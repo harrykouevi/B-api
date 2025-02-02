@@ -66,7 +66,6 @@ class Kernel extends HttpKernel
         'web' => [
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
-            Installed::class,
             StartSession::class,
             AuthenticateSession::class,
             ShareErrorsFromSession::class,
