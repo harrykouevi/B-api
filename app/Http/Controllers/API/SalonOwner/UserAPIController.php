@@ -71,7 +71,7 @@ class UserAPIController extends Controller
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
+            return $this->sendError($e->getMessage(),401);
         }
 
     }
