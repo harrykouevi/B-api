@@ -51,10 +51,11 @@ class UserAPIController extends Controller
     {
         try {
             $this->validate($request, [
-                'email' => 'required|email',
+                'email' => 'nullable|email',
+                'phone_number' => 'required|max:255',
                 'password' => 'required',
             ]);
-            if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')])) {
+            if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
                 // Authentication passed...
                 $user = auth()->user();
                 $user->device_token = $request->input('device_token', '');
