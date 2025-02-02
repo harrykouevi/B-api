@@ -69,7 +69,7 @@ class UserAPIController extends Controller
                 return $this->sendError(__('auth.failed'));
             }
         } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()));
+            return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
