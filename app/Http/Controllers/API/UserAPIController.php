@@ -62,12 +62,12 @@ class UserAPIController extends Controller
                 $user->save();
                 return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
             } else {
-                return $this->sendError(__('auth.failed'));
+                return $this->sendError(__('auth.failed'),401);
             }
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage(),401);
+            return $this->sendError($e->getMessage(),400);
         }
 
     }
