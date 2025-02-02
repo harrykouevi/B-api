@@ -113,7 +113,7 @@ class UserAPIController extends Controller
                     ->updateOrCreate(['custom_field_id' => $value['custom_field_id']], $value);
             }
         } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()));
+            return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }

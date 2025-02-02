@@ -110,7 +110,7 @@ class UserAPIController extends Controller
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
         } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()));
+            return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
