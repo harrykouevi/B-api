@@ -107,7 +107,7 @@ class UserAPIController extends Controller
             $user->api_token = Str::random(60);
             $user->save();
 
-            $defaultRoles = $this->roleRepository->findByField('default', '1');
+            $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
         } catch (ValidationException $e) {
