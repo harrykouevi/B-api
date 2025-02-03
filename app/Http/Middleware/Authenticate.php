@@ -25,6 +25,7 @@ class Authenticate extends Middleware
     public function handle($request, Closure $next, ...$guards): mixed
     {
         try {
+            dd('in authenticate') ;
             $this->authenticate($request, $guards);
             
         } catch (AuthenticationException $e) {
