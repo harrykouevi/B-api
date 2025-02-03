@@ -29,11 +29,11 @@ class Authenticate extends Middleware
             $this->authenticate($request, $guards);
             
         } catch (AuthenticationException $e) {
+            dd($request->ajax()) ;
             if ($request->ajax()) {
                 return response()->json(['error' => "Not authenticated"], 401);
             } else {
-                dd('in authenticate') ;
-                dd('in authenticate') ;
+               
                 throw new AuthenticationException(
                     'Unauthenticated.', $guards, $this->redirectTo($request)
                 );
