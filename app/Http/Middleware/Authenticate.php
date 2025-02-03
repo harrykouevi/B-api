@@ -26,6 +26,7 @@ class Authenticate extends Middleware
     {
         try {
             dd('in authenticate') ;
+            dd('in authenticate') ;
             $this->authenticate($request, $guards);
             
         } catch (AuthenticationException $e) {
