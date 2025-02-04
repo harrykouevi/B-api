@@ -6,7 +6,7 @@
  * Copyright (c) 2022
  */
 
-
+use App\Http\Controllers\API\AddressAPIController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 
@@ -111,7 +111,7 @@ Route::middleware('auth:api')->group(function () {
 
 
     Route::resource('favorites', 'API\FavoriteAPIController');
-    Route::resource('addresses', 'API\AddressAPIController');
+    Route::resource('addresses', AddressAPIController::class);
 
     Route::get('notifications/count', 'API\NotificationAPIController@count');
     Route::resource('notifications', 'API\NotificationAPIController');
