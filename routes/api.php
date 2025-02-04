@@ -6,6 +6,12 @@
  * Copyright (c) 2022
  */
 
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\SalonAPIController;
+
+
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -52,7 +58,7 @@ Route::get('modules', 'API\ModuleAPIController@index');
 
 
 Route::resource('salon_levels', 'API\SalonLevelAPIController');
-Route::resource('salons', 'API\SalonAPIController')->only(['index', 'show']);
+Route::resource('salons', SalonAPIController::class)->only(['index', 'show']);
 Route::resource('availability_hours', 'API\AvailabilityHourAPIController')->only(['index', 'show']);
 Route::resource('awards', 'API\AwardAPIController')->only(['index', 'show']);
 Route::resource('experiences', 'API\ExperienceAPIController')->only(['index', 'show']);

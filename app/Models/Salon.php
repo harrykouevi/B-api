@@ -73,7 +73,7 @@ class Salon extends Model implements HasMedia, Castable
      */
     public static array $rules = [
         'name' => 'required|max:127',
-        'salon_level_id' => 'required|exists:salon_levels,id',
+        // 'salon_level_id' => 'required|exists:salon_levels,id',
         'address_id' => 'required|exists:addresses,id',
         'phone_number' => 'max:50',
         'mobile_number' => 'max:50',
