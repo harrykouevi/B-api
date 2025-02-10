@@ -84,9 +84,10 @@ Route::resource('booking_statuses', 'API\BookingStatusAPIController')->except([
 ]);
 Route::resource('option_groups', 'API\OptionGroupAPIController');
 Route::resource('options', 'API\OptionAPIController');
-Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
 
 Route::middleware('auth:api')->group(function () {
+    Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
+
     Route::group(['middleware' => ['role:salon owner']], function () {
         Route::prefix('salon_owner')->group(function () {
             Route::post('users/{user}', 'API\UserAPIController@update');
