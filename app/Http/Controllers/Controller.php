@@ -48,6 +48,16 @@ class Controller extends BaseController
         return Response::json(ResponseUtil::makeError($error), $code);
     }
 
+     /**
+     * @param $error
+     * @param int $code
+     * @return JsonResponse
+     */
+    public function send($error, int $code = 200): JsonResponse
+    {
+        return Response::json($error, $code);
+    }
+
 
     /**
      * Example:
