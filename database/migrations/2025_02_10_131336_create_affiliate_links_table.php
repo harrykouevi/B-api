@@ -17,8 +17,7 @@ return new class extends Migration
             $table->string('link')->unique();
 
              // Change salon_level_id to be nullable
-             $table->integer('user_id')->unsigned()->nullable();
-            
+             $table->bigInteger('user_id')->unsigned()->nullable();
              // Re-add the foreign key constraint with onDelete set to null
              $table->foreign('user_id')->references('id')->on('users')->onDelete('set null')->onUpdate('cascade');
          

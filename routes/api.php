@@ -9,6 +9,7 @@
 use App\Http\Controllers\API\AddressAPIController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
+use App\Http\Controllers\API\AffiliateAPIController ;
 
 
 
@@ -83,6 +84,7 @@ Route::resource('booking_statuses', 'API\BookingStatusAPIController')->except([
 ]);
 Route::resource('option_groups', 'API\OptionGroupAPIController');
 Route::resource('options', 'API\OptionAPIController');
+Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
 
 Route::middleware('auth:api')->group(function () {
     Route::group(['middleware' => ['role:salon owner']], function () {
@@ -129,5 +131,4 @@ Route::middleware('auth:api')->group(function () {
     ]);
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
 
-    Route::post('affiliate/generate-link', [AffiliateController::class, 'generateLink']);
 });
