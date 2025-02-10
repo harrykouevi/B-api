@@ -128,4 +128,6 @@ Route::middleware('auth:api')->group(function () {
         'show', 'create', 'edit'
     ]);
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
+
+    Route::post('affiliate/generate-link', [AffiliateController::class, 'generateLink']);
 });
