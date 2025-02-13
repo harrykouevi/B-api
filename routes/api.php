@@ -112,6 +112,8 @@ Route::middleware('auth:api')->group(function () {
     ]);
     Route::post('salon_reviews', 'API\SalonReviewAPIController@store')->name('salon_reviews.store');
 
+    Route::resource('categories', 'API\CategoryAPIController')->only(['store']);
+
 
     Route::resource('favorites', 'API\FavoriteAPIController');
     Route::resource('addresses', AddressAPIController::class);
