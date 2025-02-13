@@ -40,7 +40,7 @@ class Category extends Model implements HasMedia
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
 
-    use HasTranslations;
+    // use HasTranslations;
 
     /**
      * Validation rules
@@ -48,7 +48,7 @@ class Category extends Model implements HasMedia
      * @var array
      */
     public static array $rules = ['name' => 'required|max:127', 'color' => 'required|max:36', 'description' => 'nullable', 'order' => 'nullable|numeric|min:0', 'parent_id' => 'nullable|exists:categories,id'];
-    public array $translatable = ['name', 'description'];
+    // public array $translatable = ['name', 'description'];
     public $table = 'categories';
     public $fillable = ['name', 'color', 'description', 'featured', 'order', 'parent_id'];
     /**
