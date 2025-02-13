@@ -61,6 +61,7 @@ class UserAPIController extends Controller
             ]);
             if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
                 // Authentication passed...
+                dump(auth()->user());
                 $user = auth()->user();
                 $user->device_token = $request->input('device_token', '');
                 $user->save();
