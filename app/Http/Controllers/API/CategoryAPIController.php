@@ -98,7 +98,7 @@ class CategoryAPIController extends Controller
      *
      * @param CreateCategoryRequest $request
      *
-     * @return RedirectResponse
+     * @return JsonResponse
      */
     public function store(CreateCategoryRequest $request): JsonResponse
     {
