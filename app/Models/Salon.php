@@ -79,10 +79,10 @@ class Salon extends Model implements HasMedia, Castable
         'mobile_number' => 'required|max:50',
         'availability_range' => 'required|numeric|max:9999999.99|min:0.01'
     ];
-    public array $translatable = [
-        'name',
-        'description',
-    ];
+    // public array $translatable = [
+    //     'name',
+    //     'description',
+    // ];
     public $table = 'salons';
     public $fillable = [
         'name',
