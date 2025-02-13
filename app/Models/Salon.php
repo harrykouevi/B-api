@@ -63,7 +63,7 @@ class Salon extends Model implements HasMedia, Castable
     use InteractsWithMedia {
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**
