@@ -42,10 +42,11 @@ class CategoryAPIController extends Controller
 
     public function __construct(CategoryRepository $categoryRepo , CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo)
     {
-        parent::__construct();
+        
         $this->categoryRepository = $categoryRepo;
         $this->uploadRepository = $uploadRepo ;
         $this->customFieldRepository = $customFieldRepo ;
+        parent::__construct();
     }
 
     /**
