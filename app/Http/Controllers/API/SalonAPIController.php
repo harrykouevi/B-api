@@ -113,6 +113,7 @@ class SalonAPIController extends Controller
      */
     public function store(CreateSalonRequest $request): JsonResponse
     {
+        dump(auth()->id());
         try {
             $input = $request->all();
             if (auth()->user()->hasAnyRole(['salon owner', 'customer'])) {

@@ -87,7 +87,6 @@ class Salon extends Model implements HasMedia, Castable
     public $fillable = [
         'name',
         'salon_level_id',
-        'user_id',
         'address_id',
         'description',
         'phone_number',
@@ -107,7 +106,6 @@ class Salon extends Model implements HasMedia, Castable
         'image' => 'string',
         'name' => 'string',
         'salon_level_id' => 'integer',
-        'user_id' => 'integer',
         'address_id' => 'integer',
         'description' => 'string',
         'phone_number' => 'string',
