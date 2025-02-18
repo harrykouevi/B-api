@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class FaqCategory extends Model
 {
 
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     public array $translatable = [

@@ -25,7 +25,7 @@ use Illuminate\Support\Collection;
  */
 class OptionGroup extends Model
 {
-    use HasTranslations;
+    // use HasTranslations;
 
     /**
      * Validation rules

@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Experience extends Model
 {
 
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**

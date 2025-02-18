@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class Award extends Model
 {
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**

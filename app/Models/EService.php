@@ -52,7 +52,7 @@ class EService extends Model implements HasMedia, Castable
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
 
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**

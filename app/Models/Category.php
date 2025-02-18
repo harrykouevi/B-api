@@ -40,7 +40,7 @@ class Category extends Model implements HasMedia
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
 
-    // use HasTranslations;
+    // // use HasTranslations;
 
     /**
      * Validation rules

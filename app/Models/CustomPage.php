@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class CustomPage extends Model
 {
 
-    use HasTranslations;
+    // use HasTranslations;
 
     /**
      * Validation rules

@@ -32,7 +32,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class PaymentMethod extends Model implements HasMedia
 {
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**

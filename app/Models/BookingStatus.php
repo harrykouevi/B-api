@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class BookingStatus extends Model
 {
 
-    use HasTranslations;
+    // use HasTranslations;
 
     /**
      * Validation rules

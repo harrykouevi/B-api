@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class Currency extends Model
 {
-    use HasTranslations;
+    // use HasTranslations;
 
     /**
      * Validation rules

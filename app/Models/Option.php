@@ -35,7 +35,7 @@ class Option extends Model implements HasMedia
     use InteractsWithMedia {
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**

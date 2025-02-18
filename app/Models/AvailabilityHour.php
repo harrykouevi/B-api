@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class AvailabilityHour extends Model
 {
 
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**

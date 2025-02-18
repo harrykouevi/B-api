@@ -25,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class SalonLevel extends Model
 {
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**

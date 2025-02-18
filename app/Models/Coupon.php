@@ -37,7 +37,7 @@ use Illuminate\Support\Collection;
 class Coupon extends Model implements Castable
 {
 
-    use HasTranslations;
+    // use HasTranslations;
 
     /**
      * Validation rules

@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class PaymentStatus extends Model
 {
-    use HasTranslations;
+    // use HasTranslations;
     use HasFactory;
 
     /**
