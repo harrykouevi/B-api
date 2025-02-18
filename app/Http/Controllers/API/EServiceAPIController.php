@@ -9,11 +9,13 @@
 namespace App\Http\Controllers\API;
 
 
+use Illuminate\Validation\ValidationException;
 use App\Criteria\EServices\EServicesOfUserCriteria;
 use App\Criteria\EServices\NearCriteria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateEServiceRequest;
 use App\Http\Requests\UpdateEServiceRequest;
+use App\Models\EService;
 use App\Repositories\EServiceRepository;
 use App\Repositories\UploadRepository;
 use App\Repositories\UserRepository;
@@ -154,9 +156,10 @@ class EServiceAPIController extends Controller
      *
      * @return JsonResponse
      */
-    public function store(CreateEServiceRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         try {
+            $this->validate($request, EService::$rules);
             $input = $request->all();
             $eService = $this->eServiceRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
@@ -166,9 +169,12 @@ class EServiceAPIController extends Controller
                     $mediaItem->copy($eService, 'image');
                 }
             }
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
+
         return $this->sendResponse($eService->toArray(), __('lang.saved_successfully', ['operator' => __('lang.e_service')]));
     }
 
