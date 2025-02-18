@@ -96,7 +96,7 @@ Route::middleware('auth:api')->group(function () {
             Route::put('payments/{id}', 'API\PaymentAPIController@update')->name('payments.update');
         });
     });
-    Route::resource('salons', 'API\SalonAPIController')->only([
+    Route::resource('salons', SalonAPIController::class)->only([
         'store', 'update', 'destroy'
     ]);
     Route::post('uploads/store', 'API\UploadAPIController@store');
