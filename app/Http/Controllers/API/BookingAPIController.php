@@ -99,7 +99,7 @@ class BookingAPIController extends Controller
     {
         try {
             $this->bookingRepository->pushCriteria(new RequestCriteria($request));
-            $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
+            // $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
             $this->bookingRepository->pushCriteria(new LimitOffsetCriteria($request));
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());

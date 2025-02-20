@@ -10,8 +10,8 @@ use App\Http\Controllers\API\AddressAPIController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
-
-
+use App\Http\Controllers\API\BookingAPIController;
+use App\Http\Controllers\API\UserAPIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,7 +48,7 @@ Route::prefix('salon_owner')->group(function () {
 
 
 Route::post('login', 'API\UserAPIController@login');
-Route::post('register', 'API\UserAPIController@register');
+Route::post('register', [UserAPIController::class, 'register']);
 Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
 Route::get('user', 'API\UserAPIController@user');
 Route::get('logout', 'API\UserAPIController@logout');
@@ -120,7 +120,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('notifications/count', 'API\NotificationAPIController@count');
     Route::resource('notifications', 'API\NotificationAPIController');
-    Route::resource('bookings', 'API\BookingAPIController');
+    Route::resource('bookings', BookingAPIController::class);
 
     Route::resource('earnings', 'API\EarningAPIController');
 
