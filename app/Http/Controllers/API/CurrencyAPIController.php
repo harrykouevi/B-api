@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Currency;
 use App\Repositories\CurrencyRepository;
 use App\Repositories\CustomFieldRepository;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
@@ -104,7 +105,10 @@ class CurrencyAPIController extends Controller
 
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
         }
+
 
         return $this->sendResponse($currency->toArray(), __('lang.saved_successfully', ['operator' => __('lang.currency')]));
     }
