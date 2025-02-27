@@ -13,7 +13,7 @@ use App\Traits\HasTranslations;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use DateTime;
-use Eloquent as Model;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

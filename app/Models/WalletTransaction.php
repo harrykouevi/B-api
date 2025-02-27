@@ -11,7 +11,7 @@ namespace App\Models;
 use App\Events\WalletTransactionCreatedEvent;
 use App\Events\WalletTransactionCreatingEvent;
 use App\Traits\Uuids;
-use Eloquent as Model;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

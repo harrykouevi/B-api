@@ -9,7 +9,7 @@
 namespace App\Models;
 
 use App\Casts\AffiliateCast;
-use Eloquent as Model;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

@@ -11,7 +11,7 @@ namespace App\Models;
 use App\Casts\CouponCast;
 use App\Traits\HasTranslations;
 use DateTime;
-use Eloquent as Model;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

@@ -10,7 +10,7 @@ namespace App\Models;
 
 use App\Casts\EServiceCast;
 use App\Traits\HasTranslations;
-use Eloquent as Model;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

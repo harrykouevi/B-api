@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
 use App\Http\Controllers\API\BookingAPIController;
+use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
 
 /*
@@ -55,7 +56,7 @@ Route::get('logout', 'API\UserAPIController@logout');
 Route::get('settings', 'API\UserAPIController@settings');
 Route::get('translations', 'API\TranslationAPIController@translations');
 Route::get('supported_locales', 'API\TranslationAPIController@supportedLocales');
-Route::get('modules', 'API\ModuleAPIController@index');
+Route::get('modules', [ModuleAPIController ::class, 'index']);
 
 
 Route::resource('salon_levels', 'API\SalonLevelAPIController');
