@@ -142,7 +142,6 @@ class CurrencyAPIController extends Controller
         }
 
         return $this->sendResponse($currency->toArray(), __('lang.updated_successfully', ['operator' => __('lang.currency')]));
-
     }
 
     /**
