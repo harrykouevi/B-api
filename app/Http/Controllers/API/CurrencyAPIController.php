@@ -93,10 +93,12 @@ class CurrencyAPIController extends Controller
      * @return JsonResponse
      */
     public function store(Request $request): JsonResponse
-    {
-        $input = $request->all();
-        $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->currencyRepository->model());
+    { 
         try {
+            $this->validate($request, Currency::$rules);
+            $input = $request->all();
+            $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->currencyRepository->model());
+            
             $currency = $this->currencyRepository->create($input);
             $currency->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
 
@@ -118,14 +120,16 @@ class CurrencyAPIController extends Controller
      */
     public function update(int $id, Request $request): JsonResponse
     {
-        $currency = $this->currencyRepository->findWithoutFail($id);
-
-        if (empty($currency)) {
-            return $this->sendError('Currency not found');
-        }
-        $input = $request->all();
-        $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->currencyRepository->model());
+        
         try {
+            $currency = $this->currencyRepository->findWithoutFail($id);
+            if (empty($currency)) {
+                return $this->sendError('Currency not found');
+            }
+
+            $this->validate($request, Currency::$rules);
+            $input = $request->all();
+            $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->currencyRepository->model());
             $currency = $this->currencyRepository->update($input, $id);
 
 

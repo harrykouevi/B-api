@@ -11,8 +11,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
 use App\Http\Controllers\API\BookingAPIController;
+use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
+use App\Http\Controllers\API\WalletAPIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -76,7 +78,7 @@ Route::resource('galleries', 'API\GalleryAPIController');
 Route::get('salon_reviews/{id}', 'API\SalonReviewAPIController@show');
 Route::get('salon_reviews', 'API\SalonReviewAPIController@index');
 
-Route::resource('currencies', 'API\CurrencyAPIController');
+Route::resource('currencies', CurrencyAPIController::class);
 Route::resource('slides', 'API\SlideAPIController')->except([
     'show'
 ]);
@@ -130,7 +132,7 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('coupons', 'API\CouponAPIController')->except([
         'show'
     ]);
-    Route::resource('wallets', 'API\WalletAPIController')->except([
+    Route::resource('wallets', WalletAPIController::class)->except([
         'show', 'create', 'edit'
     ]);
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
