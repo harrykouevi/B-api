@@ -138,8 +138,8 @@ class CurrencyAPIController extends Controller
                 $currency->customFieldsValues()
                     ->updateOrCreate(['custom_field_id' => $value['custom_field_id']], $value);
             }
-        } catch (ValidatorException $e) {
-            return $this->sendError($e->getMessage());
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
         }
 
         return $this->sendResponse($currency->toArray(), __('lang.updated_successfully', ['operator' => __('lang.currency')]));
