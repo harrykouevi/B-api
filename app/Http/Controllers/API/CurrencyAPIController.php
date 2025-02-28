@@ -18,7 +18,8 @@ use Illuminate\Http\Request;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
-use Prettus\Validator\Exceptions\ValidatorException;
+use Illuminate\Validation\ValidationException;
+
 
 /**
  * Class CurrencyController
