@@ -25,6 +25,7 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 
+
 /**
  * Class WalletController
  * @package App\Http\Controllers\API
@@ -92,8 +93,8 @@ class WalletAPIController extends Controller
             $input['balance'] = 0;
             $input['enabled'] = 1;
             $wallet = $this->walletRepository->create($input);
-        } catch (Exception|ValidationException $e) {
-            return $this->sendError($e->getMessage());
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
         }
         return $this->sendResponse($wallet->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
