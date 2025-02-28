@@ -102,8 +102,8 @@ class CurrencyAPIController extends Controller
             $currency = $this->currencyRepository->create($input);
             $currency->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
 
-        } catch (ValidatorException $e) {
-            return $this->sendError($e->getMessage());
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
         }
 
         return $this->sendResponse($currency->toArray(), __('lang.saved_successfully', ['operator' => __('lang.currency')]));
