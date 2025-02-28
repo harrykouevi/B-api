@@ -173,34 +173,7 @@ class UserAPIController extends Controller
                 'enable_otp' => ''
             ]
         );
-        !$settings = [
-            'default_tax' => '',
-            'default_currency' => '',
-            'default_currency_decimal_digits' => '',
-            'app_name' => '',
-            'currency_right' => '',
-            'enable_paypal' => '',
-            'enable_stripe' => '',
-            'enable_razorpay' => '',
-            'main_color' => '',
-            'main_dark_color' => '',
-            'second_color' => '',
-            'second_dark_color' => '',
-            'accent_color' => '',
-            'accent_dark_color' => '',
-            'scaffold_dark_color' => '',
-            'scaffold_color' => '',
-            'google_maps_key' => '',
-            'fcm_key' => '',
-            'mobile_language' => '',
-            'app_version' => '',
-            'enable_version' => '',
-            'distance_unit' => '',
-            'default_theme' => '',
-            'app_short_description' => '',
-            'default_country_code' => '',
-            'enable_otp' => ''
-        ] ;
+        
         if (!$settings) {
             return $this->sendError('Settings not found');
         }
