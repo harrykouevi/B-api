@@ -14,6 +14,7 @@ use App\Http\Controllers\API\BookingAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
+use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
 use App\Http\Controllers\API\WalletAPIController;
 
 /*
@@ -34,7 +35,7 @@ Route::prefix('salon_owner')->group(function () {
     Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
     Route::get('user', 'API\SalonOwner\UserAPIController@user');
     Route::get('logout', 'API\SalonOwner\UserAPIController@logout');
-    Route::get('settings', 'API\SalonOwner\UserAPIController@settings');
+    Route::get('settings', [UOwnerAPIController::class]);
     Route::get('translations', 'API\TranslationAPIController@translations');
     Route::get('supported_locales', 'API\TranslationAPIController@supportedLocales');
     Route::middleware('auth:api')->group(function () {

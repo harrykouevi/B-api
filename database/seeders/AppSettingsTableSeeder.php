@@ -389,12 +389,12 @@ class AppSettingsTableSeeder extends Seeder
             array(
                 'id' => 147,
                 'key' => 'salon_app_name',
-                'value' => 'Propriétaire de Salon',
+                'value' => 'Barber Shop +',
             ),
             array(
                 'id' => 148,
                 'key' => 'default_country_code',
-                'value' => 'DE',
+                'value' => 'TG',
             ),
             array(
                 'id' => 149,
