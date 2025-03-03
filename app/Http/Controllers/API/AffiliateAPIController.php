@@ -84,4 +84,52 @@ class AffiliateAPIController extends Controller
 
     }
 
+    public function trackConversion(Request $request)
+    {
+        $affiliationId = $request->query('affiliation_id');
+        $affiliation =$this->affiliateRepository->find($affiliationId);
+
+        $input = $request->all();
+       
+        // Enregistre le clic comme une conversion potentielle
+        $affiliation->conversions()->create(['status' => 'pending']);
+        
+        // Enregistrer le clic dans la base de données
+        $input['click'] =  $affiliation->click + 1 ;
+        $affiliation =$this->affiliateRepository->update($input, $affiliation->id);
+
+        // Rediriger vers l'application mobile avec le lien profond
+        return redirect()->to('com.example.barbershop://affiliate-link?affiliate_link_id=' . $affiliationId );
+    }
+    
+    public function confirmConversion(Request $request)
+    {
+        $affiliationId = $request->query('affiliation_id');
+        $affiliation =$this->affiliateRepository->find($affiliationId);
+        
+        // Met à jour la conversion en tant que réussie
+        $affiliation->conversions()->where('status', 'pending')->update(['status' => 'success','user_id' => Auth()->id,]);
+        
+     
+        // Met à jour la conversion en tant que réussie
+        $conversion = $affiliation->conversions()->where('status', 'pending')->first();
+        if ($conversion) {
+            $conversion->update([
+                'status' => 'success'
+            ]);
+            
+            // Attribue la récompense au partenaire
+            $this->rewardPartner($affiliation);
+        }
+    }
+    
+    private function rewardPartner($affiliation)
+    {
+        // Code pour récompenser le partenaire
+        // Par exemple, ajouter des points ou une commission
+        $partner = $affiliation->partner;
+        $partner->points += 10; // Exemple de récompense
+        $partner->save();
+    }
+
 }

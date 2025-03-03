@@ -99,6 +99,36 @@ class WalletAPIController extends Controller
         return $this->sendResponse($wallet->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
 
+
+    /**
+     * Store a newly created Wallet in storage.
+     * POST /notifications
+     *
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
+    public function storeDefault(): JsonResponse
+    {
+        try {
+         
+            $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
+            if (empty($currency)) {
+                return $this->sendError('Default Currency not found');
+            }
+            $input = [];
+            $input['name'] = setting('default_wallet_name')?? "-";
+            $input['currency'] = $currency;
+            $input['user_id'] = auth()->id();
+            $input['balance'] = 0;
+            $input['enabled'] = 1;
+            $wallet = $this->walletRepository->create($input);
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
+        }
+        return $this->sendResponse($wallet->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
+    }
+
     /**
      * Update the specified Notification in storage.
      *

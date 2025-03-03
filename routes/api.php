@@ -89,6 +89,8 @@ Route::resource('booking_statuses', 'API\BookingStatusAPIController')->except([
 Route::resource('option_groups', 'API\OptionGroupAPIController');
 Route::resource('options', 'API\OptionAPIController');
 
+Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
+
 Route::middleware('auth:api')->group(function () {
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
 
@@ -136,6 +138,8 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('wallets', WalletAPIController::class)->except([
         'show', 'create', 'edit'
     ]);
+
+    Route::resource('defaut-wallets', WalletAPIController::class)->only(['store']);
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
 
 });

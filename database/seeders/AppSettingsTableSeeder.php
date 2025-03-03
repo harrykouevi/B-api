@@ -401,6 +401,11 @@ class AppSettingsTableSeeder extends Seeder
                 'key' => 'enable_otp',
                 'value' => '1',
             ),
+            array(
+                'id' => 149,
+                'key' => 'default_wallet_name',
+                'value' => 'Igris',
+            ),
         ));
 
 
