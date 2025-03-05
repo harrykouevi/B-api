@@ -26,7 +26,7 @@ class AffiliateRepository extends BaseRepository
      * @var array
      */
     protected $fieldSearchable = [
-        'description',
+        'link',
         'user_id'
     ];
 

@@ -36,10 +36,12 @@ class Affiliate extends Model
      */
     public static array $rules = [
         'link' => 'max:255',
+        'code' => 'max:255',
     ];
     public $table = 'affiliates';
     public $fillable = [
         'link',
+        'code',
         'user_id'
     ];
     /**
@@ -49,6 +51,7 @@ class Affiliate extends Model
      */
     protected $casts = [
         'link' => 'string',
+        'code' => 'string',
         'user_id' => 'integer'
     ];
 
