@@ -8,7 +8,7 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Criteria\Affiliates\AffiliatesOfUserCriteria;
+use App\Criteria\Affiliations\AffiliatesOfUserCriteria;
 use App\Criteria\Bookings\BookingsOfUserCriteria;
 use App\Criteria\Coupons\ValidCriteria;
 use App\Events\BookingChangedEvent;
