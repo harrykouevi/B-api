@@ -105,6 +105,7 @@ class AffiliateAPIController extends Controller
         $encryptedReferralCode = Hash::make($referralCode);
         // Génération du lien d'affiliation
         $input['link']= 'affilate-link?ref=' . $encryptedReferralCode;
+        $input['code']=  $encryptedReferralCode;
  
         try {
             $address = $this->affiliateRepository->create($input);
