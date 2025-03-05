@@ -1306,6 +1306,7 @@ return [
     'custom_page_published_help' => 'Insérer publié',
     'custom_page_published_placeholder' => 'Insérer publié',
     'custom_page_updated_at' => 'Mis à jour à',
+    'lang.partener_ship'  => 'Parrainage',
     'wallet' => 'Porte monnaie',
     'wallet_plural' => 'Portefeuilles',
     'wallet_desc' => 'Gestion des portefeuilles',

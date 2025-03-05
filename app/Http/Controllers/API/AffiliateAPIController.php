@@ -8,7 +8,7 @@
 
 namespace App\Http\Controllers\API;
 
-
+use App\Criteria\Affiliates\AffiliatesOfUserCriteria;
 use App\Criteria\Bookings\BookingsOfUserCriteria;
 use App\Criteria\Coupons\ValidCriteria;
 use App\Events\BookingChangedEvent;
@@ -29,6 +29,9 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 
+use App\Repositories\WalletRepository;
+
+
 /**
  * Class AffiliateAPIController
  * @package App\Http\Controllers\API
@@ -38,15 +41,43 @@ class AffiliateAPIController extends Controller
     /** @var  AffiliateRepository */
     private AffiliateRepository $affiliateRepository;
 
-    public function __construct(
-        AffiliateRepository $affiliateRepo
-        )
+     /**
+     * @var WalletRepository
+     */
+    private WalletRepository $walletRepository;
+    public function __construct( AffiliateRepository $affiliateRepo ,WalletRepository $walletRepository )
     {
         parent::__construct();
         $this->affiliateRepository = $affiliateRepo;
+        $this->walletRepository = $walletRepository;
     }
 
     
+     /**
+     * Display the specified Booking.
+     * GET|HEAD /bookings/{id}
+     *
+     * @param int $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function show( Request $request): JsonResponse
+    {
+        try {
+            $this->affiliateRepository->pushCriteria(new RequestCriteria($request));
+            $this->affiliateRepository->pushCriteria(new AffiliatesOfUserCriteria(auth()->id()));
+            $this->affiliateRepository->pushCriteria(new LimitOffsetCriteria($request));
+        } catch (RepositoryException $e) {
+            return $this->sendError($e->getMessage());
+        }
+        $affiliate = $this->affiliateRepository->first();
+        if (empty($affiliate)) {
+            return $this->sendError('affiliate not found');
+        }
+        $this->filterModel($request, $affiliate);
+        return $this->sendResponse($affiliate->toArray(), 'affiliate retrieved successfully');
+
+    }
 
 
     /**
@@ -105,31 +136,41 @@ class AffiliateAPIController extends Controller
     public function confirmConversion(Request $request)
     {
         $affiliationId = $request->query('affiliation_id');
-        $affiliation =$this->affiliateRepository->find($affiliationId);
-        
-        // Met à jour la conversion en tant que réussie
-        $affiliation->conversions()->where('status', 'pending')->update(['status' => 'success','user_id' => Auth()->id,]);
-        
-     
-        // Met à jour la conversion en tant que réussie
-        $conversion = $affiliation->conversions()->where('status', 'pending')->first();
-        if ($conversion) {
-            $conversion->update([
-                'status' => 'success'
-            ]);
+        try {
+            $affiliation =$this->affiliateRepository->find($affiliationId);
             
-            // Attribue la récompense au partenaire
-            $this->rewardPartner($affiliation);
+            // Met à jour la conversion en tant que réussie
+            $conversion = $affiliation->conversions()->where('status', 'pending')->first();
+            if ($conversion) {
+                $conversion->update([
+                    'status' => 'success'
+                ]);
+                
+                // Attribue la récompense au partenaire
+                $this->rewardPartner($affiliation);
+            }
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
         }
+        return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
     }
     
-    private function rewardPartner($affiliation)
+    private function rewardPartner(\App\Models\Affiliate $affiliation)
     {
+        $partner = $affiliation->user;
+        $wallet = $this->walletRepository->findByField('user_id', $partner->id )->first();
+        
+       
+
         // Code pour récompenser le partenaire
         // Par exemple, ajouter des points ou une commission
-        $partner = $affiliation->partner;
-        $partner->points += 10; // Exemple de récompense
-        $partner->save();
+        $input = [];
+        // $input['name'] = $request->get('name');
+        // $input['currency'] = $currency;
+        // $input['user_id'] = auth()->id();
+        $input['balance'] = 0;
+        // $input['enabled'] = 1;
+        $wallet = $this->walletRepository->update($input, $wallet->id);
     }
 
 }

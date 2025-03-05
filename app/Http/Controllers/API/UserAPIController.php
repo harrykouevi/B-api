@@ -44,6 +44,7 @@ class UserAPIController extends Controller
         $this->userRepository = $userRepository;
         $this->uploadRepository = $uploadRepository;
         $this->roleRepository = $roleRepository;
+        $this->roleRepository = $roleRepository;
         $this->customFieldRepository = $customFieldRepo;
     }
 

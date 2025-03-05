@@ -92,7 +92,9 @@ Route::resource('options', 'API\OptionAPIController');
 Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
 
 Route::middleware('auth:api')->group(function () {
+    Route::get('affiliate', [AffiliateAPIController::class, 'show']);
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
+    Route::post('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
 
     Route::group(['middleware' => ['role:salon owner']], function () {
         Route::prefix('salon_owner')->group(function () {
