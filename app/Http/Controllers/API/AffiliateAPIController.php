@@ -108,11 +108,11 @@ class AffiliateAPIController extends Controller
         $input['code']=  $encryptedReferralCode;
  
         try {
-            $address = $this->affiliateRepository->create($input);
+            $affiliate = $this->affiliateRepository->create($input);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($address->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
+        return $this->sendResponse($affiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
 
     }
 

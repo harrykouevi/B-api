@@ -6,7 +6,7 @@
  * Copyright (c) 2024
  */
 
-namespace App\Criteria\Affiliates;
+namespace App\Criteria\Affiliations;
 
 use App\Models\User;
 use Prettus\Repository\Contracts\CriteriaInterface;
