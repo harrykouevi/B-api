@@ -402,13 +402,13 @@ class AppSettingsTableSeeder extends Seeder
                 'value' => '1',
             ),
             array(
-                'id' => 149,
+                'id' => 150,
                 'key' => 'default_wallet_name',
                 'value' => 'Igris',
             ),
 
             array(
-                'id' => 150,
+                'id' => 151,
                 'key' => 'owner_initial_amount',
                 'value' => 1000,
             ),
