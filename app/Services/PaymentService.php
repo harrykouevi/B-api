@@ -55,8 +55,9 @@ class PaymentService
 
 
         $currency = json_decode($wallet->currency, true);
+        dd(setting('default_currency_code'),$currency['code']) ;
         if ($currency['code'] == setting('default_currency_code')) {
-            dd($wallet) ;
+           
             $input = [];
             $input['payment']['amount'] = $amount;
             $input['payment']['description'] = 'compte créé et crédité';
