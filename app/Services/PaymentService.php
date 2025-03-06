@@ -50,7 +50,7 @@ class PaymentService
     {
         $wallet = $this->walletRepository->findByField('user_id',  $user->id);
         if($wallet->empty()){
-            $wallet = $this->createWallet($user->id , 0) ;
+            $wallet = $this->createWallet($user , 0) ;
         }
 
         if ($wallet->currency->code == setting('default_currency_code')) {
