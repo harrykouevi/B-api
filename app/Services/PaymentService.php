@@ -52,7 +52,7 @@ class PaymentService
         if($wallet->empty()){
             $wallet = $this->createWallet($user , 0) ;
         }
-
+        dd($wallet) ;
         if ($wallet->currency->code == setting('default_currency_code')) {
             $input = [];
             $input['payment']['amount'] = $amount;
@@ -107,9 +107,8 @@ class PaymentService
      */
     public function createWallet(User $user,float $amount ):Wallet|Null
     {
-        dd($this->currency) ;
         $currency = $this->currency;
-        if (!empty($currency)) {
+        if ($currency) {
             
             $input = [];
             $input['name'] = setting('default_wallet_name')?? "-";
