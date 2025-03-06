@@ -16,6 +16,7 @@ use App\Repositories\PaymentRepository;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Payment;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
 use App\Notifications\StatusChangedPayment;
@@ -45,21 +46,19 @@ class PaymentService
         $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
     }
 
-    public function createPayment(float $amount)
+    public function createPayment(User $user ,float $amount)
     {
-        $wallet = $this->walletRepository->findByField('user_id',  auth()->id());
+        $wallet = $this->walletRepository->findByField('user_id',  $user->id);
         if($wallet->empty()){
-            $wallet = $this->createWallet(auth()->id() , 0) ;
+            $wallet = $this->createWallet($user->id , 0) ;
         }
-
-        dd($wallet);
 
         if ($wallet->currency->code == setting('default_currency_code')) {
             $input = [];
             $input['payment']['amount'] = $amount;
             $input['payment']['description'] = 'compte créé et crédité';
             $input['payment']['payment_status_id'] = 2; // done
-            $input['payment']['user_id'] = Auth::id();
+            $input['payment']['user_id'] = $user->id;
             $input['wallet']['balance'] = $wallet->balance + $amount ;
             // $transaction['wallet_id'] = $wallet->id;
             // $transaction['user_id'] = $input['payment']['user_id'];
@@ -71,7 +70,7 @@ class PaymentService
             // $payment = $this->paymentRepository->create($input['payment']);
             if($payment) $wallet =  $this->walletRepository->update($wallet->id , $input['wallet']);
 
-            Notification::send(collect(auth()->id()), new NewReceivedPayment($wallet));
+            Notification::send(collect($user->id), new NewReceivedPayment($wallet));
         }
     }
 
