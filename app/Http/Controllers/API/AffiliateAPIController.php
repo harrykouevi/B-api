@@ -129,8 +129,8 @@ class AffiliateAPIController extends Controller
         try {
             $affiliate = $this->affiliateRepository->create($input);
             $payment = $this->paymentRepository->create($input['payment']);
-            $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-            Notification::send($booking->salon->users, new NewReceivedPayment($booking));
+            // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+            Notification::send($booking->salon->users, new NewReceivedPayment($payment));
 
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());

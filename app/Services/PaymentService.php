@@ -41,6 +41,9 @@ class PaymentService
     public function createPayment(float $amount)
     {
         $wallet = $this->walletRepository->findByField('user_id',  auth()->id());
+        if($wallet != Null){
+            
+        }
 
         if ($wallet->currency->code == setting('default_currency_code')) {
             $input['payment']['amount'] = $amount;
