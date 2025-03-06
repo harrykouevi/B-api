@@ -55,7 +55,6 @@ class PaymentService
 
 
         $currency = json_decode($wallet->currency, true);
-        dd(setting('default_currency_code'),$currency['code']) ;
         if ($currency['code'] == setting('default_currency_code')) {
            
             $input = [];
