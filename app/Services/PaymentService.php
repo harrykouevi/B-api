@@ -49,7 +49,7 @@ class PaymentService
             $wallet = $this->createWallet(auth()->id() , 0) ;
         }
 
-        
+        dd($wallet);
 
         if ($wallet->currency->code == setting('default_currency_code')) {
             $input = [];
