@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('conversions', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
-
+      
         Schema::create('conversions', function (Blueprint $table) {
             $table->id();
             $table->string('status')->nullable();
