@@ -107,6 +107,7 @@ class PaymentService
      */
     public function createWallet(User $user,float $amount ):Wallet|Null
     {
+        dd($this->currency) ;
         $currency = $this->currency;
         if (!empty($currency)) {
             
