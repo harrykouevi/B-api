@@ -119,7 +119,7 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
-
+            dd('rrrrr') ;
             $payment = $this->paymentService->createPayment($user,setting('owner_initial_amount'));
 
         } catch (ValidationException $e) {
