@@ -49,7 +49,7 @@ class PaymentService
     public function createPayment(User $user ,float $amount)
     {
         $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first();
-        if($wallet->empty()){
+        if($wallet== Null){
             $wallet = $this->createWallet($user , 0) ;
         }
 
