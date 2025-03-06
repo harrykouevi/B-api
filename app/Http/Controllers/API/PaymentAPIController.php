@@ -16,6 +16,7 @@ use App\Repositories\BookingRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\WalletRepository;
 use App\Repositories\WalletTransactionRepository;
+use App\Services\PaymentService;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -48,13 +49,19 @@ class PaymentAPIController extends Controller
      */
     private WalletRepository $walletRepository;
 
-    public function __construct(PaymentRepository $paymentRepo, BookingRepository $bookingRepo, WalletTransactionRepository $walletTransactionRepository, WalletRepository $walletRepository)
+    /**
+     * @var PaymentService
+     */
+    private PaymentService $paymentService;
+
+    public function __construct(PaymentService $paymentService ,PaymentRepository $paymentRepo, BookingRepository $bookingRepo, WalletTransactionRepository $walletTransactionRepository, WalletRepository $walletRepository)
     {
         parent::__construct();
         $this->paymentRepository = $paymentRepo;
         $this->bookingRepository = $bookingRepo;
         $this->walletTransactionRepository = $walletTransactionRepository;
         $this->walletRepository = $walletRepository;
+        $this->paymentService =  $paymentService ;
     }
 
     /**
@@ -152,15 +159,13 @@ class PaymentAPIController extends Controller
                 $input['payment']['description'] = __('lang.payment_booking_id') . $input['id'];
                 $input['payment']['payment_status_id'] = 2; // done
                 $input['payment']['user_id'] = auth()->id();
-                $transaction['wallet_id'] = $walletId;
-                $transaction['user_id'] = $input['payment']['user_id'];
-                $transaction['amount'] = $input['payment']['amount'];
-                $transaction['description'] = __('lang.payment_booking_id') . $input['id'];
-                $transaction['action'] = 'debit';
-                $this->walletTransactionRepository->create($transaction);
-                $payment = $this->paymentRepository->create($input['payment']);
-                $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-                Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                $input['payment']['action'] = 'debit';
+                
+                $payment = $this->paymentService->processPayment($input);
+                if($payment){
+                    $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+                    Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                }
 
             } else {
                 return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));

@@ -23,7 +23,7 @@ class AppSettingsTableSeeder extends Seeder
     {
 
 
-        DB::table('app_settings')->truncate();
+        // DB::table('app_settings')->truncate();
 
 
         DB::table('app_settings')->insert(array(
@@ -406,6 +406,14 @@ class AppSettingsTableSeeder extends Seeder
                 'key' => 'default_wallet_name',
                 'value' => 'Igris',
             ),
+
+            array(
+                'id' => 150,
+                'key' => 'owner_initial_amount',
+                'value' => 1000,
+            ),
+
+           
         ));
 
 

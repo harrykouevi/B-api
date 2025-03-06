@@ -25,6 +25,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
+use App\Services\PaymentService;
+
 
 class UserAPIController extends Controller
 {
@@ -38,17 +40,24 @@ class UserAPIController extends Controller
     private CustomFieldRepository $customFieldRepository;
 
     /**
+     * @var PaymentService
+     */
+    private PaymentService $paymentService;
+
+    /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct(UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
+    public function __construct(PaymentService $paymentService ,UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
     {
         parent::__construct();
         $this->userRepository = $userRepository;
         $this->uploadRepository = $uploadRepository;
         $this->roleRepository = $roleRepository;
         $this->customFieldRepository = $customFieldRepo;
+        $this->paymentService =  $paymentService ;
+
     }
 
     function login(Request $request): JsonResponse
@@ -110,6 +119,9 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
+
+            $payment = $this->paymentService->createPayment(setting('owner_initial_amount'));
+
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {

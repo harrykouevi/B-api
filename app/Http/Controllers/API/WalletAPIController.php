@@ -16,6 +16,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Wallet;
 use App\Repositories\CurrencyRepository;
 use App\Repositories\WalletRepository;
+use App\Services\PaymentService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,7 +39,7 @@ class WalletAPIController extends Controller
     /**  @var  CurrencyRepository */
     private CurrencyRepository $currencyRepository;
 
-    public function __construct(WalletRepository $walletRepo, CurrencyRepository $currencyRepository)
+    public function __construct(WalletRepository $walletRepo, CurrencyRepository $currencyRepository )
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;

@@ -15,11 +15,14 @@ use App\Events\BookingChangedEvent;
 use App\Events\BookingStatusChangedEvent;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
+use App\Notifications\NewReceivedPayment;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Repositories\AffiliateRepository;
+use App\Repositories\ConversionRepository;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Repositories\PaymentRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -29,8 +32,11 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 
-use App\Repositories\WalletRepository;
+use App\Repositories\CurrencyRepository;
 
+
+use App\Repositories\WalletRepository;
+use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 /**
  * Class AffiliateAPIController
@@ -41,15 +47,28 @@ class AffiliateAPIController extends Controller
     /** @var  AffiliateRepository */
     private AffiliateRepository $affiliateRepository;
 
-     /**
-     * @var WalletRepository
-     */
+    /** @var  ConversionRepository */
+    private ConversionRepository $conversionRepository;
+
+    /** @var  WalletRepository */
     private WalletRepository $walletRepository;
-    public function __construct( AffiliateRepository $affiliateRepo ,WalletRepository $walletRepository )
+
+    /**  @var  CurrencyRepository */
+    private CurrencyRepository $currencyRepository;
+
+    /** @var  PaymentRepository */
+    private PaymentRepository $paymentRepository;
+        
+
+
+    public function __construct(PaymentRepository $paymentRepository, AffiliateRepository $affiliateRepo ,WalletRepository $walletRepository , ConversionRepository $conversionRepo ,CurrencyRepository $currencyRepository)
     {
         parent::__construct();
         $this->affiliateRepository = $affiliateRepo;
+        $this->conversionRepository = $conversionRepo;
         $this->walletRepository = $walletRepository;
+        $this->currencyRepository = $currencyRepository;
+        $this->paymentRepository = $paymentRepository;
     }
 
     
@@ -109,6 +128,10 @@ class AffiliateAPIController extends Controller
  
         try {
             $affiliate = $this->affiliateRepository->create($input);
+            $payment = $this->paymentRepository->create($input['payment']);
+            $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+            Notification::send($booking->salon->users, new NewReceivedPayment($booking));
+
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
@@ -118,8 +141,8 @@ class AffiliateAPIController extends Controller
 
     public function trackConversion(Request $request)
     {
-        $affiliationId = $request->query('affiliation_id');
-        $affiliation =$this->affiliateRepository->find($affiliationId);
+        $affiliationCode_ = $request->query('affiliation_code');
+        $affiliation =$this->affiliateRepository->find($affiliationCode_);
 
         $input = $request->all();
        
@@ -131,24 +154,27 @@ class AffiliateAPIController extends Controller
         $affiliation =$this->affiliateRepository->update($input, $affiliation->id);
 
         // Rediriger vers l'application mobile avec le lien profond
-        return redirect()->to('com.example.barbershop://affiliate-link?affiliate_link_id=' . $affiliationId );
+        return redirect()->to('com.example.barbershop://affiliate-link?affiliate_link_id=' . $affiliationCode_ );
     }
     
     public function confirmConversion(Request $request)
     {
-        $affiliationId = $request->query('affiliation_id');
+        $affiliationCode_ = $request->query('affiliation_code');
         try {
-            $affiliation =$this->affiliateRepository->find($affiliationId);
+            $affiliation =$this->affiliateRepository->find($affiliationCode_);
             
             // Met à jour la conversion en tant que réussie
-            $conversion = $affiliation->conversions()->where('status', 'pending')->first();
-            if ($conversion) {
-                $conversion->update([
+            //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
+            if ($affiliation != Null && auth()->id() != $affiliation->user->id) {
+                $conversion = $this->conversionRepository->create([
+                    'affiliate_id' => $affiliation->id ,
+                    'affiliation' => $affiliation ,
                     'status' => 'success'
                 ]);
+                // $conversion->update();
                 
                 // Attribue la récompense au partenaire
-                $this->rewardPartner($affiliation);
+                $this->rewardPartner($affiliation , 500);
             }
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
@@ -156,22 +182,33 @@ class AffiliateAPIController extends Controller
         return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
     }
     
-    private function rewardPartner(\App\Models\Affiliate $affiliation)
+    private function rewardPartner(\App\Models\Affiliate $affiliation , int $amout)
     {
         $partner = $affiliation->user;
-        $wallet = $this->walletRepository->findByField('user_id', $partner->id )->first();
+        if($partner){ 
+            $wallet = $this->walletRepository->findByField('user_id', $partner->id )->first();
+            
+            if($wallet){
         
-       
-
-        // Code pour récompenser le partenaire
-        // Par exemple, ajouter des points ou une commission
-        $input = [];
-        // $input['name'] = $request->get('name');
-        // $input['currency'] = $currency;
-        // $input['user_id'] = auth()->id();
-        $input['balance'] = 0;
-        // $input['enabled'] = 1;
-        $wallet = $this->walletRepository->update($input, $wallet->id);
+                // Code pour récompenser le partenaire
+                // Par exemple, ajouter des points ou une commission
+                $input = [];
+                $input['balance'] = $amout;
+                $wallet = $this->walletRepository->update($input, $wallet->id);
+            }else{
+                $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
+                if (empty($currency)) {
+                    return $this->sendError('Default Currency not found');
+                }
+                $input = [];
+                $input['name'] = setting('default_wallet_name')?? "-";
+                $input['currency'] = $currency;
+                $input['user_id'] = $partner->id;
+                $input['balance'] = $amout;
+                $input['enabled'] = 1;
+                $wallet = $this->walletRepository->create($input);
+            }
+        }
     }
 
 }

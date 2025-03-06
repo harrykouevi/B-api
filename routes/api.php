@@ -16,6 +16,7 @@ use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
 use App\Http\Controllers\API\WalletAPIController;
+use App\Http\Controllers\API\PaymentAPIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,7 +32,7 @@ use App\Http\Controllers\API\WalletAPIController;
 
 Route::prefix('salon_owner')->group(function () {
     Route::post('login', 'API\SalonOwner\UserAPIController@login');
-    Route::post('register', 'API\SalonOwner\UserAPIController@register');
+    Route::post('register', [UOwnerAPIController::class,'register']);
     Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
     Route::get('user', 'API\SalonOwner\UserAPIController@user');
     Route::get('logout', 'API\SalonOwner\UserAPIController@logout');
@@ -95,6 +96,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
     Route::post('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
+    Route::post('affiliate/conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
 
     Route::group(['middleware' => ['role:salon owner']], function () {
         Route::prefix('salon_owner')->group(function () {
@@ -113,7 +115,7 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('users', 'API\UserAPIController@destroy');
 
     Route::get('payments/byMonth', 'API\PaymentAPIController@byMonth')->name('payments.byMonth');
-    Route::post('payments/wallets/{id}', 'API\PaymentAPIController@wallets')->name('payments.wallets');
+    Route::post('payments/wallets/{id}', [PaymentAPIController::class ,'wallets'])->name('payments.wallets');
     Route::post('payments/cash', 'API\PaymentAPIController@cash')->name('payments.cash');
     Route::resource('payment_methods', 'API\PaymentMethodAPIController')->only([
         'index'

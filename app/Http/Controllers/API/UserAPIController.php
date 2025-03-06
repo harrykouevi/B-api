@@ -25,6 +25,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
+use App\Services\PaymentService;
+
 
 class UserAPIController extends Controller
 {
@@ -32,13 +34,19 @@ class UserAPIController extends Controller
     private UploadRepository $uploadRepository;
     private RoleRepository $roleRepository;
     private CustomFieldRepository $customFieldRepository;
+    
+    /**
+     * @var PaymentService
+     */
+    private PaymentService $paymentService;
+
 
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct(UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
+    public function __construct(PaymentService $paymentService  , UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
     {
         parent::__construct();
         $this->userRepository = $userRepository;
@@ -46,6 +54,7 @@ class UserAPIController extends Controller
         $this->roleRepository = $roleRepository;
         $this->roleRepository = $roleRepository;
         $this->customFieldRepository = $customFieldRepo;
+        $this->paymentService =  $paymentService ;
     }
 
     function login(Request $request): JsonResponse
