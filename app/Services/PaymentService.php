@@ -75,7 +75,7 @@ class PaymentService
             // $payment = $this->paymentRepository->create($input['payment']);
             if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
 
-            Notification::send(collect($user), new NewReceivedPayment($wallet));
+            Notification::send([$user], new NewReceivedPayment($wallet));
         }
     }
 
