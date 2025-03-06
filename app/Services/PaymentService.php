@@ -10,11 +10,13 @@ namespace App\Services;
 
 use App\Repositories\BookingRepository;
 use App\Repositories\WalletRepository;
+use App\Repositories\CurrencyRepository;
 use App\Repositories\WalletTransactionRepository;
 use App\Repositories\PaymentRepository;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Payment;
+use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
 use App\Notifications\StatusChangedPayment;
 
@@ -22,6 +24,7 @@ class PaymentService
 {
     private $bookingRepository;
     private $walletRepository;
+    private $currencyRepository;
     private $walletTransactionRepository;
     private $paymentRepository;
     
@@ -29,6 +32,7 @@ class PaymentService
     public function __construct(
         BookingRepository $bookingRepository,
         WalletRepository $walletRepository,
+        CurrencyRepository $currencyRepository,
         WalletTransactionRepository $walletTransactionRepository,
         PaymentRepository $paymentRepository
     ) {
@@ -41,22 +45,29 @@ class PaymentService
     public function createPayment(float $amount)
     {
         $wallet = $this->walletRepository->findByField('user_id',  auth()->id());
-        if($wallet != Null){
-            
+        if($wallet == Null){
+            $wallet = $this->createWallet(auth()->id() , 0) ;
         }
 
+        
+
         if ($wallet->currency->code == setting('default_currency_code')) {
+            $input = [];
             $input['payment']['amount'] = $amount;
             $input['payment']['description'] = 'compte créé et crédité';
             $input['payment']['payment_status_id'] = 2; // done
             $input['payment']['user_id'] = Auth::id();
-            $transaction['wallet_id'] = $wallet->id;
-            $transaction['user_id'] = $input['payment']['user_id'];
-            $transaction['amount'] = $input['payment']['amount'];
-            $transaction['description'] = $input['payment']['description'];
-            $transaction['action'] =  'credit';
-            $this->walletTransactionRepository->create($transaction);
-            $payment = $this->paymentRepository->create($input['payment']);
+            $input['wallet']['balance'] = $wallet->balance + $amount ;
+            // $transaction['wallet_id'] = $wallet->id;
+            // $transaction['user_id'] = $input['payment']['user_id'];
+            // $transaction['amount'] = $input['payment']['amount'];
+            // $transaction['description'] = $input['payment']['description'];
+            // $transaction['action'] =  'credit';
+            $payment = $this->processPayment($input) ;
+            // $this->walletTransactionRepository->create($transaction);
+            // $payment = $this->paymentRepository->create($input['payment']);
+            if($payment) $wallet =  $this->walletRepository->update($wallet->id , $input['wallet']);
+
             Notification::send(collect(auth()->id()), new NewReceivedPayment($wallet));
         }
     }
@@ -69,13 +80,10 @@ class PaymentService
      */
     public function processPayment($input):Payment | Null
     {
-        $wallet = $this->walletRepository->findByField('user_id',  auth()->id());
+        $wallet = $this->walletRepository->findByField('user_id',  $input['payment']['user_id']);
 
         if ($wallet->currency->code == setting('default_currency_code')) {
-            // $input['payment']['amount'] = $booking->getTotal();
-            // $input['payment']['description'] = __('lang.payment_booking_id') . $input['id'];
-            // $input['payment']['payment_status_id'] = 2; // done
-            // $input['payment']['user_id'] = Auth::id();
+           
             $transaction['wallet_id'] =  $wallet->id;
             $transaction['user_id'] = $input['payment']['user_id'];
             $transaction['amount'] = $input['payment']['amount'];
@@ -86,5 +94,28 @@ class PaymentService
             // Notification::send($booking->salon->users, new StatusChangedPayment($booking));
         }
         return Null ;
+    }
+
+
+
+    /**
+     * make Wallet .
+     *
+     * @return Wallet
+     */
+    public function createWallet($user,float $amount ):Wallet|Null
+    {
+        $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
+        if (!empty($currency)) {
+            
+            $input = [];
+            $input['name'] = setting('default_wallet_name')?? "-";
+            $input['currency'] = $currency;
+            $input['user_id'] = $user->id;
+            $input['balance'] = $amount;
+            $input['enabled'] = 1;
+           return  $this->walletRepository->create($input);
+        }
+        return Null;
     }
 }

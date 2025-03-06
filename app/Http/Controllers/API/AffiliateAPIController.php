@@ -193,7 +193,7 @@ class AffiliateAPIController extends Controller
                 // Code pour récompenser le partenaire
                 // Par exemple, ajouter des points ou une commission
                 $input = [];
-                $input['balance'] = $amout;
+                $wallet->balance += $amout;
                 $wallet = $this->walletRepository->update($input, $wallet->id);
             }else{
                 $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
@@ -207,6 +207,7 @@ class AffiliateAPIController extends Controller
                 $input['balance'] = $amout;
                 $input['enabled'] = 1;
                 $wallet = $this->walletRepository->create($input);
+                createWallet($partner, setting() ) ;
             }
         }
     }
