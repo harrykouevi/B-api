@@ -83,8 +83,8 @@ class PaymentService
     public function processPayment($input):Payment | Null
     {
         $wallet = $this->walletRepository->findByField('user_id',  $input['payment']['user_id']);
-
-        if ($wallet->currency->code == setting('default_currency_code')) {
+        $currency = json_decode($wallet->currency, true);
+        if ($currency['code'] == setting('default_currency_code')) {
            
             $transaction['wallet_id'] =  $wallet->id;
             $transaction['user_id'] = $input['payment']['user_id'];
