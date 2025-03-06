@@ -61,6 +61,7 @@ class PaymentService
             $input['payment']['amount'] = $amount;
             $input['payment']['description'] = 'compte créé et crédité';
             $input['payment']['payment_status_id'] = 2; // done
+            $input['payment']['payment_method_id'] = 11; // done
             $input['payment']['user_id'] = $user->id;
             $input['payment']['action'] = 'credit';
             $input['wallet']['balance'] = $wallet->balance + $amount ;

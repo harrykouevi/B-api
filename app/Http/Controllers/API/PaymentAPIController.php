@@ -154,10 +154,13 @@ class PaymentAPIController extends Controller
         try {
             $booking = $this->bookingRepository->find($input['id']);
             $wallet = $this->walletRepository->find($walletId);
-            if ($wallet && $wallet->currency->code == setting('default_currency_code')) {
+            $currency = json_decode($wallet->currency, true);
+
+            if ($wallet && $currency['code'] == setting('default_currency_code')) {
                 $input['payment']['amount'] = $booking->getTotal();
                 $input['payment']['description'] = __('lang.payment_booking_id') . $input['id'];
-                $input['payment']['payment_status_id'] = 2; // done
+                $input['payment']['payment_status_id'] = 2;
+                $input['payment']['payment_method_id'] = 11;  // done
                 $input['payment']['user_id'] = auth()->id();
                 $input['payment']['action'] = 'debit';
                 
