@@ -52,8 +52,8 @@ class PaymentService
         if($wallet->empty()){
             $wallet = $this->createWallet($user , 0) ;
         }
-       
-        if ($wallet->currency->code == setting('default_currency_code')) {
+        $currency = json_decode($wallet->currency, true);
+        if ($currency['code'] == setting('default_currency_code')) {
             $input = [];
             $input['payment']['amount'] = $amount;
             $input['payment']['description'] = 'compte créé et crédité';
