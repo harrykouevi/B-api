@@ -41,9 +41,7 @@ class PaymentService
         $this->walletRepository = $walletRepository;
         $this->walletTransactionRepository = $walletTransactionRepository;
         $this->paymentRepository = $paymentRepository;
-
-        dd(setting('default_currency_id'));
-        $this->currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
+        $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
     }
 
     public function createPayment(float $amount)
