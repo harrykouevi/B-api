@@ -42,6 +42,7 @@ class PaymentService
         $this->walletTransactionRepository = $walletTransactionRepository;
         $this->paymentRepository = $paymentRepository;
 
+        dd(setting('scaffold_dark_color'));
         $this->currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
     }
 
