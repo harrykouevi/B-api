@@ -28,6 +28,7 @@ class PaymentService
     private $walletTransactionRepository;
     private $paymentRepository;
     
+    private $currency ;
 
     public function __construct(
         BookingRepository $bookingRepository,
@@ -40,6 +41,8 @@ class PaymentService
         $this->walletRepository = $walletRepository;
         $this->walletTransactionRepository = $walletTransactionRepository;
         $this->paymentRepository = $paymentRepository;
+
+        $this->currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
     }
 
     public function createPayment(float $amount)
@@ -105,7 +108,7 @@ class PaymentService
      */
     public function createWallet($user,float $amount ):Wallet|Null
     {
-        $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
+        $currency = $this->currency;
         if (!empty($currency)) {
             
             $input = [];
