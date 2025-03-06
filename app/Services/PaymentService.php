@@ -41,6 +41,7 @@ class PaymentService
         $this->walletRepository = $walletRepository;
         $this->walletTransactionRepository = $walletTransactionRepository;
         $this->paymentRepository = $paymentRepository;
+        $this->currencyRepository = $currencyRepository ;
         $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
     }
 
