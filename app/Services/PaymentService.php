@@ -52,7 +52,7 @@ class PaymentService
         if($wallet->empty()){
             $wallet = $this->createWallet($user , 0) ;
         }
-        dd($wallet) ;
+       
         if ($wallet->currency->code == setting('default_currency_code')) {
             $input = [];
             $input['payment']['amount'] = $amount;
