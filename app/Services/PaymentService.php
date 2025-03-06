@@ -65,14 +65,9 @@ class PaymentService
             $input['payment']['user_id'] = $user->id;
             $input['payment']['action'] = 'credit';
             $input['wallet']['balance'] = $wallet->balance + $amount ;
-            // $transaction['wallet_id'] = $wallet->id;
-            // $transaction['user_id'] = $input['payment']['user_id'];
-            // $transaction['amount'] = $input['payment']['amount'];
-            // $transaction['description'] = $input['payment']['description'];
-            // $transaction['action'] =  'credit';
+            
             $payment = $this->processPayment($input) ;
-            // $this->walletTransactionRepository->create($transaction);
-            // $payment = $this->paymentRepository->create($input['payment']);
+            
             if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
 
             Notification::send([$user], new NewReceivedPayment($wallet));
@@ -98,7 +93,6 @@ class PaymentService
             $transaction['action'] =  $input['payment']['action'];
             $this->walletTransactionRepository->create($transaction);
             return $payment = $this->paymentRepository->create($input['payment']);
-            // Notification::send($booking->salon->users, new StatusChangedPayment($booking));
         }
         return Null ;
     }
