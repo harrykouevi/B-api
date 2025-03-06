@@ -48,7 +48,7 @@ class PaymentService
 
     public function createPayment(User $user ,float $amount)
     {
-        $wallet = $this->walletRepository->findByField('user_id',  $user->id);
+        $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first();
         if($wallet->empty()){
             $wallet = $this->createWallet($user , 0) ;
         }
@@ -85,7 +85,7 @@ class PaymentService
      */
     public function processPayment($input):Payment | Null
     {
-        $wallet = $this->walletRepository->findByField('user_id',  $input['payment']['user_id']);
+        $wallet = $this->walletRepository->findByField('user_id',  $input['payment']['user_id'])->first();
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
            
