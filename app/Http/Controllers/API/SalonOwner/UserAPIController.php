@@ -121,12 +121,12 @@ class UserAPIController extends Controller
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
           
-            $payment = $this->paymentService->createPayment($user,setting('owner_initial_amount'));
+            $this->paymentService->createPayment($user,setting('owner_initial_amount'));
 
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
-            dd($e) ;
+            
             return $this->sendError($e->getMessage());
         }
 

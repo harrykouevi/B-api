@@ -46,7 +46,7 @@ class PaymentService
         $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
     }
 
-    public function createPayment(User $user ,float $amount)
+    public function createPayment(User $user ,float $amount) : array | Null
     {
         $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first();
         if($wallet== Null){
@@ -70,8 +70,10 @@ class PaymentService
             
             if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
 
-            // Notification::send([$user], new NewReceivedPayment($wallet));
+            Notification::send([$user], new NewReceivedPayment($wallet));
+            return [$payment , $wallet] ;
         }
+        return Null ;
     }
 
 
@@ -80,7 +82,7 @@ class PaymentService
      *
      * @return Payment
      */
-    public function processPayment($input):Payment | Null
+    private function processPayment($input):Payment | Null
     {
         $wallet = $this->walletRepository->findByField('user_id',  $input['payment']['user_id'])->first();
         $currency = json_decode($wallet->currency, true);
@@ -104,7 +106,7 @@ class PaymentService
      *
      * @return Wallet
      */
-    public function createWallet(User $user,float $amount ):Wallet|Null
+    private function createWallet(User $user,float $amount ):Wallet|Null
     {
         $currency = $this->currency;
         if ($currency) {

@@ -120,30 +120,22 @@ class WalletAPIController extends Controller
     { 
         try {
          
-            // $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
-            // if (empty($currency)) {
-            //     return $this->sendError('Default Currency not found');
-            // }
-            // $input = [];
-            // $input['name'] = setting('default_wallet_name')?? "-";
-            // $input['currency'] = $currency;
-            // $input['user_id'] = auth()->id();
-            // $input['balance'] = 0;
-            // $input['enabled'] = 1;
-            // $wallet = $this->walletRepository->create($input);
+        
             if(auth()->user()->hasRole('customer') ){
-                $wallet = $this->paymentService->createWallet(auth()->user() , setting('customer_initial_amount') ) ;
+                $resp = $this->paymentService->createPayment(auth()->user(),setting('customer_initial_amount'));
+
             }else {
-                $wallet = $this->paymentService->createWallet(auth()->user() , setting('owner_initial_amount') ) ;
+                $resp = $this->paymentService->createPayment(auth()->user(),setting('owner_initial_amount'));
+
             }
             
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
-            dd($e) ;
+           
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($wallet->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
+        return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
 
     /**
