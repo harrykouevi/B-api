@@ -143,7 +143,7 @@ Route::middleware('auth:api')->group(function () {
         'show', 'create', 'edit'
     ]);
 
-    Route::resource('defaut-wallets', WalletAPIController::class)->only(['store']);
+    Route::resource('defaut-wallets', WalletAPIController::class)->only(['storeDefault']);
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
 
 });
