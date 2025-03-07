@@ -104,6 +104,7 @@ class UserAPIController extends Controller
      */
     function register(Request $request): JsonResponse
     {
+      
         try {
             $this->validate($request, User::$rules);
             $user = new User;
