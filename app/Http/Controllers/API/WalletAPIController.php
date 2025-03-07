@@ -39,11 +39,18 @@ class WalletAPIController extends Controller
     /**  @var  CurrencyRepository */
     private CurrencyRepository $currencyRepository;
 
-    public function __construct(WalletRepository $walletRepo, CurrencyRepository $currencyRepository )
+     /**
+     * @var PaymentService
+     */
+    private PaymentService $paymentService;
+
+    public function __construct(PaymentService $paymentService ,WalletRepository $walletRepo, CurrencyRepository $currencyRepository )
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
         $this->currencyRepository = $currencyRepository;
+        $this->paymentService =  $paymentService ;
+
     }
 
     /**
@@ -113,17 +120,18 @@ class WalletAPIController extends Controller
     {
         try {
          
-            $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
-            if (empty($currency)) {
-                return $this->sendError('Default Currency not found');
-            }
-            $input = [];
-            $input['name'] = setting('default_wallet_name')?? "-";
-            $input['currency'] = $currency;
-            $input['user_id'] = auth()->id();
-            $input['balance'] = 0;
-            $input['enabled'] = 1;
-            $wallet = $this->walletRepository->create($input);
+            // $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
+            // if (empty($currency)) {
+            //     return $this->sendError('Default Currency not found');
+            // }
+            // $input = [];
+            // $input['name'] = setting('default_wallet_name')?? "-";
+            // $input['currency'] = $currency;
+            // $input['user_id'] = auth()->id();
+            // $input['balance'] = 0;
+            // $input['enabled'] = 1;
+            // $wallet = $this->walletRepository->create($input);
+            $wallet = $this->paymentService->createWallet(auth() , 0) ;
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         }
