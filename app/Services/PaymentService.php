@@ -65,7 +65,7 @@ class PaymentService
             $input['payment']['user_id'] = $user->id;
             $input['payment']['action'] = 'credit';
             $input['wallet']['balance'] = $wallet->balance + $amount ;
-            
+            dd('rrr');
             $payment = $this->processPayment($input) ;
             
             if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
