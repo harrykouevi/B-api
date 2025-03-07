@@ -117,7 +117,7 @@ class WalletAPIController extends Controller
      * @return JsonResponse
      */
     public function storeDefault(): JsonResponse
-    {   dd('kkkk');
+    { 
         try {
          
             // $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
