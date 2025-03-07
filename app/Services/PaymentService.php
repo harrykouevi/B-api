@@ -94,7 +94,7 @@ class PaymentService
             $transaction['description'] = $input['payment']['description'];
             $transaction['action'] =  $input['payment']['action'];
             $this->walletTransactionRepository->create($transaction);
-            return $payment = $this->paymentRepository->create($input['payment']);
+            return $this->paymentRepository->create($input['payment']);
         }
         return Null ;
     }
