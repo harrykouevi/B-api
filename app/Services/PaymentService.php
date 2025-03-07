@@ -67,10 +67,10 @@ class PaymentService
             $input['wallet']['balance'] = $wallet->balance + $amount ;
           
             $payment = $this->processPayment($input) ;
-            dd('rrr');
+           
             if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
 
-            Notification::send([$user], new NewReceivedPayment($wallet));
+            Notification::send([$user], new NewReceivedPayment($payment,$wallet));
             return [$payment , $wallet] ;
         }
         return Null ;

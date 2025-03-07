@@ -8,6 +8,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Payment;
 use App\Models\Wallet;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
@@ -23,14 +24,20 @@ class NewReceivedPayment extends Notification
      */
     private Wallet $wallet;
 
+     /**
+     * @var Payment
+     */
+    private Payment $payment;
+
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct(Wallet $wallet)
+    public function __construct(Payment $payment,Wallet $wallet)
     {
         $this->wallet = $wallet;
+        $this->payment = $payment;
     }
 
     /**
@@ -60,9 +67,9 @@ class NewReceivedPayment extends Notification
     public function toMail(mixed $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(trans('lang.notification_payment', ['wallet_id' => $this->wallet->id, 'payment_status' => $this->wallet->payment->paymentStatus->status]) . " | " . setting('app_name', ''))
+            ->subject(trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status]) . " | " . setting('app_name', ''))
             ->markdown("notifications::wallet", ['wallet' => $this->wallet])
-            ->greeting(trans('lang.notification_payment', ['wallet_id' => $this->wallet->id, 'payment_status' => $this->wallet->payment->paymentStatus->status]))
+            ->greeting(trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status]))
             ->action(trans('lang.wallet_details'), route('wallets.show', $this->wallet->id));
     }
 
@@ -70,7 +77,7 @@ class NewReceivedPayment extends Notification
     {
         $message = new FcmMessage();
         $notification = [
-            'body' => trans('lang.notification_payment', ['wallet_id' => $this->wallet->id, 'payment_status' => $this->wallet->payment->paymentStatus->status]),
+            'body' => trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status]),
             'title' => trans('lang.notification_status_changed_payment'),
 
         ];
