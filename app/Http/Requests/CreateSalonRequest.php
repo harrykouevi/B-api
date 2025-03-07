@@ -42,7 +42,7 @@ class CreateSalonRequest extends FormRequest
     public function validationData(): array
     {
         if (!auth()->user()->hasRole('admin') || auth()->user()->hasRole('salon owner')) {
-            $this->offsetUnset('accepted');
+            // $this->offsetUnset('accepted');
         }
         return parent::validationData();
     }
