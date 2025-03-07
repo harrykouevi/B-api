@@ -31,7 +31,7 @@ use App\Http\Controllers\API\PaymentAPIController;
 
 
 Route::prefix('salon_owner')->group(function () {
-    Route::post('login', 'API\SalonOwner\UserAPIController@login');
+    Route::post('login', 'API\SalonOwner\UserAPIController@login')->name('api.login');;
     Route::post('register', [UOwnerAPIController::class,'register']);
     Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
     Route::get('user', 'API\SalonOwner\UserAPIController@user');

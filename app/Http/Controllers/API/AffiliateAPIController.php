@@ -101,12 +101,12 @@ class AffiliateAPIController extends Controller
 
     /**
      * Create or generate  a newly created Affiliate in storage.
+     * POST|HEAD /affilate
      *
      * @param Request $request
-     *
      * @return JsonResponse
      */
-    public function generateLink(Request $request)
+    public function generateLink(Request $request): JsonResponse
     {
         $input = $request->all();
         // $user = Auth::user(); // Utilisez auth()->user() au lieu de auth()->Auth::user()
