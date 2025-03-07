@@ -134,6 +134,9 @@ class WalletAPIController extends Controller
             $wallet = $this->paymentService->createWallet(auth()->user() , 0) ;
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
+        } catch (Exception $e) {
+            dd($e) ;
+            return $this->sendError($e->getMessage());
         }
         return $this->sendResponse($wallet->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
