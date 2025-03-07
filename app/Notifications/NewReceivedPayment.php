@@ -98,11 +98,9 @@ class NewReceivedPayment extends Notification
 
     private function getSalonMediaUrl(): string
     {
-        if ($this->wallet->salon->hasMedia('image')) {
-            return $this->wallet->salon->getFirstMediaUrl('image', 'thumb');
-        } else {
+        
             return asset('images/image_default.png');
-        }
+        
     }
 
     /**
