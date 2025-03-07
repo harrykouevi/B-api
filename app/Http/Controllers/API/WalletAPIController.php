@@ -131,7 +131,12 @@ class WalletAPIController extends Controller
             // $input['balance'] = 0;
             // $input['enabled'] = 1;
             // $wallet = $this->walletRepository->create($input);
-            $wallet = $this->paymentService->createWallet(auth()->user() , 0) ;
+            if(auth()->user()->hasRole('customer') ){
+                $wallet = $this->paymentService->createWallet(auth()->user() , setting('customer_initial_amount') ) ;
+            }else {
+                $wallet = $this->paymentService->createWallet(auth()->user() , setting('owner_initial_amount') ) ;
+            }
+            
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
