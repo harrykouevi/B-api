@@ -38,6 +38,9 @@ use App\Repositories\CurrencyRepository;
 use App\Repositories\WalletRepository;
 use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
+use App\Services\PaymentService;
+
+
 /**
  * Class AffiliateAPIController
  * @package App\Http\Controllers\API
@@ -59,9 +62,12 @@ class AffiliateAPIController extends Controller
     /** @var  PaymentRepository */
     private PaymentRepository $paymentRepository;
         
+      /**
+     * @var PaymentService
+     */
+    private PaymentService $paymentService;
 
-
-    public function __construct(PaymentRepository $paymentRepository, AffiliateRepository $affiliateRepo ,WalletRepository $walletRepository , ConversionRepository $conversionRepo ,CurrencyRepository $currencyRepository)
+    public function __construct(PaymentService $paymentService, PaymentRepository $paymentRepository, AffiliateRepository $affiliateRepo ,WalletRepository $walletRepository , ConversionRepository $conversionRepo ,CurrencyRepository $currencyRepository)
     {
         parent::__construct();
         $this->affiliateRepository = $affiliateRepo;
@@ -69,6 +75,8 @@ class AffiliateAPIController extends Controller
         $this->walletRepository = $walletRepository;
         $this->currencyRepository = $currencyRepository;
         $this->paymentRepository = $paymentRepository;
+        $this->paymentService =  $paymentService ;
+
     }
 
     
@@ -230,29 +238,31 @@ class AffiliateAPIController extends Controller
     {
         $partner = $affiliation->user;
         if($partner){ 
-            $wallet = $this->walletRepository->findByField('user_id', $partner->id )->first();
+            // $wallet = $this->walletRepository->findByField('user_id', $partner->id )->first();
             
-            if($wallet){
+            // if($wallet){
         
                 // Code pour récompenser le partenaire
                 // Par exemple, ajouter des points ou une commission
-                $input = [];
-                $wallet->balance += $amout;
-                $wallet = $this->walletRepository->update($input, $wallet->id);
-            }else{
-                $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
-                if (empty($currency)) {
-                    return $this->sendError('Default Currency not found');
-                }
-                $input = [];
-                $input['name'] = setting('default_wallet_name')?? "-";
-                $input['currency'] = $currency;
-                $input['user_id'] = $partner->id;
-                $input['balance'] = $amout;
-                $input['enabled'] = 1;
-                $wallet = $this->walletRepository->create($input);
-                createWallet($partner, setting() ) ;
-            }
+                // $input = [];
+                // $wallet->balance += $amout;
+                // $wallet = $this->walletRepository->update($input, $wallet->id);
+
+                $this->paymentService->createPayment($partner ,50);
+            // }else{
+            //     $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
+            //     if (empty($currency)) {
+            //         return $this->sendError('Default Currency not found');
+            //     }
+            //     $input = [];
+            //     $input['name'] = setting('default_wallet_name')?? "-";
+            //     $input['currency'] = $currency;
+            //     $input['user_id'] = $partner->id;
+            //     $input['balance'] = $amout;
+            //     $input['enabled'] = 1;
+            //     $wallet = $this->walletRepository->create($input);
+            //     createWallet($partner, setting() ) ;
+            // }
         }
     }
 
