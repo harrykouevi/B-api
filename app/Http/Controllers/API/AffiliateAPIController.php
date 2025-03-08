@@ -204,7 +204,7 @@ class AffiliateAPIController extends Controller
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
              
             if ($affiliation == Null )  return $this->sendError("unprocessable partenership",404);
-            if (auth()->id() == $affiliation->user_id) return $this->sendError("unprocessable partenership",404);
+            if (auth()->user()->id == $affiliation->user_id) return $this->sendError("unprocessable partenership",404);
 
             // Met à jour la conversion en tant que réussie
             //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
@@ -220,7 +220,7 @@ class AffiliateAPIController extends Controller
             $d=[];
             $d['sponsorship'] =  $affiliation;
             $d['sponsorship_at'] =  now();
-            $user = $this->userRepository->update($d,auth()->id());
+            $user = $this->userRepository->update($d,auth()->user()->id);
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
            

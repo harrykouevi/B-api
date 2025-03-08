@@ -27,7 +27,8 @@ class ConversionRepository extends BaseRepository
      */
     protected $fieldSearchable = [
         'status',
-        'affiliate_id'
+        'affiliate_id',
+        'affiliate'
     ];
 
     /**

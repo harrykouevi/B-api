@@ -22,7 +22,8 @@ class Conversion extends Model
     public $table = 'conversions';
     public $fillable = [
         'status',
-        'affiliate_id'
+        'affiliate_id',
+        'affiliate'
     ];
     /**
      * The attributes that should be casted to native types.
@@ -31,7 +32,8 @@ class Conversion extends Model
      */
     protected $casts = [
         'status' => 'string',
-        'affiliate_id' => 'integer'
+        'affiliate_id' => 'integer',
+        'affiliate' => AffiliateCast::class,
     ];
 
     protected $hidden = [
