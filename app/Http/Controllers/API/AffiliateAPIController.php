@@ -215,7 +215,10 @@ class AffiliateAPIController extends Controller
             
             // Attribue la récompense au partenaire
             $this->rewardPartner($affiliation , 500);
-            $user = $this->userRepository->update($input, $id);
+            $d=[];
+            $d['sponsorship'] =  $affiliation;
+            $d['sponsorship_at'] =  now();
+            $user = $this->userRepository->update($d,auth()->id());
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
            
