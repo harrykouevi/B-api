@@ -91,7 +91,7 @@ class AffiliateAPIController extends Controller
         }
         $affiliate = $this->affiliateRepository->first();
         if (empty($affiliate)) {
-            return $this->sendError('affiliate not found',422);
+            return $this->sendError('affiliate not found',404);
         }
         $this->filterModel($request, $affiliate);
         return $this->sendResponse($affiliate->toArray(), 'affiliate retrieved successfully');
