@@ -44,7 +44,7 @@ class AffiliateCast implements CastsAttributes
             throw new InvalidArgumentException('The given value is not an Affiliate instance.');
         }
 
-        return ['currency' => json_encode([
+        return ['sponsorship' => json_encode([
             'id' => $value['id'],
             'link' => $value['link'],
             'code' => $value['code'],
