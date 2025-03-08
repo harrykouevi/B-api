@@ -219,6 +219,7 @@ class AffiliateAPIController extends Controller
                 $this->rewardPartner($affiliation , 500);
             }
         } catch (Exception $e) {
+            dd($e) ;
             return $this->sendError($e->getMessage());
         }
         return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
