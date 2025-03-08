@@ -196,9 +196,9 @@ class AffiliateAPIController extends Controller
         return redirect()->to('com.example.barbershop://affiliate-link?affiliate_link_id=' . $affiliationCode_ );
     }
     
-    public function confirmConversion(Request $request)
+    public function confirmConversion($affiliationCode_ ,Request $request)
     {
-        $affiliationCode_ = $request->query('affiliation_code');
+        dump($affiliationCode_) ;
         try {
             if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
