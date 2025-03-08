@@ -203,7 +203,7 @@ class AffiliateAPIController extends Controller
     {
         $affiliationCode_ = $request->query('affiliation_code');
         try {
-            $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_);
+            $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
             
             // Met à jour la conversion en tant que réussie
             //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
