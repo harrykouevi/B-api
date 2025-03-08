@@ -20,6 +20,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\Permission\Traits\HasRoles;
+use App\Casts\AffiliateCast;
+
 
 /**
  * Class User
@@ -68,6 +70,8 @@ class User extends Authenticatable implements HasMedia
         'email',
         'phone_number',
         'phone_verified_at',
+        'sponsorship',
+        'sponsorship_at',
         'password',
         'api_token',
         'device_token',
@@ -82,6 +86,8 @@ class User extends Authenticatable implements HasMedia
         'email' => 'string',
         'phone_number' => 'string',
         'password' => 'string',
+        'sponsorship' => AffiliateCast::class,
+        'sponsorship_at' => 'datetime',
         'email_verified_at' => 'datetime',
         'phone_verified_at' => 'datetime',
         'api_token' => 'string',
