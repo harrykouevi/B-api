@@ -200,7 +200,9 @@ class AffiliateAPIController extends Controller
     {
         $affiliationCode_ = $request->query('affiliation_code');
         try {
+            if (auth()->user()->sponsorship_at == Null )  return $this->sendError("unprocessable partenership",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
+            
             if ($affiliation == Null )  return $this->sendError("unprocessable partenership",404);
             if (auth()->id() == $affiliation->user_id) return $this->sendError("unprocessable partenership",404);
 
