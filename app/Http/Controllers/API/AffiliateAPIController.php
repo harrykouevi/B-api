@@ -117,6 +117,8 @@ class AffiliateAPIController extends Controller
         if ($existingAffiliate) {
             return $this->sendResponse($existingAffiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
         }
+
+        $code = $this->getdigits(Auth::id()) ;
  
         // Générer un code unique basé sur l'ID utilisateur
         $referralCode = 'REF' . $input['user_id'] . strtoupper(Str::random(4));
@@ -124,7 +126,7 @@ class AffiliateAPIController extends Controller
         $encryptedReferralCode = Hash::make($referralCode);
         // Génération du lien d'affiliation
         $input['link']= 'affilate-link?ref=' . $encryptedReferralCode;
-        $input['code']=  $encryptedReferralCode;
+        $input['code']=  $code;
  
         try {
             $affiliate = $this->affiliateRepository->create($input);
@@ -137,6 +139,46 @@ class AffiliateAPIController extends Controller
         }
         return $this->sendResponse($affiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
 
+    }
+
+    /**
+     * 
+     *
+     * @param $nombre
+     * @return int
+     */
+    private function getdigits($nombre) {
+
+        // Vérifier si l'entrée est un nombre
+        if (!is_numeric($nombre)) {
+            echo "Veuillez entrer un nombre valide.\n";
+            exit;
+        }
+        // Créer le tableau de chiffres
+        $chiffres = str_split((string)$nombre);
+
+        // Générer un nombre aléatoire de 3 chiffres en utilisant les chiffres
+        // Assurez-vous d'avoir au moins 3 chiffres
+        if (count($chiffres) < 3) {
+            // Répéter les chiffres pour en avoir au moins 3
+            while (count($chiffres) < 3) {
+                $chiffres = array_merge($chiffres, $chiffres);
+            }
+        }
+
+        // Mélanger les chiffres
+        shuffle($chiffres);
+
+        // Prendre les 3 premiers chiffres mélangés
+        $nombre3Chiffres = (int)implode('', array_slice($chiffres, 0, 3));
+
+        // Générer un nombre aléatoire de 5 chiffres
+        $nombre5Chiffres = rand(10000, 99999);
+
+        // Concaténer les nombres avec le nombre initial
+        return (string)$nombre . $nombre3Chiffres . $nombre5Chiffres;
+
+        
     }
 
     public function trackConversion(Request $request)
@@ -161,7 +203,7 @@ class AffiliateAPIController extends Controller
     {
         $affiliationCode_ = $request->query('affiliation_code');
         try {
-            $affiliation =$this->affiliateRepository->find($affiliationCode_);
+            $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_);
             
             // Met à jour la conversion en tant que réussie
             //$conversion = $affiliation->conversions()->where('status', 'pending')->first();

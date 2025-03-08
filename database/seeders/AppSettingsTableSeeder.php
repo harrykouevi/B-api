@@ -190,7 +190,7 @@ class AppSettingsTableSeeder extends Seeder
             array(
                 'id' => 107,
                 'key' => 'default_currency',
-                'value' => '1',
+                'value' => 'XOF',
             ),
             array(
                 'id' => 108,
