@@ -41,6 +41,7 @@ class CreateSalonRequest extends FormRequest
      */
     public function validationData(): array
     {
+        $this->offsetUnset('availability_range');
         if (!auth()->user()->hasRole('admin') || auth()->user()->hasRole('salon owner')) {
             // $this->offsetUnset('accepted');
         }

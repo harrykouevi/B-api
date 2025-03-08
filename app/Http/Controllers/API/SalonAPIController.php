@@ -121,6 +121,7 @@ class SalonAPIController extends Controller
                 $input['featured'] = 0;
                 $input['available'] = 1;
             }
+            $input['availability_range'] = 10;
             $salon = $this->salonRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
