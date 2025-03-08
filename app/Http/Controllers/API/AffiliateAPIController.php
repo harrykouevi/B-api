@@ -204,25 +204,26 @@ class AffiliateAPIController extends Controller
         $affiliationCode_ = $request->query('affiliation_code');
         try {
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
-            
+            if ($affiliation == Null )  return $this->sendError("unprocessable partenership",404);
+            if (auth()->id() == $affiliation->user_id) return $this->sendError("unprocessable partenership",404);
+
             // Met à jour la conversion en tant que réussie
             //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
-            if ($affiliation != Null && auth()->id() != $affiliation->user_id) {
-                $conversion = $this->conversionRepository->create([
-                    'affiliate_id' => $affiliation->id ,
-                    'affiliation' => $affiliation ,
-                    'status' => 'success'
-                ]);
-                // $conversion->update();
-                
-                // Attribue la récompense au partenaire
-                $this->rewardPartner($affiliation , 500);
-            }
+            $conversion = $this->conversionRepository->create([
+                'affiliate_id' => $affiliation->id ,
+                'affiliation' => $affiliation ,
+                'status' => 'success'
+            ]);
+            // $conversion->update();
+            
+            // Attribue la récompense au partenaire
+            $this->rewardPartner($affiliation , 500);
+            return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
-            dd($e) ;
+           
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
+        
     }
     
     private function rewardPartner(\App\Models\Affiliate $affiliation , int $amout)
