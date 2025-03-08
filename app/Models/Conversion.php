@@ -19,7 +19,7 @@ class Conversion extends Model
     public static array $rules = [
         'status' => 'max:255',
     ];
-    public $table = 'affiliates';
+    public $table = 'conversions';
     public $fillable = [
         'status',
         'affiliate_id'
