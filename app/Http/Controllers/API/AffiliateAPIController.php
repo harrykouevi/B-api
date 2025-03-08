@@ -9,20 +9,14 @@
 namespace App\Http\Controllers\API;
 
 use App\Criteria\Affiliations\AffiliatesOfUserCriteria;
-use App\Criteria\Bookings\BookingsOfUserCriteria;
-use App\Criteria\Coupons\ValidCriteria;
-use App\Events\BookingChangedEvent;
-use App\Events\BookingStatusChangedEvent;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
-use App\Notifications\NewReceivedPayment;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use App\Repositories\AffiliateRepository;
 use App\Repositories\ConversionRepository;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use App\Repositories\PaymentRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -31,11 +25,9 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
+use App\Repositories\UserRepository;
 
-use App\Repositories\CurrencyRepository;
 
-
-use App\Repositories\WalletRepository;
 use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 use App\Services\PaymentService;
@@ -47,34 +39,31 @@ use App\Services\PaymentService;
  */
 class AffiliateAPIController extends Controller
 {
+    /**
+     * @var UserRepository
+     */
+    private UserRepository $userRepository;
+
     /** @var  AffiliateRepository */
     private AffiliateRepository $affiliateRepository;
 
     /** @var  ConversionRepository */
     private ConversionRepository $conversionRepository;
 
-    /** @var  WalletRepository */
-    private WalletRepository $walletRepository;
-
-    /**  @var  CurrencyRepository */
-    private CurrencyRepository $currencyRepository;
-
-    /** @var  PaymentRepository */
-    private PaymentRepository $paymentRepository;
-        
+   
+   
+  
       /**
      * @var PaymentService
      */
     private PaymentService $paymentService;
 
-    public function __construct(PaymentService $paymentService, PaymentRepository $paymentRepository, AffiliateRepository $affiliateRepo ,WalletRepository $walletRepository , ConversionRepository $conversionRepo ,CurrencyRepository $currencyRepository)
+    public function __construct(UserRepository $userRepository,PaymentService $paymentService, AffiliateRepository $affiliateRepo , ConversionRepository $conversionRepo )
     {
         parent::__construct();
+        $this->userRepository = $userRepository;
         $this->affiliateRepository = $affiliateRepo;
         $this->conversionRepository = $conversionRepo;
-        $this->walletRepository = $walletRepository;
-        $this->currencyRepository = $currencyRepository;
-        $this->paymentRepository = $paymentRepository;
         $this->paymentService =  $paymentService ;
 
     }
@@ -226,6 +215,7 @@ class AffiliateAPIController extends Controller
             
             // Attribue la récompense au partenaire
             $this->rewardPartner($affiliation , 500);
+            $user = $this->userRepository->update($input, $id);
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
            
