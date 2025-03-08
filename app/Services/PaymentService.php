@@ -87,13 +87,15 @@ class PaymentService
         $wallet = $this->walletRepository->findByField('user_id',  $input['payment']['user_id'])->first();
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
-           
-            $transaction['wallet_id'] =  $wallet->id;
-            $transaction['user_id'] = $input['payment']['user_id'];
-            $transaction['amount'] = $input['payment']['amount'];
-            $transaction['description'] = $input['payment']['description'];
-            $transaction['action'] =  $input['payment']['action'];
-            $this->walletTransactionRepository->create($transaction);
+           if($input['payment']['amount'] != 0){
+                $transaction['wallet_id'] =  $wallet->id;
+                $transaction['user_id'] = $input['payment']['user_id'];
+                $transaction['amount'] = $input['payment']['amount'];
+                $transaction['description'] = $input['payment']['description'];
+                $transaction['action'] =  $input['payment']['action'];
+                $this->walletTransactionRepository->create($transaction);
+            }
+
             return $this->paymentRepository->create($input['payment']);
         }
         return Null ;
