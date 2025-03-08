@@ -412,6 +412,17 @@ class AppSettingsTableSeeder extends Seeder
                 'key' => 'owner_initial_amount',
                 'value' => 1000,
             ),
+            
+            array(
+                'id' => 152,
+                'key' => 'customer_initial_amount',
+                'value' => 500,
+            ),
+            array(
+                'id' => 153,
+                'key' => 'default_distance',
+                'value' => 10,
+            ),
 
            
         ));

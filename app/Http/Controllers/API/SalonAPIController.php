@@ -121,7 +121,7 @@ class SalonAPIController extends Controller
                 $input['featured'] = 0;
                 $input['available'] = 1;
             }
-            $input['availability_range'] = 10;
+            $input['availability_range'] = setting('default_distance');
             $salon = $this->salonRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
