@@ -202,6 +202,7 @@ class AffiliateAPIController extends Controller
         try {
             if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
+            dump($affiliation) ;
             
             if ($affiliation == Null )  return $this->sendError("unprocessable partenership",404);
             if (auth()->id() == $affiliation->user_id) return $this->sendError("unprocessable partenership",404);
