@@ -207,7 +207,7 @@ class AffiliateAPIController extends Controller
             
             // Met à jour la conversion en tant que réussie
             //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
-            if ($affiliation != Null && auth()->id() != $affiliation->user->id) {
+            if ($affiliation != Null && auth()->id() != $affiliation->user_id) {
                 $conversion = $this->conversionRepository->create([
                     'affiliate_id' => $affiliation->id ,
                     'affiliation' => $affiliation ,
