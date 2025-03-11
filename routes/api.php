@@ -15,6 +15,7 @@ use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
+
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 

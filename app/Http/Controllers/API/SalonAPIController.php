@@ -155,6 +155,7 @@ class SalonAPIController extends Controller
         }
         try {
             $input = $request->all();
+            $input['availability_range'] = setting('default_distance');
             $salon = $this->salonRepository->update($input, $id);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 if ($salon->hasMedia('image')) {
