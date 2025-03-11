@@ -15,7 +15,6 @@ use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
-use App\Http\Controllers\API\SalonOwner\SalonAPIController as OwnerSalonAPIController;
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 
@@ -41,14 +40,14 @@ Route::prefix('salon_owner')->group(function () {
     Route::get('translations', 'API\TranslationAPIController@translations');
     Route::get('supported_locales', 'API\TranslationAPIController@supportedLocales');
     Route::middleware('auth:api')->group(function () {
-        Route::resource('salons', [OwnerSalonAPIController::class])->only(['index', 'show']);
+        Route::resource('salons', 'API\SalonOwner\SalonAPIController')->only(['index', 'show']);
         Route::get('e_services', 'API\SalonOwner\EServiceAPIController@index');
         Route::resource('availability_hours', 'API\AvailabilityHourAPIController')->only(['store', 'update', 'destroy']);
         Route::resource('awards', 'API\AwardAPIController')->only(['store', 'update', 'destroy']);
         Route::resource('experiences', 'API\ExperienceAPIController')->only(['store', 'update', 'destroy']);
         Route::get('salon_levels', 'API\SalonLevelAPIController@index');
         Route::get('taxes', 'API\SalonOwner\TaxAPIController@index');
-        Route::get('employees',  [UOwnerAPIController::class, 'employees']);
+        Route::get('employees', 'API\SalonOwner\UserAPIController@employees');
     });
 });
 
