@@ -77,7 +77,7 @@ class Salon extends Model implements HasMedia, Castable
         'address_id' => 'required|exists:addresses,id',
         'phone_number' => 'required|max:50',
         'mobile_number' => 'required|max:50',
-        'availability_range' => 'nullbale|numeric|max:9999999.99|min:0.01',
+        'availability_range' => 'numeric|max:9999999.99|min:0.01',
         'available' => 'boolean',
         'featured' => 'boolean',
         'accepted' => 'required|boolean',
