@@ -70,11 +70,12 @@ class PaymentService
             // $input['payment']['payment_method_id'] = 11; // done
             // $input['payment']['user_id'] = $user->id;
             // $input['payment']['action'] = 'credit';
-            // $input['wallet']['balance'] = $wallet->balance + $amount ;
+            $input['wallet']['balance'] = $wallet->balance + $amount ;
           
             $payment = $this->processPayment($input , [$wallet , $payer_wallet]) ;
-           
-            if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
+            
+            if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
+            if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $wallet->id);
 
             Notification::send([$user], new NewReceivedPayment($payment,$wallet));
             return [$payment , $wallet] ;
