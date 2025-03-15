@@ -14,8 +14,8 @@ return new class extends Migration
           
         Schema::table('wallet_transactions', function (Blueprint $table) {
             
-            $table->bigInteger('payment_id')->unsigned();
-            $table->foreign('payment_id')->references('id')->on('payments')->onDelete('cascade')->onUpdate('cascade');
+            $table->unsignedBigInteger('payment_id')->nullable();
+            $table->foreign('payment_id')->references('id')->on('payments');
               
             // Drop the existing foreign key constraint
         });
