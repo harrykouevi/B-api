@@ -44,6 +44,7 @@ class WalletTransaction extends Model
         'description' => 'nullable|max:255',
         'action' => ["required", "regex:/^(credit|debit)$/i"],
         'wallet_id' => 'required|exists:wallets,id',
+        'payment_id' => 'required|exists:payments,id',
     ];
     public $table = 'wallet_transactions';
     public $fillable = [
@@ -51,6 +52,7 @@ class WalletTransaction extends Model
         'description',
         'action',
         'wallet_id',
+        'payment_id',
         'user_id'
     ];
     /**
@@ -107,6 +109,14 @@ class WalletTransaction extends Model
     public function wallet(): BelongsTo
     {
         return $this->belongsTo(Wallet::class, 'wallet_id', 'id');
+    }
+
+    /**
+     * @return BelongsTo
+     **/
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(Payment::class, 'payment_id', 'id');
     }
 
     /**

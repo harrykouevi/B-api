@@ -30,6 +30,7 @@ class WalletTransactionRepository extends BaseRepository
         'description',
         'action',
         'wallet_id',
+        'payment_id',
         'user_id'
     ];
 

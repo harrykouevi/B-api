@@ -15,11 +15,15 @@ use App\Repositories\WalletTransactionRepository;
 use App\Repositories\PaymentRepository;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
+use Exception;
+
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
+use App\Notifications\NewDebitPayment ;
 use App\Notifications\StatusChangedPayment;
+use PhpParser\Node\Expr\Cast\Double;
 
 class PaymentService
 {
@@ -46,9 +50,10 @@ class PaymentService
         $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
     }
 
-    public function createPayment(User $user ,float $amount) : array | Null
+    public function createPayment(User $user ,float $amount ,Int|Wallet $payer_wallet ) : array | Null
     {
         $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first();
+        $payer_wallet = (is_int($payer_wallet)) ? $this->walletRepository->find($payer_wallet) : $payer_wallet ;
         if($wallet== Null){
             $wallet = $this->createWallet($user , 0) ;
         }
@@ -57,16 +62,16 @@ class PaymentService
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
            
-            $input = [];
-            $input['payment']['amount'] = $amount;
-            $input['payment']['description'] = 'compte créé et crédité';
-            $input['payment']['payment_status_id'] = 2; // done
-            $input['payment']['payment_method_id'] = 11; // done
-            $input['payment']['user_id'] = $user->id;
-            $input['payment']['action'] = 'credit';
-            $input['wallet']['balance'] = $wallet->balance + $amount ;
+            $input = $this->getPaymentDetail($user,$wallet,$amount) ;
+            // $input['payment']['amount'] = $amount;
+            // $input['payment']['description'] = 'compte créé et crédité';
+            // $input['payment']['payment_status_id'] = 2; // done
+            // $input['payment']['payment_method_id'] = 11; // done
+            // $input['payment']['user_id'] = $user->id;
+            // $input['payment']['action'] = 'credit';
+            // $input['wallet']['balance'] = $wallet->balance + $amount ;
           
-            $payment = $this->processPayment($input) ;
+            $payment = $this->processPayment($input , [$wallet , $payer_wallet]) ;
            
             if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
 
@@ -76,29 +81,97 @@ class PaymentService
         return Null ;
     }
 
+    // public function debitPayment(User $user ,float $amount) : array | Null
+    // {
+    //     $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first();
+    //     if($wallet== Null){
+    //         throw new Exception("no wallet for this user");
+    //     }
+
+
+    //     $currency = json_decode($wallet->currency, true);
+    //     if ($currency['code'] == setting('default_currency_code')) {
+           
+    //         $input = $this->getPaymentDetail($user,$wallet,'debit',$amount) ;
+    //         // $input['payment']['amount'] = $amount;
+    //         // $input['payment']['description'] = 'payment de ...';
+    //         // $input['payment']['payment_status_id'] = 2; // done
+    //         // $input['payment']['payment_method_id'] = 11; // done
+    //         // $input['payment']['user_id'] = $user->id;
+    //         // $input['payment']['action'] = 'debit';
+    //         // $input['wallet']['balance'] = $wallet->balance - $amount ;
+          
+    //         $payment = $this->processPayment($input , [$wallet , ]) ;
+           
+    //         if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
+
+    //         Notification::send([$user], new NewDebitPayment($payment,$wallet));
+    //         return [$payment , $wallet] ;
+    //     }
+    //     return Null ;
+    // }
+
 
     /**
      * make Payment .
      *
      * @return Payment
      */
-    private function processPayment($input):Payment | Null
+    private function processPayment($input , array $wallets):Payment | Null
     {
-        $wallet = $this->walletRepository->findByField('user_id',  $input['payment']['user_id'])->first();
+        $wallet =  $wallets[0] ;
+        $payer_wallet =  $wallets[1] ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
-           if($input['payment']['amount'] != 0){
-                $transaction['wallet_id'] =  $wallet->id;
-                $transaction['user_id'] = $input['payment']['user_id'];
+            if($input['payment']['amount'] != 0){
+
+                $payment = $this->paymentRepository->create($input['payment']);
+
                 $transaction['amount'] = $input['payment']['amount'];
-                $transaction['description'] = $input['payment']['description'];
-                $transaction['action'] =  $input['payment']['action'];
-                $this->walletTransactionRepository->create($transaction);
+                $transaction['payment_id'] = $payment->id;
+                
+                for ($i=0; $i <= 1  ; $i++) { 
+                    if($i == 0){
+                        $transaction['user_id'] = $wallet->user_id;
+                        $transaction['wallet_id'] = $wallet->id;
+                        $transaction['description'] = 'compte credité';
+                        $transaction['action'] =  'credit';
+                    }
+                    if($i == 1){
+                        $transaction['user_id'] = $payer_wallet->user_id;
+                        $transaction['wallet_id'] = $payer_wallet->id;
+                        $transaction['description'] = 'compte débité';
+                        $transaction['action'] =  'debit';
+                    }
+
+                    $this->walletTransactionRepository->create($transaction);
+                }
+                
+
+                return $payment ;
             }
 
-            return $this->paymentRepository->create($input['payment']);
+            
         }
         return Null ;
+    }
+
+
+    /**
+     *getPaymentDetail .
+     *
+     * @return Array
+     */
+    private function getPaymentDetail(User $user,Wallet $wallet,float $amount){
+
+        $input = [];
+        $input['payment']['amount'] = $amount;
+        $input['payment']['description'] = 'compte créé et crédité';
+        $input['payment']['payment_status_id'] = 2; // done
+        $input['payment']['payment_method_id'] = 11; // done
+        $input['payment']['user_id'] = $user->id;
+  
+        return $input;
     }
 
 

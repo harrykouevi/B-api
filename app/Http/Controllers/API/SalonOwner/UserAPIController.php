@@ -121,7 +121,7 @@ class UserAPIController extends Controller
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
           
-            $this->paymentService->createPayment($user,setting('owner_initial_amount'));
+            $this->paymentService->createPayment($user,setting('owner_initial_amount'),setting('app_default_wallet_id'));
 
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);

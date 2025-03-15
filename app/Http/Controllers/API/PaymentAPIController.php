@@ -11,6 +11,7 @@ namespace App\Http\Controllers\API;
 
 use App\Events\BookingChangedEvent;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Notifications\StatusChangedPayment;
 use App\Repositories\BookingRepository;
 use App\Repositories\PaymentRepository;
@@ -157,14 +158,9 @@ class PaymentAPIController extends Controller
             $currency = json_decode($wallet->currency, true);
 
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
-                $input['payment']['amount'] = $booking->getTotal();
-                $input['payment']['description'] = __('lang.payment_booking_id') . $input['id'];
-                $input['payment']['payment_status_id'] = 2;
-                $input['payment']['payment_method_id'] = 11;  // done
-                $input['payment']['user_id'] = auth()->id();
-                $input['payment']['action'] = 'debit';
                 
-                $payment = $this->paymentService->processPayment($input);
+                $payment = $this->paymentService->createPayment(new User(),$booking->getTotal(),$wallet);
+                $payment = $payment[0];
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                     Notification::send($booking->salon->users, new StatusChangedPayment($booking));
