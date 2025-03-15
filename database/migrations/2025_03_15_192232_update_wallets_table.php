@@ -16,7 +16,7 @@ return new class extends Migration
             $table->dropForeign(['user_id']);
             
             // Change user_id to be nullable
-            $table->integer('user_id')->unsigned()->nullable()->change();
+            $table->bigInteger('user_id')->unsigned()->nullable()->change();
             
             // Re-add the foreign key constraint with onDelete set to null
             $table->foreign('user_id')->references('id')->on('users')->onDelete('set null')->onUpdate('cascade');
