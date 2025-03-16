@@ -25,6 +25,7 @@ class WalletsTableSeeder extends Seeder
                 'id' => '01194a4f-f302-47af-80b2-ceb2075d36dc',
                 'name' => 'Igris',
                 'balance' => 5000000,
+                'user_id' => 1,
                 'currency' => '{"id":1,"name":"FCFA","symbol":"XOF","code":"XOF","decimal_digits":0,"rounding":0}',
                 'enabled' => 1,
                 'created_at' => now(),
