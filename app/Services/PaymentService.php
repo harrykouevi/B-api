@@ -63,6 +63,7 @@ class PaymentService
     */
     public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() ) : array | Null
     {
+        dd($user) ;
         $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
         $user = $wallet->user ;
         $payer_wallet = (is_int($payer_wallet)) ? $this->walletRepository->find($payer_wallet) : $payer_wallet ;
