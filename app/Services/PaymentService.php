@@ -57,11 +57,11 @@ class PaymentService
     * wallet, which can be either an integer identifier or a Wallet object.
     *
     * @param float $amount The amount of the payment.
-    * @param Int|Wallet $payer_wallet The wallet identifier or wallet of the payer initiating the payment.
+    * @param Int|String|Wallet $payer_wallet The wallet identifier or wallet of the payer initiating the payment.
     * @param User  $user The user receiving the payment.
     * @return Array|Null
     */
-    public function createPayment(float $amount ,Int|Wallet $payer_wallet ,User $user = new User() ) : array | Null
+    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() ) : array | Null
     {
         $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
         $user = $wallet->user ;
