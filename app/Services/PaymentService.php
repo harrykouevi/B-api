@@ -72,14 +72,14 @@ class PaymentService
         }
         $user = $wallet->user ;
 
-        dd($user ) ;
+       
 
 
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
            
             $payment = $this->processPayment($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-            
+            dd($user ) ;
             if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
             if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $wallet->id);
 
