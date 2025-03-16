@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
         $this->call(BookingStatusesTableSeeder::class);
         $this->call(PaymentMethodsTableSeeder::class);
         $this->call(PaymentStatusesTableSeeder::class);
+        $this->call(WalletsTableSeeder::class);
         
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
