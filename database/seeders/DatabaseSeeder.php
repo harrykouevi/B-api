@@ -24,10 +24,11 @@ class DatabaseSeeder extends Seeder
         $this->call(AppSettingsTableSeeder::class);
         $this->call(FaqCategoriesTableSeeder::class);
         $this->call(CustomPagesTableSeeder::class);
+        $this->call(CurrenciesTableSeeder::class);
         $this->call(FaqsTableSeeder::class);
         $this->call(MediaTableSeeder::class);
         $this->call(SlidesTableSeeder::class);
-        $this->call(BookingStatusSeeder::class);
+        $this->call(BookingStatusesTableSeeder::class);
         $this->call(PaymentMethodsTableSeeder::class);
         $this->call(PaymentStatusesTableSeeder::class);
         
