@@ -65,12 +65,12 @@ class PaymentService
     {
         
         $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
-        $user = $wallet->user ;
-        $payer_wallet = (is_string($payer_wallet)) ? $this->walletRepository->find($payer_wallet) : $payer_wallet ;
+        $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
         
         if($wallet== Null){
             $wallet = $this->createWallet($user , 0) ;
         }
+        $user = $wallet->user ;
 
 
         $currency = json_decode($wallet->currency, true);
