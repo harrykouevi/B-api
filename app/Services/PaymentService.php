@@ -101,6 +101,7 @@ class PaymentService
      */
     private function processPayment(Array $input , array $wallets):Payment | Null
     {
+        dd("tttttt") ;
         $wallet =  $wallets[0] ;
         $payer_wallet =  $wallets[1] ;
         $currency = json_decode($wallet->currency, true);
