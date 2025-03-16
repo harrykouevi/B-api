@@ -64,13 +64,15 @@ class PaymentService
     public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() ) : array | Null
     {
         
-        $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
         $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
-        
-        if($wallet== Null){
+
+        $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
+        if($wallet == Null){
             $wallet = $this->createWallet($user , 0) ;
         }
         $user = $wallet->user ;
+
+        dd($user ) ;
 
 
         $currency = json_decode($wallet->currency, true);
