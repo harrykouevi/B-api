@@ -300,7 +300,7 @@ class AppSettingsTableSeeder extends Seeder
             array(
                 'id' => 129,
                 'key' => 'default_currency_code',
-                'value' => 'USD',
+                'value' => 'XOF',
             ),
             array(
                 'id' => 130,
@@ -315,7 +315,7 @@ class AppSettingsTableSeeder extends Seeder
             array(
                 'id' => 132,
                 'key' => 'currency_right',
-                'value' => '1',
+                'value' => 'XOF',
             ),
             array(
                 'id' => 133,
@@ -423,7 +423,13 @@ class AppSettingsTableSeeder extends Seeder
                 'key' => 'default_distance',
                 'value' => 10,
             ),
+            array(
+                'id' => 154,
+                'key' => 'default_distance',
+                'value' => '01194a4f-f302-47af-80b2-ceb2075d36dc',
+            ),
 
+           
            
         ));
 

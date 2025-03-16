@@ -8,6 +8,10 @@
 
 namespace App\Providers;
 
+use App\Events\BookingChangedEvent;
+use App\Events\BookingStatusChangedEvent;
+use App\Listeners\SendBookingStatusNotificationsListener;
+use App\Listeners\UpdateBookingEarningTable;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -30,11 +34,11 @@ class EventServiceProvider extends ServiceProvider
         'App\Events\UserRoleChangedEvent' => [
 
         ],
-        'App\Events\BookingChangedEvent' => [
-            'App\Listeners\UpdateBookingEarningTable'
+        BookingChangedEvent::class => [
+            UpdateBookingEarningTable::class,
         ],
-        'App\Events\BookingStatusChangedEvent' => [
-            'App\Listeners\SendBookingStatusNotificationsListener'
+        BookingStatusChangedEvent::class => [
+            SendBookingStatusNotificationsListener::class,
         ],
 
     ];
