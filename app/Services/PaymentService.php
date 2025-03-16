@@ -171,7 +171,7 @@ class PaymentService
 
         $input = [];
         $input['payment']['amount'] = $amount;
-        $input['payment']['description'] = "payement done to user : "+$user->id+". Compte dédité";
+        $input['payment']['description'] = "payement done to user : "+ strval($user->id) +". Compte dédité";
         $input['payment']['payment_status_id'] = 2; // done
         $input['payment']['payment_method_id'] = 11; // done
         $input['payment']['user_id'] =  $wallet->user->id;
