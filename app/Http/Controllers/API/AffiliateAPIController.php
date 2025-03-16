@@ -243,7 +243,7 @@ class AffiliateAPIController extends Controller
                 // $wallet->balance += $amout;
                 // $wallet = $this->walletRepository->update($input, $wallet->id);
 
-                $this->paymentService->createPayment($partner ,50,setting('app_default_wallet_id'));
+                $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
 
             // }else{
             //     $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));

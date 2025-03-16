@@ -50,13 +50,22 @@ class PaymentService
         $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
     }
 
-    public function createPayment(User $user ,float $amount ,Int|Wallet $payer_wallet ) : array | Null
+    /**
+    * make Payment .
+    * This method processes a payment transaction where a payer initiates the payment
+    * to a specified receiver. It requires the receiver's user object and the payer's
+    * wallet, which can be either an integer identifier or a Wallet object.
+    *
+    * @param float $amount The amount of the payment.
+    * @param Int|Wallet $payer_wallet The wallet identifier or wallet of the payer initiating the payment.
+    * @param User  $user The user receiving the payment.
+    * @return Array|Null
+    */
+    public function createPayment(float $amount ,Int|Wallet $payer_wallet ,User $user = new User() ) : array | Null
     {
         $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
         $user = $wallet->user ;
-        dump(['beneficiaire',$user,$wallet]);
         $payer_wallet = (is_int($payer_wallet)) ? $this->walletRepository->find($payer_wallet) : $payer_wallet ;
-        dump(['payer',$payer_wallet->user,$payer_wallet]);
         
         if($wallet== Null){
             $wallet = $this->createWallet($user , 0) ;
@@ -66,16 +75,7 @@ class PaymentService
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
            
-            $input = $this->getPaymentDetail($payer_wallet,$amount,$user) ;
-            // $input['payment']['amount'] = $amount;
-            // $input['payment']['description'] = 'compte créé et crédité';
-            // $input['payment']['payment_status_id'] = 2; // done
-            // $input['payment']['payment_method_id'] = 11; // done
-            // $input['payment']['user_id'] = $user->id;
-            // $input['payment']['action'] = 'credit';
-            $input['wallet']['balance'] = $wallet->balance + $amount ;
-          
-            $payment = $this->processPayment($input , [$wallet , $payer_wallet]) ;
+            $payment = $this->processPayment($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
             
             if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
             if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $wallet->id);
@@ -86,43 +86,17 @@ class PaymentService
         return Null ;
     }
 
-    // public function debitPayment(User $user ,float $amount) : array | Null
-    // {
-    //     $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first();
-    //     if($wallet== Null){
-    //         throw new Exception("no wallet for this user");
-    //     }
-
-
-    //     $currency = json_decode($wallet->currency, true);
-    //     if ($currency['code'] == setting('default_currency_code')) {
-           
-    //         $input = $this->getPaymentDetail($user,$wallet,'debit',$amount) ;
-    //         // $input['payment']['amount'] = $amount;
-    //         // $input['payment']['description'] = 'payment de ...';
-    //         // $input['payment']['payment_status_id'] = 2; // done
-    //         // $input['payment']['payment_method_id'] = 11; // done
-    //         // $input['payment']['user_id'] = $user->id;
-    //         // $input['payment']['action'] = 'debit';
-    //         // $input['wallet']['balance'] = $wallet->balance - $amount ;
-          
-    //         $payment = $this->processPayment($input , [$wallet , ]) ;
-           
-    //         if($payment) $wallet =  $this->walletRepository->update($input['wallet'] , $wallet->id);
-
-    //         Notification::send([$user], new NewDebitPayment($payment,$wallet));
-    //         return [$payment , $wallet] ;
-    //     }
-    //     return Null ;
-    // }
+    
 
 
     /**
      * make Payment .
-     *
-     * @return Payment
+     * @param Array $input
+     * @param Array $wallets
+     * 
+     * @return Payment | Null
      */
-    private function processPayment($input , array $wallets):Payment | Null
+    private function processPayment(Array $input , array $wallets):Payment | Null
     {
         $wallet =  $wallets[0] ;
         $payer_wallet =  $wallets[1] ;
@@ -151,23 +125,23 @@ class PaymentService
 
                     $this->walletTransactionRepository->create($transaction);
                 }
-                
-
                 return $payment ;
             }
-
-            
         }
         return Null ;
     }
 
 
     /**
-     *getPaymentDetail .
-     *
-     * @return Array
-     */
-    private function getPaymentDetail(Wallet $wallet,float $amount , User $user){
+    * getPaymentDetail .
+    *
+    * @param float $amount The amount of the payment.
+    * @param Wallet $wallet The wallet of the payer initiating the payment.
+    * @param User  $user The user receiving the payment.
+    * 
+    * @return Array
+    */
+    private function getPaymentDetail(float $amount ,Wallet $wallet, User $user){
 
         $input = [];
         $input['payment']['amount'] = $amount;

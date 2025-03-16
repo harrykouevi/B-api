@@ -159,7 +159,7 @@ class PaymentAPIController extends Controller
 
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
                 
-                $payment = $this->paymentService->createPayment(new User(),$booking->getTotal(),$wallet);
+                $payment = $this->paymentService->createPayment($booking->getTotal(),$wallet);
                 $payment = $payment[0];
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
