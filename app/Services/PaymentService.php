@@ -54,7 +54,10 @@ class PaymentService
     {
         $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
         $user = $wallet->user ;
+        dump(['beneficiaire',$user,$wallet]);
         $payer_wallet = (is_int($payer_wallet)) ? $this->walletRepository->find($payer_wallet) : $payer_wallet ;
+        dump(['payer',$payer_wallet->user,$payer_wallet]);
+        
         if($wallet== Null){
             $wallet = $this->createWallet($user , 0) ;
         }
