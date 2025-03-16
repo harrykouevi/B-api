@@ -66,7 +66,7 @@ class PaymentService
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
            
-            $input = $this->getPaymentDetail($user,$wallet,$amount) ;
+            $input = $this->getPaymentDetail($payer_wallet,$amount,$user) ;
             // $input['payment']['amount'] = $amount;
             // $input['payment']['description'] = 'compte créé et crédité';
             // $input['payment']['payment_status_id'] = 2; // done
@@ -167,14 +167,14 @@ class PaymentService
      *
      * @return Array
      */
-    private function getPaymentDetail(User $user,Wallet $wallet,float $amount){
+    private function getPaymentDetail(Wallet $wallet,float $amount , User $user){
 
         $input = [];
         $input['payment']['amount'] = $amount;
-        $input['payment']['description'] = 'compte créé et crédité';
+        $input['payment']['description'] = "payement done to user : "+$user->id+". Compte dédité";
         $input['payment']['payment_status_id'] = 2; // done
         $input['payment']['payment_method_id'] = 11; // done
-        $input['payment']['user_id'] = $user->id;
+        $input['payment']['user_id'] =  $wallet->user->id;
   
         return $input;
     }
