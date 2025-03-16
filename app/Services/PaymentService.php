@@ -68,16 +68,9 @@ class PaymentService
 
         $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
         if($wallet == Null){
-            dump('fgrhrhrh') ;
-            dump($user->id) ;
             $wallet = $this->createWallet($user , 0) ;
         }
         $user = $wallet->user ;
-
-       
-
-        dump('fgrhrhrh:1') ;
-            dump($user->id) ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
             dump('fgrhrhrh:2') ;
@@ -85,7 +78,7 @@ class PaymentService
             $payment = $this->processPayment($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
           
             if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
-            if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $wallet->id);
+            if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $payer_wallet->id);
 
             Notification::send([$user], new NewReceivedPayment($payment,$wallet));
             return [$payment , $wallet] ;
