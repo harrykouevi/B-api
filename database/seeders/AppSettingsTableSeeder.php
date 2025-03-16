@@ -425,7 +425,7 @@ class AppSettingsTableSeeder extends Seeder
             ),
             array(
                 'id' => 154,
-                'key' => 'default_distance',
+                'key' => 'app_default_wallet_id',
                 'value' => '01194a4f-f302-47af-80b2-ceb2075d36dc',
             ),
 
