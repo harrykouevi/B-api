@@ -105,9 +105,10 @@ class PaymentService
      */
     private function processPayment(Array $input , array $wallets):Payment | Null
     {
-        dump('fgrhrhrh:3') ;
-        dump($user->id) ;
+        
         $wallet =  $wallets[0] ;
+        dump('fgrhrhrh:3') ;
+        dump($wallet->user->id) ;
         $payer_wallet =  $wallets[1] ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
