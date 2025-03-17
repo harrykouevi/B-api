@@ -50,8 +50,7 @@ class Kernel extends HttpKernel
      */
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
-        // \Illuminate\Http\Middleware\HandleCors::class,
-        // ...
+        \Illuminate\Http\Middleware\HandleCors::class,
         TrustProxies::class,
         CheckForMaintenanceMode::class,
         ValidatePostSize::class,
@@ -83,8 +82,6 @@ class Kernel extends HttpKernel
 
         'api' => [
             'throttle:60,1',
-            \App\Http\Middleware\CorsMiddleware::class,
-
             SubstituteBindings::class,
             RestrictIp::class,
             Locale::class,
