@@ -117,9 +117,7 @@ class UserAPIController extends Controller
         try {
 
             $this->validate($request, User::$rules);
-            if($request->has('code_affiliation')){
-                $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
-            }
+            
 
             $user = new User;
             $user->name = $request->input('name');
@@ -136,8 +134,9 @@ class UserAPIController extends Controller
             $user->assignRole($defaultRoles);
             $user = $user->fresh();
 
-            if ($user->sponsorship_at == Null && $affiliation != Null ) { 
-               
+            if ($user->sponsorship_at == Null && $request->has('code_affiliation') ) { 
+                $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
+                
                 $this->partenerShipService->proceedPartenerShip($affiliation) ;
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
