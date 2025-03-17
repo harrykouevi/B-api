@@ -27,7 +27,7 @@ class WalletTransactionCreatingEvent
     public function __construct(WalletTransaction $walletTransaction)
     {
         if ($walletTransaction->action == 'debit' && $walletTransaction->wallet->balance < $walletTransaction->amount) {
-            throw new Exception(__('lang.wallet_balance_insufficient'));
+            throw new Exception($walletTransaction->amount);
         }
     }
 }

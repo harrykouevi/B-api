@@ -147,9 +147,6 @@ class UserAPIController extends Controller
                     'sponsorship' => $affiliation,
                     'sponsorship_at' => now(),
                 ]);
-
-                // Pour récupérer l'instance mise à jour du modèle
-                // $user = $user->fresh();
             }
         
             //credité le wallet du coiffeur
