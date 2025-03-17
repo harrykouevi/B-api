@@ -83,8 +83,8 @@ class PartenerShipService
         $input['click'] =  $affiliation->click + 1 ;
         $affiliation =$this->affiliateRepository->update($input, $affiliation->id);
 
-        if (auth()->user()->id == $affiliation->user_id) throw new \Exception("unprocessable partenership") ;
-        if ($affiliation->user->sponsorhip_at != Null && auth()->user()->id == $affiliation->user->sponsorhip->user_id) throw new \Exception("unprocessable partenership") ;
+        if ($user->id == $affiliation->user_id) throw new \Exception("unprocessable partenership") ;
+        if ($affiliation->user->sponsorhip_at != Null && $user->id == $affiliation->user->sponsorhip->user_id) throw new \Exception("unprocessable partenership") ;
 
         // Met à jour la conversion en tant que réussie
         //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
