@@ -134,8 +134,9 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
+            $user = $user->fresh();
 
-            if (auth()->user()->sponsorship_at == Null && $affiliation != Null ) { 
+            if ($user->sponsorship_at == Null && $affiliation != Null ) { 
                
                 $this->partenerShipService->proceedPartenerShip($affiliation) ;
                 // Attribue la récompense au partenaire
