@@ -48,6 +48,7 @@ class AffiliateCast implements CastsAttributes
             'id' => $value['id'],
             'link' => $value['link'],
             'code' => $value['code'],
+            'user_id' => $value['user_id'],
         ])];
     }
 }

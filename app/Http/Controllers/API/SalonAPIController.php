@@ -117,7 +117,7 @@ class SalonAPIController extends Controller
             $input = $request->all();
             if (auth()->user()->hasAnyRole(['salon owner', 'customer'])) {
                 $input['users'] = [auth()->id()];
-                $input['accepted'] = 0;
+                $input['accepted'] = 1;
                 $input['featured'] = 0;
                 $input['available'] = 1;
             }

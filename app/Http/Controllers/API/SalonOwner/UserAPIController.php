@@ -26,6 +26,8 @@ use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
+use App\Services\PartenerShipService;
+
 
 
 class UserAPIController extends Controller
@@ -44,12 +46,17 @@ class UserAPIController extends Controller
      */
     private PaymentService $paymentService;
 
+      /**
+     * @var PartenerShipService
+     */
+    private PartenerShipService $partenerShipService;
+
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct(PaymentService $paymentService ,UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
+    public function __construct(PaymentService $paymentService  ,PartenerShipService $partenerShipService ,UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
     {
         parent::__construct();
         $this->userRepository = $userRepository;
@@ -57,6 +64,8 @@ class UserAPIController extends Controller
         $this->roleRepository = $roleRepository;
         $this->customFieldRepository = $customFieldRepo;
         $this->paymentService =  $paymentService ;
+        $this->partenerShipService =  $partenerShipService ;
+
 
     }
 
@@ -106,7 +115,12 @@ class UserAPIController extends Controller
     {
         
         try {
+
             $this->validate($request, User::$rules);
+            if($request->has('code_affiliation')){
+                $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
+            }
+
             $user = new User;
             $user->name = $request->input('name');
             $user->email = $request->input('email');
@@ -120,18 +134,35 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
-          
+
+            if (auth()->user()->sponsorship_at == Null && $affiliation != Null ) { 
+               
+                $this->partenerShipService->proceedPartenerShip($affiliation) ;
+                // Attribue la récompense au partenaire
+                $partner = $affiliation->user;
+                if($partner){ 
+                    $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                }
+
+                $user->update([
+                    'sponsorship' => $affiliation,
+                    'sponsorship_at' => now(),
+                ]);
+
+                // Pour récupérer l'instance mise à jour du modèle
+                $user = $user->fresh();
+            }
+        
+            //credité le wallet du coiffeur
             $this->paymentService->createPayment(setting('owner_initial_amount'),setting('app_default_wallet_id'),$user);
+            
+            return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
 
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
-            
             return $this->sendError($e->getMessage());
         }
-
-
-        return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
     }
 
 

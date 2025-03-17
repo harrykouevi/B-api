@@ -31,6 +31,7 @@ use App\Repositories\UserRepository;
 use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 use App\Services\PaymentService;
+use App\Services\PartenerShipService;
 
 
 /**
@@ -58,13 +59,19 @@ class AffiliateAPIController extends Controller
      */
     private PaymentService $paymentService;
 
-    public function __construct(UserRepository $userRepository,PaymentService $paymentService, AffiliateRepository $affiliateRepo , ConversionRepository $conversionRepo )
+      /**
+     * @var PartenerShipService
+     */
+    private PartenerShipService $partenerShipService;
+
+    public function __construct(UserRepository $userRepository,PaymentService $paymentService, PartenerShipService $partenerShipService, AffiliateRepository $affiliateRepo , ConversionRepository $conversionRepo )
     {
         parent::__construct();
         $this->userRepository = $userRepository;
         $this->affiliateRepository = $affiliateRepo;
         $this->conversionRepository = $conversionRepo;
         $this->paymentService =  $paymentService ;
+        $this->partenerShipService =  $partenerShipService ;
 
     }
 
@@ -198,29 +205,24 @@ class AffiliateAPIController extends Controller
     
     public function confirmConversion($affiliationCode_ ,Request $request)
     {
-        
         try {
-            if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
+            // if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
-             
-            if ($affiliation == Null )  return $this->sendError("unprocessable partenership",404);
-            if (auth()->user()->id == $affiliation->user_id) return $this->sendError("unprocessable partenership",404);
+            $conversion = $this->partenerShipService->proceedPartenerShip($affiliation) ;
 
-            // Met à jour la conversion en tant que réussie
-            //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
-            $conversion = $this->conversionRepository->create([
-                'affiliate_id' => $affiliation->id ,
-                'affiliation' => $affiliation ,
-                'status' => 'success'
-            ]);
-            // $conversion->update();
             
             // Attribue la récompense au partenaire
-            $this->rewardPartner($affiliation , 500);
-            $d=[];
-            $d['sponsorship'] =  $affiliation;
-            $d['sponsorship_at'] =  now();
-            $user = $this->userRepository->update($d,auth()->user()->id);
+            // $this->rewardPartner($affiliation , 500);
+            $partner = $affiliation->user;
+            if($partner){ 
+                $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+            }
+
+           
+            $this->userRepository->update([
+                'sponsorship' => $affiliation,
+                'sponsorship_at' => now(),
+            ],auth()->user()->id);
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
            
@@ -228,38 +230,6 @@ class AffiliateAPIController extends Controller
         }
         
     }
-    
-    private function rewardPartner(\App\Models\Affiliate $affiliation , int $amout)
-    {
-        $partner = $affiliation->user;
-        if($partner){ 
-            // $wallet = $this->walletRepository->findByField('user_id', $partner->id )->first();
-            
-            // if($wallet){
-        
-                // Code pour récompenser le partenaire
-                // Par exemple, ajouter des points ou une commission
-                // $input = [];
-                // $wallet->balance += $amout;
-                // $wallet = $this->walletRepository->update($input, $wallet->id);
-
-                $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
-
-            // }else{
-            //     $currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
-            //     if (empty($currency)) {
-            //         return $this->sendError('Default Currency not found');
-            //     }
-            //     $input = [];
-            //     $input['name'] = setting('default_wallet_name')?? "-";
-            //     $input['currency'] = $currency;
-            //     $input['user_id'] = $partner->id;
-            //     $input['balance'] = $amout;
-            //     $input['enabled'] = 1;
-            //     $wallet = $this->walletRepository->create($input);
-            //     createWallet($partner, setting() ) ;
-            // }
-        }
-    }
+ 
 
 }
