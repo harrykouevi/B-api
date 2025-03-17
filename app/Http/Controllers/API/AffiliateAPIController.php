@@ -208,7 +208,7 @@ class AffiliateAPIController extends Controller
         try {
             // if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
-            $conversion = $this->partenerShipService->proceedPartenerShip($affiliation) ;
+            $conversion = $this->partenerShipService->proceedPartenerShip(auth()->user(),$affiliation) ;
 
             
             // Attribue la récompense au partenaire

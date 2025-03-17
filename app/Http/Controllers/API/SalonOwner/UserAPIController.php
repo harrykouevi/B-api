@@ -133,10 +133,10 @@ class UserAPIController extends Controller
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
           
-            if ( $request->has('code_affiliation') ) { 
+            if ($user->sponsorship_at == Null && $request->has('code_affiliation') ) { 
                 $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
                 
-                $this->partenerShipService->proceedPartenerShip($affiliation) ;
+                $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
                 if($partner){ 

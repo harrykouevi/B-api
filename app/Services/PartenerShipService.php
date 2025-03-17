@@ -72,10 +72,10 @@ class PartenerShipService
     * @param Affiliate $affiliation 
     * @return Conversion
     */
-    public function proceedPartenerShip(Affiliate $affiliation ) : Conversion
+    public function proceedPartenerShip(User $user , Affiliate $affiliation ) : Conversion
     {
         
-        if (auth()->user()->sponsorship_at )  throw new \Exception("already get sponsored");
+        if ($user->sponsorship_at )  throw new \Exception("already get sponsored");
         if ($affiliation == Null ) throw new \Exception("unprocessable partenership") ;
         
         // Increment le nombre de fois que le code d'affiliation à tenté d'etre utilisé
