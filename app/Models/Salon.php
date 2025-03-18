@@ -13,6 +13,7 @@ use App\Traits\HasTranslations;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use DateTime;
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Database\Eloquent\Collection;
@@ -242,9 +243,31 @@ class Salon extends Model implements HasMedia, Castable
     {
         $openingHoursArray = [];
         foreach ($this->availabilityHours as $element) {
-            $openingHoursArray[$element['day']][] = $element['start_at'] . '-' . $element['end_at'];
+            $openingHoursArray[$this->toEnglishday($element['day'])][] = $element['start_at'] . '-' . $element['end_at'];
         }
         return OpeningHours::createAndMergeOverlappingRanges($openingHoursArray);
+    }
+
+    private function toEnglishday(String $day)
+    {
+        $dayarray = [
+            "lundi"=>"monday" ,
+            "mardi"=>"tuesday" ,
+            "mercredi"=>"wednesday" ,
+            "jeudi"=>"thursday" ,
+            "vendredi"=>"friday" ,
+            "samedi"=>"saturday" ,
+            "dimanche"=>"sunday" ,
+        ];
+        if (array_key_exists(strtolower($day), $dayarray)) {  
+            return $dayarray[strtolower($day)];
+        }else{
+            if(in_array(strtolower($day), $dayarray) ){ 
+                return strtolower($day) ;
+            }else {
+                throw new Exception("Attempt $day is not a supported day.");
+            }
+        }
     }
 
     /**
