@@ -89,7 +89,7 @@ class Controller extends BaseController
                         }
                     }
                 } catch (Exception) {
-                    dd($key);
+                   
                 }
             }
             return $item;

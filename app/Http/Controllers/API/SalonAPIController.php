@@ -97,11 +97,33 @@ class SalonAPIController extends Controller
             $availabilityHours = $array['availability_hours'];
             $availabilityHours = collect($availabilityHours);
             $availabilityHours = $availabilityHours->sortBy(function ($item, $key) {
-                return Carbon::createFromIsoFormat('dddd', $item['day'])->dayOfWeek;
+                return Carbon::createFromIsoFormat('dddd', $this->toEnglishday($item['day']))->dayOfWeek;
             });
             $array['availability_hours'] = array_values($availabilityHours->toArray());
         }
         return $array;
+    }
+
+    private function toEnglishday(String $day)
+    {
+        $dayarray = [
+            "lundi"=>"monday" ,
+            "mardi"=>"tuesday" ,
+            "mercredi"=>"wednesday" ,
+            "jeudi"=>"thursday" ,
+            "vendredi"=>"friday" ,
+            "samedi"=>"saturday" ,
+            "dimanche"=>"sunday" ,
+        ];
+        if (array_key_exists(strtolower($day), $dayarray)) {  
+            return $dayarray[strtolower($day)];
+        }else{
+            if(in_array(strtolower($day), $dayarray) ){ 
+                return strtolower($day) ;
+            }else {
+                throw new Exception("Attempt $day is not a supported day.");
+            }
+        }
     }
 
     /**

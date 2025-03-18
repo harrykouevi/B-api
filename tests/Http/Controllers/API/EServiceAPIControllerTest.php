@@ -87,7 +87,6 @@ class EServiceAPIControllerTest extends TestCase
         ];
 
         $response = $this->json('get', 'api/e_services', $queryParameters);
-        $response->dump();
         $data = TestHelper::generateJsonArray(count($response->json('data')), [
             'available' => true,
             'salon' => [
