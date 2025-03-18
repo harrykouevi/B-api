@@ -26,6 +26,9 @@ use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
+use App\Services\PartenerShipService;
+
+
 
 
 class UserAPIController extends Controller
@@ -40,13 +43,17 @@ class UserAPIController extends Controller
      */
     private PaymentService $paymentService;
 
+      /**
+     * @var PartenerShipService
+     */
+    private PartenerShipService $partenerShipService;
 
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct(PaymentService $paymentService  , UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
+    public function __construct(PartenerShipService $partenerShipService ,PaymentService $paymentService  , UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
     {
         parent::__construct();
         $this->userRepository = $userRepository;
@@ -55,6 +62,8 @@ class UserAPIController extends Controller
         $this->roleRepository = $roleRepository;
         $this->customFieldRepository = $customFieldRepo;
         $this->paymentService =  $paymentService ;
+        $this->partenerShipService =  $partenerShipService ;
+
     }
 
     function login(Request $request): JsonResponse
@@ -120,10 +129,22 @@ class UserAPIController extends Controller
             $user->assignRole($defaultRoles);
 
             // Récupère l'ID d'affiliation à partir du paramètre de requête
-            if ($request->has('affiliation_id')) {
-                $this->confirmConversion($request->query('affiliation_id'), $user);
-            }
+            if ($request->has('code_affiliation') && $request->input('code_affiliation') != ""  ) { 
+                $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
+                
+                $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
+                // Attribue la récompense au partenaire
+                $partner = $affiliation->user;
+                if($partner){ 
+                    $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                }
 
+                $user->update([
+                    'sponsorship' => $affiliation,
+                    'sponsorship_at' => now(),
+                ]);
+            }
+        
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->userRepository->model());
 
             foreach (getCustomFieldsValues($customFields, $request) as $value) {
