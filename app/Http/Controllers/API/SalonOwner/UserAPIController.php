@@ -9,6 +9,7 @@
 namespace App\Http\Controllers\API\SalonOwner;
 
 use App\Criteria\Users\SalonsCustomersCriteria;
+use App\Events\DoPaymentEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -27,6 +28,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
+
 
 
 
@@ -140,7 +142,9 @@ class UserAPIController extends Controller
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
                 if($partner){ 
-                    $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                    // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                    $paymentInfo = ["amount"=>50,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    event(new DoPaymentEvent($paymentInfo));
                 }
 
                 $user->update([
@@ -150,7 +154,9 @@ class UserAPIController extends Controller
             }
         
             //credité le wallet du coiffeur
-            $this->paymentService->createPayment(setting('owner_initial_amount'),setting('app_default_wallet_id'),$user);
+            // $this->paymentService->createPayment(setting('owner_initial_amount'),setting('app_default_wallet_id'),$user);
+            $paymentInfo = ["amount"=>setting('owner_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            event(new DoPaymentEvent($paymentInfo));
             
             return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
 

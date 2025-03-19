@@ -9,6 +9,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Criteria\Users\SalonsCustomersCriteria;
+use App\Events\DoPaymentEvent;
+use App\Events\DoPaymentserEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -133,10 +135,13 @@ class UserAPIController extends Controller
                 $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
                 
                 $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
+                
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
                 if($partner){ 
-                    $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                    // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                    $paymentInfo = ["amount"=>50,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    event(new DoPaymentEvent($paymentInfo));
                 }
 
                 $user->update([

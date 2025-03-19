@@ -17,6 +17,7 @@ class WalletTransactionCreatedEvent
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public $walletTransaction ;
     /**
      * Create a new event instance.
      *
@@ -24,11 +25,6 @@ class WalletTransactionCreatedEvent
      */
     public function __construct(WalletTransaction $walletTransaction)
     {
-        if ($walletTransaction->action == 'credit') {
-            $walletTransaction->wallet->balance += $walletTransaction->amount;
-        } else if ($walletTransaction->action == 'debit') {
-            $walletTransaction->wallet->balance -= $walletTransaction->amount;
-        }
-        $walletTransaction->wallet->save();
+        $this->walletTransaction = $walletTransaction ;
     }
 }
