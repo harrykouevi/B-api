@@ -242,7 +242,7 @@ class BookingAPIController extends Controller
                     
                     
                 // }
-                // event(new DoPaymentEvent($paymentInfo));
+                // event(new DoPahhymentEvent($paymentInfo));
 
                 event(new BookingChangedEvent($booking));
             }

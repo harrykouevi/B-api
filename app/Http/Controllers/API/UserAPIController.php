@@ -9,8 +9,6 @@
 namespace App\Http\Controllers\API;
 
 use App\Criteria\Users\SalonsCustomersCriteria;
-use App\Events\DoPaymentEvent;
-use App\Events\DoPaymentserEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;

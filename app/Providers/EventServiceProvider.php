@@ -47,7 +47,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         BookingChangedEvent::class => [
             UpdateBookingPaymentListener::class,
-            UpdateBookingEarningTable::class,
+            // UpdateBookingEarningTable::class,
         ],
         BookingStatusChangedEvent::class => [
             SendBookingStatusNotificationsListener::class,
