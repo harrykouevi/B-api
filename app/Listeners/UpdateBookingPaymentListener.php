@@ -62,12 +62,9 @@ class UpdateBookingPaymentListener
 
                 }
                 if(auth()->user()->hasRole('customer') ){
-                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. am customer');
-                    
-                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' user '. auth()->user()->id);
 
                     //refund appli
-                    array_push($payments ,  ["amount"=>150+10,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
+                    array_push($payments ,  ["amount"=>150,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
                     Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. and wallet is ',['wallet' => setting('app_default_wallet_id')]);
                     
                 }
