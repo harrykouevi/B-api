@@ -33,7 +33,7 @@ class DoPaymentEvent
             throw new InvalidArgumentException('Invalid amount.');
         }
 
-        if (!is_int($paymentInfo['payer_wallet']) || !is_string($paymentInfo['payer_wallet']) || !($paymentInfo['payer_wallet'] instanceof Wallet) ) {
+        if (!is_int($paymentInfo['payer_wallet']) && !is_string($paymentInfo['payer_wallet']) && !($paymentInfo['payer_wallet'] instanceof Wallet) ) {
             throw new InvalidArgumentException('Payer wallet must be an integer or string or Wallet instance.');
         }
 
