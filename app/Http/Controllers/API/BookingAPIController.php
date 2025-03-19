@@ -244,7 +244,7 @@ class BookingAPIController extends Controller
                 // }
                 // event(new DoPahhymentEvent($paymentInfo));
 
-                event(new BookingChangedEvent($oldBooking));
+                event(new BookingChangedEvent($booking));
             }
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {
                 event(new BookingStatusChangedEvent($booking));
