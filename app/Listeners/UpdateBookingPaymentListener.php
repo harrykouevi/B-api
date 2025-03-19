@@ -40,10 +40,16 @@ class UpdateBookingPaymentListener
     {
         try {
             $booking = $event->booking;
+            // Écrire un message de débogage
+            Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' et status '. $booking->payment_status_id);
             $payments =[];
             if($booking->payment_status_id == 7){
                 //refund coiffeur
                 if(auth()->user()->hasRole('salon owner') ){
+                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. am owner');
+
+                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' user '. auth()->user()->id);
+
                     $payerW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($payerW == Null) throw new \Exception('user dont have a wallet yet');
                      //le coiffeur rembourse l'appli
@@ -55,6 +61,10 @@ class UpdateBookingPaymentListener
 
                 }
                 if(auth()->user()->hasRole('customer') ){
+                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. am customer');
+                    
+                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' user '. auth()->user()->id);
+
                     //refund appli
                     array_push($payments , $paymentInfo = ["amount"=>150+10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
                 }

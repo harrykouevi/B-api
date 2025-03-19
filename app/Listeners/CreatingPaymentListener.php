@@ -29,6 +29,8 @@ class CreatingPaymentListener
     public function handle(DoPaymentEvent $event): void
     {
         try {
+            Log::channel('listeners_transactions')->debug('Ceci est un message $this->paymentService->createPayment( montant='. $event->amount.' ,payer_wallet= '.$event->payer_wallet->id.', user= '.$event->user->id);
+
             $this->paymentService->createPayment($event->amount,$event->payer_wallet,$event->user  );
         } catch (\Exception $e) {
             // Gestion de l'exception
