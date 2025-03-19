@@ -54,10 +54,10 @@ class UpdateBookingPaymentListener
                     $payerW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($payerW == Null) throw new \Exception('user dont have a wallet yet');
                      //le coiffeur rembourse l'appli
-                    array_push($payments , $paymentInfo = ["amount"=>10,"payer_wallet"=>$payerW, "user"=> new User()] );
+                    array_push($payments ,  ["amount"=>10,"payer_wallet"=>$payerW, "user"=> new User()] );
 
                     //refund appli
-                    array_push($payments , $paymentInfo = ["amount"=>150+10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
+                    array_push($payments ,  ["amount"=>150+10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
                     // $resp = $this->paymentService->createPayment(150,setting('app_default_wallet_id'),$booking->user);
 
                 }
@@ -67,7 +67,9 @@ class UpdateBookingPaymentListener
                     Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' user '. auth()->user()->id);
 
                     //refund appli
-                    array_push($payments , $paymentInfo = ["amount"=>150+10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
+                    array_push($payments ,  ["amount"=>150+10,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
+                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. and wallet is ',['wallet' => setting('app_default_wallet_id')]);
+                    
                 }
             }
 
