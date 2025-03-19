@@ -42,7 +42,7 @@ class UpdateBookingPaymentListener
             $booking = $event->booking;
             // Écrire un message de débogage
             Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking',['booking' => $booking->toArray()]);
-            Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' et status '. $booking->payment_status_id);
+            Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' et status '. $booking->payment->payment_status_id);
             $payments =[];
             if($booking->payment->payment_status_id == 3){
                 //refund coiffeur
