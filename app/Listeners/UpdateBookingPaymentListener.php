@@ -55,7 +55,7 @@ class UpdateBookingPaymentListener
                     //refund appli
                     array_push($payments ,  ["amount"=>$booking->payment->amount +10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
                 }
-                if(auth()->user()->hasRole('customer') ){
+                if(auth()->user()->hasRole('customer') ){ 
                     //refund appli
                     array_push($payments ,  ["amount"=>$booking->payment->amount,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
                 }
