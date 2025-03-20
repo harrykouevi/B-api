@@ -219,7 +219,7 @@ class BookingAPIController extends Controller
 
             if (isset($input['payment_status_id'])) {
                 
-             
+                event(new BookingChangedEvent($booking));
                 // //creer un paiement de remboursement plutot
                 // if($input['payment_status_id'] == 7){
                 //    //refund coiffeur
@@ -244,7 +244,7 @@ class BookingAPIController extends Controller
                 // }
                 // event(new DoPahhymentEvent($paymentInfo));
 
-                event(new BookingChangedEvent($booking));
+                
             }
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {
                 event(new BookingStatusChangedEvent($booking));

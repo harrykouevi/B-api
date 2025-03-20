@@ -428,8 +428,12 @@ class AppSettingsTableSeeder extends Seeder
                 'key' => 'app_default_wallet_id',
                 'value' => '01194a4f-f302-47af-80b2-ceb2075d36dc',
             ),
+            array(
+                'id' => 155,
+                'key' => 'booking_price',
+                'value' => 200,
+            ),
 
-           
            
         ));
 

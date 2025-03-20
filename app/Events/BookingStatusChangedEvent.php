@@ -19,7 +19,7 @@ class BookingStatusChangedEvent
     public $booking;
 
     /**
-     * BookingChangedEvent constructor.
+     * BookingStatusChangedEvent constructor.
      * @param $booking
      */
     public function __construct($booking)

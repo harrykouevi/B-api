@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\DoPaymentEvent;
 use App\Models\User;
+use App\Models\Booking;
 use App\Repositories\BookingRepository;
 use App\Repositories\WalletRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -39,34 +40,24 @@ class UpdateBookingPaymentListener
     public function handle(object $event): void
     {
         try {
+            /** @var Booking $booking */
             $booking = $event->booking;
-            // Écrire un message de débogage
-            Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking',['booking' => $booking->toArray()]);
-            Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' et status '. $booking->payment->payment_status_id);
+           
             $payments =[];
-            if($booking->payment->payment_status_id == 2){
+            if($booking->booking_status_id == 7 && $booking->payment->payment_status_id != 3){
                 //refund coiffeur
                 if(auth()->user()->hasRole('salon owner') ){
-                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. am owner');
-
-                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. booking_id'. $booking->id .' user '. auth()->user()->id);
-
+                   
                     $payerW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($payerW == Null) throw new \Exception('user dont have a wallet yet');
-                     //le coiffeur rembourse l'appli
+                     //le coiffeur rembourse  l'appli
                     array_push($payments ,  ["amount"=>10,"payer_wallet"=>$payerW, "user"=> new User()] );
-
                     //refund appli
-                    array_push($payments ,  ["amount"=>150+10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
-                    // $resp = $this->paymentService->createPayment(150,setting('app_default_wallet_id'),$booking->user);
-
+                    array_push($payments ,  ["amount"=>$booking->payment->amount +10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
                 }
                 if(auth()->user()->hasRole('customer') ){
-
                     //refund appli
-                    array_push($payments ,  ["amount"=>150,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
-                    Log::channel('listeners_transactions')->debug('Ceci est un message de débogage. and wallet is ',['wallet' => setting('app_default_wallet_id')]);
-                    
+                    array_push($payments ,  ["amount"=>$booking->payment->amount,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
                 }
             }
 

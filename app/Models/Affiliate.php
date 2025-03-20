@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  *
  * @property User user
  * @property integer id
+ * @property integer click
  * @property string link
  * @property integer user_id
  */
@@ -41,6 +42,7 @@ class Affiliate extends Model
     public $table = 'affiliates';
     public $fillable = [
         'link',
+        'click',
         'code',
         'user_id'
     ];
@@ -52,7 +54,8 @@ class Affiliate extends Model
     protected $casts = [
         'link' => 'string',
         'code' => 'string',
-        'user_id' => 'integer'
+        'user_id' => 'integer',
+        'click' => 'integer'
     ];
 
     protected $hidden = [

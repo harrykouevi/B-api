@@ -8,6 +8,7 @@
 
 namespace App\Services;
 
+use App\Events\DoPaymentEvent;
 use App\Models\Affiliate;
 use App\Models\Conversion;
 use App\Repositories\AffiliateRepository;
@@ -94,8 +95,10 @@ class PartenerShipService
             'status' => 'success'
         ]);
 
-        // Attribue la récompense au partenaire
-        // $this->rewardPartner($affiliation , 500);
+         // Attribue la récompense à la personne qui a utilisé un code d'affiliation
+        $paymentInfo = ["amount"=>50,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+        event(new DoPaymentEvent($paymentInfo));
+
         return  $conversion ;
     }
 
