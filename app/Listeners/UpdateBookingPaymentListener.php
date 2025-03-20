@@ -50,14 +50,15 @@ class UpdateBookingPaymentListener
                    
                     $payerW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($payerW == Null) throw new \Exception('user dont have a wallet yet');
+                    $theamount = $booking->payment->amount ;
                      //le coiffeur rembourse  l'appli
-                    array_push($payments ,  ["amount"=>10,"payer_wallet"=>$payerW, "user"=> new User()] );
+                    // array_push($payments ,  ["amount"=>10,"payer_wallet"=>$payerW, "user"=> new User()] );
                     //refund appli
-                    array_push($payments ,  ["amount"=>$booking->payment->amount +10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
+                    array_push($payments ,  ["amount"=>$theamount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
                 }
                 if(auth()->user()->hasRole('customer') ){ 
                     //refund appli
-                    array_push($payments ,  ["amount"=>$booking->payment->amount,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
+                    array_push($payments ,  ["amount"=>$theamount,"payer_wallet"=> setting('app_default_wallet_id'), "user"=> $booking->user] );
                 }
             }
 
