@@ -73,7 +73,7 @@ class PartenerShipService
     * @param Affiliate $affiliation 
     * @return Conversion | Null
     */
-    public function proceedPartenerShip(User $user , Affiliate $affiliation ) : Conversion | Null
+    public function proceedPartenerShip(User $user , Affiliate|Null $affiliation ) : Conversion | Null
     {
         
         if ($user == Null )  return Null ;
