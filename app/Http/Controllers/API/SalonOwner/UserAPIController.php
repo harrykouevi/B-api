@@ -143,7 +143,7 @@ class UserAPIController extends Controller
                 $partner = $affiliation->user;
                 if($partner){ 
                     // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
-                    $paymentInfo = ["amount"=>50,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    $paymentInfo = ["amount"=> setting('owner_partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
                     event(new DoPaymentEvent($paymentInfo));
                 }
 
@@ -154,9 +154,9 @@ class UserAPIController extends Controller
             }
         
             //credité le wallet du coiffeur
-            // $this->paymentService->createPayment(setting('owner_initial_amount'),setting('app_default_wallet_id'),$user);
             $paymentInfo = ["amount"=>setting('owner_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
             event(new DoPaymentEvent($paymentInfo));
+            
             
             return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
 

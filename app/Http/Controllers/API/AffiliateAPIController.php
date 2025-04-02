@@ -212,10 +212,10 @@ class AffiliateAPIController extends Controller
 
             
             // Attribue la récompense au partenaire
-            // $this->rewardPartner($affiliation , 500);
             $partner = $affiliation->user;
             if($partner){ 
-                $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                $amount =  auth()->user()->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
+                $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner );
             }
 
            

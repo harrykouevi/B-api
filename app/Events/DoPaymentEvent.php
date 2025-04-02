@@ -29,8 +29,8 @@ class DoPaymentEvent
             throw new InvalidArgumentException('Invalid payment information.');
         }
 
-        if (!is_numeric($paymentInfo['amount']) || $paymentInfo['amount'] <= 0) {
-            throw new InvalidArgumentException('Invalid amount.');
+        if (!is_numeric($paymentInfo['amount'])) {
+            throw new InvalidArgumentException('required amount.');
         }
 
         if (!is_int($paymentInfo['payer_wallet']) && !is_string($paymentInfo['payer_wallet']) && !($paymentInfo['payer_wallet'] instanceof Wallet) ) {

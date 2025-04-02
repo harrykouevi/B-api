@@ -78,8 +78,7 @@ class PaymentService
           
             // if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
             // if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $payer_wallet->id);
-
-            Notification::send([$user], new NewReceivedPayment($payment,$wallet));
+            if($amount != 0) Notification::send([$user], new NewReceivedPayment($payment,$wallet));
             return [$payment , $wallet] ;
         }
         return Null ;

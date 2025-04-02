@@ -139,7 +139,7 @@ class UserAPIController extends Controller
                 $partner = $affiliation->user;
                 if($partner){ 
                     // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
-                    $paymentInfo = ["amount"=>50,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
                     event(new DoPaymentEvent($paymentInfo));
                 }
 
@@ -148,6 +148,11 @@ class UserAPIController extends Controller
                     'sponsorship_at' => now(),
                 ]);
             }
+
+            //credité le wallet du client
+            $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            event(new DoPaymentEvent($paymentInfo));
+            
         
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->userRepository->model());
 

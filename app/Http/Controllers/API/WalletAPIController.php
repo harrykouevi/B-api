@@ -121,7 +121,7 @@ class WalletAPIController extends Controller
         try {
          
         
-            $resp = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? setting('customer_initial_amount') : setting('owner_initial_amount'),setting('app_default_wallet_id'),auth()->user());
+            $resp = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0 ,setting('app_default_wallet_id'),auth()->user());
 
             
         } catch (ValidationException $e) {

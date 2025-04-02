@@ -433,7 +433,27 @@ class AppSettingsTableSeeder extends Seeder
                 'key' => 'booking_price',
                 'value' => 200,
             ),
-
+            array(
+                'id' => 156,
+                'key' => 'owner_partener_rewards',
+                'value' => 0,
+            ),
+            array(
+                'id' => 157,
+                'key' => 'partener_rewards',
+                'value' => 0,
+            ),
+            
+            array(
+                'id' => 158,
+                'key' => 'referral_rewards',
+                'value' => 0,
+            ),
+            array(
+                'id' => 159,
+                'key' => 'owner_referral_rewards',
+                'value' => 0,
+            ),
            
         ));
 

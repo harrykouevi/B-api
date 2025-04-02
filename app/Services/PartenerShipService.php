@@ -95,8 +95,11 @@ class PartenerShipService
             'status' => 'success'
         ]);
 
-         // Attribue la récompense à la personne qui a utilisé un code d'affiliation
-        $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+
+
+        // Attribue la récompense à la personne qui a utilisé un code d'affiliation
+        $amount = auth()->user()->hasRole('customer') ? setting('referral_rewards') : setting('owner_referral_rewards') ;
+        $paymentInfo = ["amount"=> $amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
         event(new DoPaymentEvent($paymentInfo));
 
         return  $conversion ;
