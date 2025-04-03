@@ -71,14 +71,20 @@ class UserAPIController extends Controller
     {
         try {
             
-            // return $this->send($request->all(),422);
             $this->validate($request, [
                 'email' => 'nullable|email',
-                'phone_number' => 'required|max:255',
+                'phone_number' => 'nullable|max:255',
                 'password' => 'required',
+              
             ]);
-            if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
-                // Authentication passed...
+
+            // Determine whether the input is an email or phone number
+            if($request->has('email') ) $loginField =  'email' ;
+            $loginField = ($request->has('phone_number') && filter_var($request->input('phone_number'), FILTER_VALIDATE_EMAIL)) ? 'email' : 'phone_number';
+
+            if (auth()->attempt([$loginField => $request->input($loginField), 'password' => $request->input('password')])) {
+            // if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
+                // Authentication passed...   // Authentication passed...
                 $user = auth()->user();
                 $user->device_token = $request->input('device_token', '');
                 $user->save();
@@ -107,13 +113,20 @@ class UserAPIController extends Controller
 
     /**
      * Create a new user instance after a valid registration.
-     *
+     * for use of User::$rules_v2 it required an suppplement
+     * attribute version . if version is not given User::$rules wil be used
      * @param Request $request
      * @return JsonResponse
      */
     function register(Request $request): JsonResponse
     {
         try {
+            if(!$request->has('version') ){
+                $this->validate($request, User::$rules);
+            }else{
+                $this->validate($request, User::$rules_v2);
+            }
+
             $this->validate($request, User::$rules);
             $user = new User;
             $user->name = $request->input('name');

@@ -71,30 +71,37 @@ class UserAPIController extends Controller
 
     }
 
-    function login(Request $request): JsonResponse
-    {
-        try {
-            $this->validate($request, [
-                'email' => 'nullable|email',
-                'phone_number' => 'required|max:255',
-                'password' => 'required',
-            ]);
-            if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
-                // Authentication passed...
-                $user = auth()->user();
-                $user->device_token = $request->input('device_token', '');
-                $user->save();
-                return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
-            } else {
-                return $this->sendError(__('auth.failed'),401);
-            }
-        } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()),422);
-        } catch (Exception $e) {
-            return $this->sendError($e->getMessage(),401);
-        }
+    // function login(Request $request): JsonResponse
+    // {
+    //     try {
+    //         $this->validate($request, [
+    //             'email' => 'nullable|email',
+    //             'phone_number' => 'nullable|max:255',
+    //             'password' => 'required',
+              
+    //         ]);
 
-    }
+    //         // Determine whether the input is an email or phone number
+    //         if($request->has('email') ) $loginField =  'email' ;
+    //         $loginField = ($request->has('phone_number') && filter_var($request->input('phone_number'), FILTER_VALIDATE_EMAIL)) ? 'email' : 'phone_number';
+
+    //         if (auth()->attempt([$loginField => $request->input($loginField), 'password' => $request->input('password')])) {
+    //         // if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
+    //             // Authentication passed...
+    //             $user = auth()->user();
+    //             $user->device_token = $request->input('device_token', '');
+    //             $user->save();
+    //             return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
+    //         } else {
+    //             return $this->sendError(__('auth.failed'),401);
+    //         }
+    //     } catch (ValidationException $e) {
+    //         return $this->sendError(array_values($e->errors()),422);
+    //     } catch (Exception $e) {
+    //         return $this->sendError($e->getMessage(),401);
+    //     }
+
+    // }
 
     function user(Request $request): JsonResponse
     {
@@ -109,7 +116,8 @@ class UserAPIController extends Controller
 
     /**
      * Create a new user instance after a valid registration.
-     *
+     * for use of User::$rules_v2 it required an suppplement
+     * attribute version . if version is not given User::$rules wil be used
      * @param Request $request
      * @return JsonResponse
      */
@@ -117,8 +125,11 @@ class UserAPIController extends Controller
     {
         
         try {
-
-            $this->validate($request, User::$rules);
+            if(!$request->has('version') ){
+                $this->validate($request, User::$rules);
+            }else{
+                $this->validate($request, User::$rules_v2);
+            }
             
 
             $user = new User;
@@ -187,37 +198,7 @@ class UserAPIController extends Controller
     function settings(Request $request): JsonResponse
     {
         $settings = setting()->all();
-        // $settings = array_intersect_key($settings,
-        //     [
-        //         'default_tax' => '',
-        //         'default_currency' => '',
-        //         'default_currency_decimal_digits' => '',
-        //         'app_name' => '',
-        //         'salon_app_name' => '',
-        //         'currency_right' => '',
-        //         'enable_paypal' => '',
-        //         'enable_stripe' => '',
-        //         'enable_razorpay' => '',
-        //         'main_color' => '',
-        //         'main_dark_color' => '',
-        //         'second_color' => '',
-        //         'second_dark_color' => '',
-        //         'accent_color' => '',
-        //         'accent_dark_color' => '',
-        //         'scaffold_dark_color' => '',
-        //         'scaffold_color' => '',
-        //         'google_maps_key' => '',
-        //         'fcm_key' => '',
-        //         'mobile_language' => '',
-        //         'app_version' => '',
-        //         'enable_version' => '',
-        //         'distance_unit' => '',
-        //         'default_theme' => '',
-        //         'default_country_code' => '',
-        //         'enable_otp' => ''
-        //     ]
-        // );
-
+       
         if (!$settings) {
             return $this->sendError('Settings not found');
         }

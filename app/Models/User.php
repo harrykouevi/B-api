@@ -59,6 +59,31 @@ class User extends Authenticatable implements HasMedia
         'password' => 'required|string|min:5|confirmed',
     ];
 
+    /**
+     * Validation rules
+     *
+     * @var array
+     */
+    public static array $rules_v2 = [
+        'name' => 'required|string|max:255',
+        'email' => 'nullable|string|max:255|unique:users|required_without:phone_number',
+        'password' => 'required|string|min:5|confirmed',
+        'phone_number' => [
+            'nullable',
+            'max:255', 
+            'unique:users',
+            // function ($attribute, $value, $fail) {
+            //     // Supprimer l'indicatif (+225, +33, etc.) s'il y en a un
+            //     $cleanedPhone = preg_replace('/^\+\d{1,3}/', '', $value);
+                
+            //     // Vérifier si le premier chiffre après l'indicatif est 7, 8 ou 9
+            //     if (!preg_match('/^[789]\d+$/', $cleanedPhone)) {
+            //         $fail("Le numéro de téléphone doit commencer par 7, 8 ou 9 après l'indicatif.");
+            //     }
+            // },
+        ],
+    ];
+
     public $table = 'users';
     /**
      * The attributes that are mass assignable.
