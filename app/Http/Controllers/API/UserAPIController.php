@@ -10,6 +10,7 @@ namespace App\Http\Controllers\API;
 
 use App\Criteria\Users\SalonsCustomersCriteria;
 use App\Events\DoPaymentEvent;
+use App\Events\SendEmailOtpEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -17,6 +18,7 @@ use App\Repositories\CustomFieldRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\UploadRepository;
 use App\Repositories\UserRepository;
+use App\Services\OtpService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,9 +30,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
-
-
-
+use Illuminate\Support\Carbon;
 
 class UserAPIController extends Controller
 {
@@ -123,8 +123,11 @@ class UserAPIController extends Controller
         try {
             if(!$request->has('version') ){
                 $this->validate($request, User::$rules);
+                $registerwith = 'phone_number' ;
             }else{
                 $this->validate($request, User::$rules_v2);
+                 // Determine whether the input is an email or phone number
+                $registerwith = $request->has('email')?  'email' : 'phone_number' ;
             }
 
             $this->validate($request, User::$rules);
@@ -141,6 +144,9 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name','customer');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
+
+            if($registerwith == 'email') event(new SendEmailOtpEvent($user));
+
 
             // Récupère l'ID d'affiliation à partir du paramètre de requête
             if ($request->has('code_affiliation') && $request->input('code_affiliation') != ""  ) { 
@@ -277,6 +283,52 @@ class UserAPIController extends Controller
             return $this->sendError("Email not configured in your admin panel settings");
         }
     }
+
+    /**
+     * Send otp code via email.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function sendEmailVerificationOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|unique:users,email'
+        ]);
+
+        $user = $this->userRepository->findByField('email', $request->input('email'))->first();
+        if (!$user) {
+            return $this->sendError('it seems your email do not exist in our server');
+        }
+
+        (new OtpService())->generate($user) ;
+
+        return response()->json(['message' => 'OTP envoyé pour la vérification de l\'email.']);
+    }
+
+    public function verifyEmailOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|digits:5',
+        ]);
+
+        $user = $this->userRepository->findWhere([  'email' => $request->input('email') , 
+                                            'otp'=> $request->input('otp') , 
+                                            'otp_expires_at' =>  ['otp_expires_at', '>', now()],
+                                            ])->first() ;
+    
+        if (!$user) {
+            return $this->sendError('OTP invalide ou expiré.');
+            // return response()->json(['message' => 'OTP invalide ou expiré.'], 400);
+        }
+
+        // Mark email as verified
+        $user = $this->userRepository->update(["email_verified_at" =>  Carbon::now()] , $user->id); 
+
+        return response()->json(['message' => 'Email vérifié avec succès.']);
+    }
+
 
     /**
      * Display a listing of the employees.

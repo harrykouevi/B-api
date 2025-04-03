@@ -10,6 +10,7 @@ namespace App\Http\Controllers\API\SalonOwner;
 
 use App\Criteria\Users\SalonsCustomersCriteria;
 use App\Events\DoPaymentEvent;
+use App\Events\SendEmailOtpEvent ;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -127,8 +128,11 @@ class UserAPIController extends Controller
         try {
             if(!$request->has('version') ){
                 $this->validate($request, User::$rules);
+                $registerwith = 'phone_number' ;
             }else{
                 $this->validate($request, User::$rules_v2);
+                 // Determine whether the input is an email or phone number
+                $registerwith = $request->has('email')?  'email' : 'phone_number' ;
             }
             
 
@@ -145,6 +149,8 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
+
+            if($registerwith == 'email') event(new SendEmailOtpEvent($user));
           
             if ($request->has('code_affiliation') && $request->input('code_affiliation') != ""  ) { 
                 $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;

@@ -97,7 +97,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
     Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
-    // Route::post('affiliate/conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
+
+    Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
+    Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);
+    
+// Route::post('affiliate/conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
 
     Route::group(['middleware' => ['role:salon owner']], function () {
         Route::prefix('salon_owner')->group(function () {
