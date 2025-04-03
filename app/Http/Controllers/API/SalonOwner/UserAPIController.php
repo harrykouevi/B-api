@@ -184,6 +184,64 @@ class UserAPIController extends Controller
         }
     }
 
+    function v2_register(Request $request): JsonResponse
+    {
+        
+        try {
+            
+                $this->validate($request, User::$rules_v2);
+                 // Determine whether the input is an email or phone number
+                $registerwith = $request->has('email')?  'email' : 'phone_number' ;
+            
+
+            $user = new User;
+            $user->name = $request->input('name');
+            $user->email = $request->input('email');
+            $user->phone_number = $request->input('phone_number');
+            $user->phone_verified_at = $request->input('phone_verified_at');
+            $user->device_token = $request->input('device_token', '');
+            $user->password = Hash::make($request->input('password'));
+            $user->api_token = Str::random(60);
+            $user->save();
+
+            $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
+            $defaultRoles = $defaultRoles->pluck('name')->toArray();
+            $user->assignRole($defaultRoles);
+
+            if($registerwith == 'email') event(new SendEmailOtpEvent($user));
+          
+            if ($request->has('code_affiliation') && $request->input('code_affiliation') != ""  ) { 
+                $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
+                
+                $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
+                // Attribue la récompense au partenaire
+                $partner = $affiliation->user;
+                if($partner){ 
+                    // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                    $paymentInfo = ["amount"=> setting('owner_partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    event(new DoPaymentEvent($paymentInfo));
+                }
+
+                $user->update([
+                    'sponsorship' => $affiliation,
+                    'sponsorship_at' => now(),
+                ]);
+            }
+        
+            //credité le wallet du coiffeur
+            $paymentInfo = ["amount"=>setting('owner_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            event(new DoPaymentEvent($paymentInfo));
+            
+            
+            return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
+
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
 
 
     function logout(Request $request): JsonResponse
