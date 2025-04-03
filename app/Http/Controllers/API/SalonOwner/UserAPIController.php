@@ -189,9 +189,9 @@ class UserAPIController extends Controller
         
         try {
             
-                $this->validate($request, User::$rules_v2);
-                 // Determine whether the input is an email or phone number
-                $registerwith = $request->has('email')?  'email' : 'phone_number' ;
+            $this->validate($request, User::$rules_v2);
+                // Determine whether the input is an email or phone number
+            $registerwith = $request->has('email')?  'email' : 'phone_number' ;
             
 
             $user = new User;
