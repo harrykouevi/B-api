@@ -56,6 +56,7 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('register', [UserAPIController::class, 'register']);
+Route::post('v2/register', [UserAPIController::class, 'v2_register']);
 Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
 Route::get('user', 'API\UserAPIController@user');
 Route::get('logout', 'API\UserAPIController@logout');

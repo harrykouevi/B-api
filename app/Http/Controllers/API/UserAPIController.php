@@ -189,6 +189,81 @@ class UserAPIController extends Controller
         return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
     }
 
+    /**
+     * Create a new user instance after a valid registration.
+     * for use of User::$rules_v2 it required an suppplement
+     * attribute version . if version is not given User::$rules wil be used
+     * @param Request $request
+     * @return JsonResponse
+     */
+    function v2_register(Request $request): JsonResponse
+    {
+        try {
+          
+                $this->validate($request, User::$rules_v2);
+                 // Determine whether the input is an email or phone number
+                $registerwith = $request->has('email')?  'email' : 'phone_number' ;
+            
+
+            $this->validate($request, User::$rules);
+            $user = new User;
+            $user->name = $request->input('name');
+            $user->email = $request->input('email');
+            $user->phone_number = $request->input('phone_number');
+            $user->phone_verified_at = $request->input('phone_verified_at');
+            $user->device_token = $request->input('device_token', '');
+            $user->password = Hash::make($request->input('password'));
+            $user->api_token = Str::random(60);
+            $user->save();
+
+            $defaultRoles = $this->roleRepository->findByField('name','customer');
+            $defaultRoles = $defaultRoles->pluck('name')->toArray();
+            $user->assignRole($defaultRoles);
+
+            if($registerwith == 'email') event(new SendEmailOtpEvent($user));
+
+
+            // Récupère l'ID d'affiliation à partir du paramètre de requête
+            if ($request->has('code_affiliation') && $request->input('code_affiliation') != ""  ) { 
+                $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
+                
+                $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
+                
+                // Attribue la récompense au partenaire
+                $partner = $affiliation->user;
+                if($partner){ 
+                    // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
+                    $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    event(new DoPaymentEvent($paymentInfo));
+                }
+
+                $user->update([
+                    'sponsorship' => $affiliation,
+                    'sponsorship_at' => now(),
+                ]);
+            }
+
+            //credité le wallet du client
+            $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            event(new DoPaymentEvent($paymentInfo));
+            
+        
+            $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->userRepository->model());
+
+            foreach (getCustomFieldsValues($customFields, $request) as $value) {
+                $user->customFieldsValues()
+                    ->updateOrCreate(['custom_field_id' => $value['custom_field_id']], $value);
+            }
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+
+
+        return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
+    }
+
     function logout(Request $request): JsonResponse
     {
         $user = $this->userRepository->findByField('api_token', $request->input('api_token'))->first();
