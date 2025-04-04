@@ -204,7 +204,9 @@ class UserAPIController extends Controller
     function v2_register(Request $request): JsonResponse
     {
         try {
-          
+            // met 'email' a null si c'est une chaîne vide
+            if ($request->input('email') === '') $request->merge(['email' => null]);
+            
             $this->validate($request, User::$rules_v2);
                 // Determine whether the input is an email or phone number
             $registerwith = $request->has('email')?  'email' : 'phone_number' ;
