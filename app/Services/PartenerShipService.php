@@ -98,7 +98,7 @@ class PartenerShipService
 
 
         // Attribue la récompense à la personne qui a utilisé un code d'affiliation
-        $amount = auth()->user()->hasRole('customer') ? setting('referral_rewards') : setting('owner_referral_rewards') ;
+        $amount = $user->hasRole('customer') ? setting('referral_rewards') : setting('owner_referral_rewards') ;
         $paymentInfo = ["amount"=> $amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
         event(new DoPaymentEvent($paymentInfo));
 
