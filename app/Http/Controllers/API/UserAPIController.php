@@ -88,7 +88,6 @@ class UserAPIController extends Controller
                     $loginField =  'phone_number' ;
                 } 
             } 
-            return $this->sendError([$loginField => $request->input($loginField), 'password' => $request->input('password')],401);
             if (auth()->attempt([$loginField => $request->input($loginField), 'password' => $request->input('password')])) {
             // if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
                 // Authentication passed...   // Authentication passed...
