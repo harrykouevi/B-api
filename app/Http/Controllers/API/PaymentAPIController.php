@@ -174,7 +174,7 @@ class PaymentAPIController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($payment->toArray(), __('lang.saved_successfully', ['operator' => __('lang.payment')]));
+        return $this->sendResponse(!is_null($payment)? $payment->toArray() : $payment, __('lang.saved_successfully', ['operator' => __('lang.payment')]));
     }
 
     public function byMonth(): JsonResponse
