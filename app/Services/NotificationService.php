@@ -27,11 +27,7 @@ class NotificationService extends Mailable
             <p>Votre code de vérification est : <strong>$user->otp</strong></p>
             <p>Ce code expirera dans 10 minutes.</p>
             <p>Merci !</p>
-            <p>Cordialement,<br>L'équipe de Votre Entreprise</p>
-            [Votre nom]  
-            [Votre position]  
-            [Nom de l'entreprise ou organisation]  
-            [Coordonnées]  
+            <p>Cordialement,<br>L'équipe de  ". setting('app_name', '')."</p>
         ";
         // email admin
         Mail::html($emailContent, function ($mail) use ($user) {
