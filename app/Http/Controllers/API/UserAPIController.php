@@ -79,8 +79,13 @@ class UserAPIController extends Controller
             ]);
 
             // Determine whether the input is an email or phone number
-            if($request->has('email') ) $loginField =  'email' ;
-            $loginField = ($request->has('phone_number') && filter_var($request->input('phone_number'), FILTER_VALIDATE_EMAIL)) ? 'email' : 'phone_number';
+            if($request->has('email') && !is_null($request->input('email')) ) $loginField =  'email' ;
+            if($request->has('phone_number') && !is_null($request->input('phone_number')) && filter_var($request->input('phone_number'), FILTER_VALIDATE_EMAIL)){
+                $request->merge(['email' => $request->input('phone_number')]) ;
+                $loginField =  'email' ;
+            } else{ 
+                $loginField =  'phone_number' ;
+            } 
 
             if (auth()->attempt([$loginField => $request->input($loginField), 'password' => $request->input('password')])) {
             // if (auth()->attempt(['phone_number' => $request->input('phone_number'), 'password' => $request->input('password')])) {
