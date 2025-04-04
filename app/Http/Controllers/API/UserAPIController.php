@@ -205,7 +205,7 @@ class UserAPIController extends Controller
     {
         try {
             // met 'email' a null si c'est une chaîne vide
-            if ($request->input('email') === '')  $request->remove('email');
+            if ($request->input('email') === '')   $request->request->remove('email');
             
             $this->validate($request, User::$rules_v2);
                 // Determine whether the input is an email or phone number
