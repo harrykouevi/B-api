@@ -93,6 +93,8 @@ class User extends Authenticatable implements HasMedia
     public $fillable = [
         'name',
         'email',
+        'address',
+        'bio',
         'phone_number',
         'phone_verified_at',
         'sponsorship',
