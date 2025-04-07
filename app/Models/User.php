@@ -56,7 +56,7 @@ class User extends Authenticatable implements HasMedia
         'name' => 'required|string|max:255',
         'email' => 'nullable|string|max:255|unique:users',
         'phone_number' => 'required|max:255|unique:users',
-        'password' => 'required|string|min:5|confirmed',
+        'password' => 'required|string|min:3|confirmed',
     ];
 
     /**
@@ -66,7 +66,7 @@ class User extends Authenticatable implements HasMedia
      */
     public static array $rules_v2 = [
         'name' => 'required|string|max:255',
-        'password' => 'required|string|min:5|confirmed',
+        'password' => 'required|string|min:3|confirmed',
         'email' => 'nullable|string|max:255|required_without:phone_number|unique:users',
         'phone_number' => [
             'nullable',
