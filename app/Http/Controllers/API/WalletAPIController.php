@@ -13,6 +13,7 @@ use App\Criteria\Wallets\CurrentCurrencyWalletsCriteria;
 use App\Criteria\Wallets\EnabledCriteria;
 use App\Criteria\Wallets\WalletsOfUserCriteria;
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
 use App\Models\Wallet;
 use App\Repositories\CurrencyRepository;
 use App\Repositories\WalletRepository;
@@ -181,6 +182,28 @@ class WalletAPIController extends Controller
             if ($this->walletRepository->delete($id) < 1) {
                 return $this->sendError('Wallet not deleted');
             }
+        } catch (RepositoryException $e) {
+            return $this->sendError($e->getMessage());
+        }
+
+        return $this->sendResponse(true, __('lang.deleted_successfully', ['operator' => __('lang.wallet')]));
+
+    }
+
+
+    /**
+     * Remove the specified Favorite from storage.
+     *
+     * @param $id
+     *
+     * @return JsonResponse
+     */
+    public function sendNotification() : JsonResponse
+    {
+        try {
+           
+                Notification::send(auth()->user(), "yes yes yes yes");
+          
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
