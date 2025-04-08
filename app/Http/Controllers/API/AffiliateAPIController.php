@@ -225,6 +225,7 @@ class AffiliateAPIController extends Controller
                     'sponsorship' => $affiliation,
                     'sponsorship_at' => now(),
                 ],auth()->user()->id);
+                
             }
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
