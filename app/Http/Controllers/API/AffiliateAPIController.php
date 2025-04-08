@@ -32,6 +32,7 @@ use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /**
@@ -231,6 +232,10 @@ class AffiliateAPIController extends Controller
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
            
+             // Gestion de l'exception
+             Log::channel('listeners_transactions')->error('Erreur lors de l\'affiliation à l\'utilisateur #' , [
+                'exception' => $e,
+            ]);
             return $this->sendError($e->getMessage());
         }
         
