@@ -211,18 +211,21 @@ class AffiliateAPIController extends Controller
             $conversion = $this->partenerShipService->proceedPartenerShip(auth()->user(),$affiliation) ;
 
             
-            // Attribue la récompense au partenaire
-            $partner = $affiliation->user;
-            if($partner){ 
-                $amount =  auth()->user()->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
-                $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner );
-            }
+           
+            if( $conversion ){ 
+                 // Attribue la récompense au partenaire
+                 $partner = $affiliation->user;
+                if( $conversion && $partner){ 
+                    $amount =  auth()->user()->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
+                    $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner );
+                }
 
            
-            $this->userRepository->update([
-                'sponsorship' => $affiliation,
-                'sponsorship_at' => now(),
-            ],auth()->user()->id);
+                $this->userRepository->update([
+                    'sponsorship' => $affiliation,
+                    'sponsorship_at' => now(),
+                ],auth()->user()->id);
+            }
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
            
