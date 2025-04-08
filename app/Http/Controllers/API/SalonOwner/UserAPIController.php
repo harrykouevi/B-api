@@ -224,10 +224,10 @@ class UserAPIController extends Controller
                     event(new DoPaymentEvent($paymentInfo));
                 }
 
-                $user->update([
-                    'sponsorship' => $affiliation,
-                    'sponsorship_at' => now(),
-                ]);
+                // $user->update([
+                //     'sponsorship' => $affiliation,
+                //     'sponsorship_at' => now(),
+                // ]);
             }
         
             //credité le wallet du coiffeur

@@ -85,7 +85,7 @@ class PartenerShipService
         $affiliation =$this->affiliateRepository->update($input, $affiliation->id);
 
         if ($user->id == $affiliation->user_id) throw new \Exception("unprocessable partenership") ;
-        if ($affiliation->user->sponsorhip_at != Null && $user->id == $affiliation->user->sponsorhip->user_id) throw new \Exception("unprocessable partenership") ;
+        //if ($affiliation->user->sponsorhip_at != Null && $user->id == $affiliation->user->sponsorhip->user_id) throw new \Exception("unprocessable partenership") ;
 
         // Met à jour la conversion en tant que réussie
         //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
@@ -95,7 +95,12 @@ class PartenerShipService
             'status' => 'success'
         ]);
 
-        dd($affiliation->user , $user) ;
+        $user->update([
+            'sponsorship' => $affiliation,
+            'sponsorship_at' => now(),
+        ]);
+
+       
 
         // Attribue la récompense à la personne qui a utilisé un code d'affiliation
         $amount = $user->hasRole('customer') ? setting('referral_rewards') : setting('owner_referral_rewards') ;
