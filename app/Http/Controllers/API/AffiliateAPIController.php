@@ -32,7 +32,7 @@ use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
-
+use InvalidArgumentException;
 
 /**
  * Class AffiliateAPIController
@@ -208,9 +208,10 @@ class AffiliateAPIController extends Controller
         try {
             // if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
+            if( is_null($affiliation) ) throw new InvalidArgumentException('parrainage do not exist');
+
             $conversion = $this->partenerShipService->proceedPartenerShip(auth()->user(),$affiliation) ;
 
-            
            
             if( $conversion ){ 
                 // Attribue la récompense au partenaire
@@ -225,7 +226,7 @@ class AffiliateAPIController extends Controller
                     'sponsorship' => $affiliation,
                     'sponsorship_at' => now(),
                 ],auth()->user()->id);
-                
+
             }
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
         } catch (Exception $e) {
