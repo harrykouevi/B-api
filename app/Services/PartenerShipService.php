@@ -95,7 +95,7 @@ class PartenerShipService
             'status' => 'success'
         ]);
 
-
+        dd($affiliation->user , $user) ;
 
         // Attribue la récompense à la personne qui a utilisé un code d'affiliation
         $amount = $user->hasRole('customer') ? setting('referral_rewards') : setting('owner_referral_rewards') ;
