@@ -29,6 +29,7 @@ class UploadRequest extends FormRequest
      */
     public function rules(): array
     {
+        
         return [
             'file' => 'image|mimes:jpeg,png,jpg,gif,svg',
         ];

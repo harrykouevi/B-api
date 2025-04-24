@@ -223,10 +223,10 @@ class AffiliateAPIController extends Controller
                 }
 
            
-                $this->userRepository->update([
-                    'sponsorship' => $affiliation,
-                    'sponsorship_at' => now(),
-                ],auth()->user()->id);
+                // $this->userRepository->update([
+                //     'sponsorship' => $affiliation,
+                //     'sponsorship_at' => now(),
+                // ],auth()->user()->id);
 
             }
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));

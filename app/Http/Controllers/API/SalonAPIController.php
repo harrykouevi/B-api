@@ -20,6 +20,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
@@ -135,6 +136,7 @@ class SalonAPIController extends Controller
      */
     public function store(CreateSalonRequest $request): JsonResponse
     {
+        
         try {
             $input = $request->all();
             if (auth()->user()->hasAnyRole(['salon owner', 'customer'])) {
@@ -143,6 +145,7 @@ class SalonAPIController extends Controller
                 $input['featured'] = 0;
                 $input['available'] = 1;
             }
+           
             $input['availability_range'] = setting('default_distance');
             $salon = $this->salonRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
@@ -152,10 +155,19 @@ class SalonAPIController extends Controller
                     $mediaItem->copy($salon, 'image');
                 }
             }
+           
+           
+        } catch (ValidationException $e) {
+           
+            return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
+           
+            return $this->sendError($e->getMessage() , 500);
         }
-        return $this->sendResponse($salon->toArray(), __('lang.saved_successfully', ['operator' => __('lang.salon')]));
+       
+        // return $this->sendResponse($salon, __('lang.saved_successfully', ['operator' => __('lang.salon')]));
+        return $this->sendResponse($salon, 'User retrieved successfully');
+
     }
 
     /**

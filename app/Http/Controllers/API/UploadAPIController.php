@@ -53,7 +53,7 @@ class UploadAPIController extends Controller
     public function clear(UploadRequest $request): JsonResponse
     {
         $input = $request->all();
-        if (!isset($input['uuid'])) {
+        if (! $request->has('uuid')) {
             return $this->sendResponse(false, 'Media not found');
         }
         try {

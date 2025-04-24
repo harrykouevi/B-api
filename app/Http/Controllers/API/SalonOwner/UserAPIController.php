@@ -11,6 +11,7 @@ namespace App\Http\Controllers\API\SalonOwner;
 use App\Criteria\Users\SalonsCustomersCriteria;
 use App\Events\DoPaymentEvent;
 use App\Events\SendEmailOtpEvent ;
+use App\Exceptions\InvalidPaymentInfoException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -29,9 +30,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
-
-
-
+use Illuminate\Support\Facades\Log;
 
 class UserAPIController extends Controller
 {
@@ -44,10 +43,7 @@ class UserAPIController extends Controller
     private RoleRepository $roleRepository;
     private CustomFieldRepository $customFieldRepository;
 
-    /**
-     * @var PaymentService
-     */
-    private PaymentService $paymentService;
+ 
 
       /**
      * @var PartenerShipService
@@ -59,14 +55,13 @@ class UserAPIController extends Controller
      *
      * @return void
      */
-    public function __construct(PaymentService $paymentService  ,PartenerShipService $partenerShipService ,UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
+    public function __construct(PartenerShipService $partenerShipService ,UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
     {
         parent::__construct();
         $this->userRepository = $userRepository;
         $this->uploadRepository = $uploadRepository;
         $this->roleRepository = $roleRepository;
         $this->customFieldRepository = $customFieldRepo;
-        $this->paymentService =  $paymentService ;
         $this->partenerShipService =  $partenerShipService ;
 
 
@@ -175,13 +170,21 @@ class UserAPIController extends Controller
             event(new DoPaymentEvent($paymentInfo));
             
             
-            return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
+            
 
         } catch (ValidationException $e) {
+           
             return $this->sendError(array_values($e->errors()),422);
+        } catch (InvalidPaymentInfoException $e) {
+            // On logue l'erreur, mais on ne fait pas échouer l'inscription
+            Log::error("error code :{$e->getStatusCode()} 'Erreur lors du paiement à l\'utilisateur #ID {$user->id} : {$e->getMessage()}" );
+           
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
+            return $this->sendError($e->getMessage() , 500);
         }
+
+        return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
+
     }
 
     function v2_register(Request $request): JsonResponse
@@ -235,13 +238,20 @@ class UserAPIController extends Controller
             event(new DoPaymentEvent($paymentInfo));
             
             
-            return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
+           
 
         } catch (ValidationException $e) {
+           
             return $this->sendError(array_values($e->errors()),422);
+        } catch (InvalidPaymentInfoException $e) {
+            // On logue l'erreur, mais on ne fait pas échouer l'inscription
+            Log::error("error code :{$e->getStatusCode()} 'Erreur lors du paiement à l\'utilisateur #ID {$user->id} : {$e->getMessage()}" );
+           
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
+            return $this->sendError($e->getMessage() , 500);
         }
+
+        return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
     }
 
 

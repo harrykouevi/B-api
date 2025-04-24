@@ -47,7 +47,7 @@ class PaymentService
         $this->walletTransactionRepository = $walletTransactionRepository;
         $this->paymentRepository = $paymentRepository;
         $this->currencyRepository = $currencyRepository ;
-        $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
+        $this->currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
     }
 
     /**
@@ -161,12 +161,13 @@ class PaymentService
      */
     private function createWallet(User $user,float $amount ):Wallet|Null
     {
-        $currency = $this->currency;
-        if ($currency) {
-            
+        
+        
+        if (!is_null($this->currency)) {
+           
             $input = [];
             $input['name'] = setting('default_wallet_name')?? "-";
-            $input['currency'] = $currency;
+            $input['currency'] = $this->currency;
             $input['user_id'] = $user->id;
             $input['balance'] = $amount;
             $input['enabled'] = 1;

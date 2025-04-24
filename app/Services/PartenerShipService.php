@@ -50,7 +50,7 @@ class PartenerShipService
         $this->conversionRepository = $conversionRepository;
         $this->paymentRepository = $paymentRepository;
         $this->currencyRepository = $currencyRepository ;
-        $this->currency = $this->currencyRepository->find(setting('default_currency_id'));
+        $this->currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
     }
 
 

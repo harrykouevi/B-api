@@ -11,6 +11,7 @@ namespace App\Http\Controllers\API;
 use App\Criteria\Users\SalonsCustomersCriteria;
 use App\Events\DoPaymentEvent;
 use App\Events\SendEmailOtpEvent;
+use App\Exceptions\InvalidPaymentInfoException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
@@ -31,6 +32,8 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+
 
 class UserAPIController extends Controller
 {
@@ -126,6 +129,7 @@ class UserAPIController extends Controller
      */
     function register(Request $request): JsonResponse
     {
+     
         try {
             if(!$request->has('version') ){
                 $this->validate($request, User::$rules);
@@ -186,9 +190,14 @@ class UserAPIController extends Controller
             }
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
+        } catch (InvalidPaymentInfoException $e) {
+            // On logue l'erreur, mais on ne fait pas échouer l'inscription
+            Log::error("error code :{$e->getStatusCode()} 'Erreur lors du paiement à l\'utilisateur #ID {$user->id} : {$e->getMessage()}" );
+           
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
+            return $this->sendError($e->getMessage() , 500);
         }
+
 
 
         return $this->sendResponse($user->load('roles'), 'User retrieved successfully');
@@ -225,7 +234,6 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name','customer');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
-
             if($registerwith == 'email') event(new SendEmailOtpEvent($user));
 
 
@@ -241,6 +249,7 @@ class UserAPIController extends Controller
                     // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
                     $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
                     event(new DoPaymentEvent($paymentInfo));
+                    
                 }
 
                 $user->update([
@@ -261,9 +270,14 @@ class UserAPIController extends Controller
                     ->updateOrCreate(['custom_field_id' => $value['custom_field_id']], $value);
             }
         } catch (ValidationException $e) {
+           
             return $this->sendError(array_values($e->errors()),422);
+        } catch (InvalidPaymentInfoException $e) {
+            // On logue l'erreur, mais on ne fait pas échouer l'inscription
+            Log::error("error code :{$e->getStatusCode()} 'Erreur lors du paiement à l\'utilisateur #ID {$user->id} : {$e->getMessage()}" );
+           
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
+            return $this->sendError($e->getMessage() , 500);
         }
 
 

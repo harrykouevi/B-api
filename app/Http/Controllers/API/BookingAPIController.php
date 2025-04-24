@@ -143,7 +143,6 @@ class BookingAPIController extends Controller
      *
      * @return JsonResponse
      */
-    /** @noinspection PhpUndefinedFieldInspection */
     public function store(Request $request): JsonResponse
     {
         try {
@@ -173,7 +172,6 @@ class BookingAPIController extends Controller
                     $input['coupon'] = $coupon->getValue($input['e_services']);
                 }
             }
-
             $taxes = $salon->taxes;
             $input['salon'] = $salon;
             $input['taxes'] = $taxes;
@@ -185,11 +183,11 @@ class BookingAPIController extends Controller
 
             $booking = $this->bookingRepository->create($input);
             Notification::send($salon->users, new NewBooking($booking));
-
         } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()));
-        } catch (ValidatorException|ModelNotFoundException|Exception $e) {
-            return $this->sendError($e->getMessage());
+           
+            return $this->sendError(array_values($e->errors()),422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage() , 500);
         }
 
         return $this->sendResponse($booking->toArray(), __('lang.saved_successfully', ['operator' => __('lang.booking')]));

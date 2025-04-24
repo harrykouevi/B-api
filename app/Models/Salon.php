@@ -236,7 +236,9 @@ class Salon extends Model implements HasMedia, Castable
      */
     public function getClosedAttribute(): bool
     {
-        return !$this->accepted || !$this->attributes['available'] || $this->openingHours()->isClosed();
+        $isAvailable = array_key_exists('available', $this->attributes) ? $this->attributes['available'] : false;
+
+        return !$this->accepted || !$isAvailable || $this->openingHours()->isClosed();
     }
 
     public function openingHours(): OpeningHours

@@ -18,6 +18,7 @@ use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController
 
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
+use App\Http\Controllers\API\UploadAPIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,7 +33,7 @@ use App\Http\Controllers\API\PaymentAPIController;
 
 
 Route::prefix('salon_owner')->group(function () {
-    // Route::post('login', 'API\SalonOwner\UserAPIController@login')->name('api.login');;
+    // Route::post('login', 'API\SalonOwner\UserAPIController@login')->name('api.login');
     Route::post('register', [UOwnerAPIController::class,'register']);
     Route::post('v2/register', [UOwnerAPIController::class,'v2_register']);
     Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
@@ -103,7 +104,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
     Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);
     
-// Route::post('affiliate/conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
+    Route::post('affiliate/conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
 
     Route::group(['middleware' => ['role:salon owner']], function () {
         Route::prefix('salon_owner')->group(function () {
@@ -117,7 +118,7 @@ Route::middleware('auth:api')->group(function () {
         'store', 'update', 'destroy'
     ]);
     Route::post('uploads/store', 'API\UploadAPIController@store');
-    Route::post('uploads/clear', 'API\UploadAPIController@clear');
+    Route::post('uploads/clear',  [UploadAPIController::class ,'clear']);
     Route::post('users/{user}', 'API\UserAPIController@update');
     Route::delete('users', 'API\UserAPIController@destroy');
 
