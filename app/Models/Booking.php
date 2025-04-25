@@ -218,7 +218,7 @@ class Booking extends Model
 
     public function getAtSalonAttribute(): bool
     {
-        return $this->address->id == $this->salon->address->id;
+        return $this->address->id == ( is_null($this->salon->address)? $this->salon->address_id : $this->salon->address->id ) ;
     }
 
     /**
