@@ -22,7 +22,7 @@ class InvalidPaymentInfoException extends Exception
         parent::__construct($message, $this->status);
     }
 
-    protected function validate(array $paymentInfo): string
+    protected function validate(array $paymentInfo)
     {
         if (!array_key_exists('amount',$paymentInfo) || !array_key_exists("payer_wallet",$paymentInfo) || !array_key_exists('user',$paymentInfo)) {
             return 'Invalid payment information. Missing required fields.';
@@ -44,7 +44,7 @@ class InvalidPaymentInfoException extends Exception
             return 'User must be a valid User object.';
         }
 
-        return 'Unknown error with payment information.';
+        // return 'Unknown error with payment information.';
     }
 
     public function getStatusCode(): int
