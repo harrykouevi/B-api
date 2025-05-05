@@ -44,7 +44,17 @@ class InvalidPaymentInfoException extends Exception
             return 'User must be a valid User object.';
         }
 
-        // return 'Unknown error with payment information.';
+        // Aucune erreur
+        return null;
+    }
+
+    // Dans InvalidPaymentInfoException.php
+    public static function check(array $paymentInfo): void
+    {
+        $instance = new self($paymentInfo);
+        if ($instance->getMessage()) {
+            throw $instance;
+        }
     }
 
     public function getStatusCode(): int

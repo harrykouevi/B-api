@@ -43,8 +43,7 @@ class DoPaymentEvent
         // if (!($paymentInfo['user'] instanceof User)) {
         //     throw new Exception('User must be an object.');
         // }
-        // Cette ligne va valider et throw si problème
-        throw new InvalidPaymentInfoException($paymentInfo);
+        InvalidPaymentInfoException::check($paymentInfo);
 
         $this->amount = (int) $paymentInfo['amount'];
         $this->payer_wallet = $paymentInfo['payer_wallet'];
