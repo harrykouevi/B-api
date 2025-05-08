@@ -31,7 +31,6 @@ use App\Http\Controllers\API\UploadAPIController;
 |
 */
 
-
 Route::prefix('salon_owner')->group(function () {
     // Route::post('login', 'API\SalonOwner\UserAPIController@login')->name('api.login');
     Route::post('register', [UOwnerAPIController::class,'register']);
@@ -117,7 +116,7 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('salons', SalonAPIController::class)->only([
         'store', 'update', 'destroy'
     ]);
-    Route::post('uploads/store', 'API\UploadAPIController@store');
+    Route::post('uploads/store', [UploadAPIController::class ,'store']);
     Route::post('uploads/clear',  [UploadAPIController::class ,'clear']);
     Route::post('users/{user}', 'API\UserAPIController@update');
     Route::delete('users', 'API\UserAPIController@destroy');

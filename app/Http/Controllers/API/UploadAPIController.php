@@ -13,6 +13,7 @@ use App\Http\Requests\UploadRequest;
 use App\Repositories\UploadRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Prettus\Validator\Exceptions\ValidatorException;
 
 class UploadAPIController extends Controller
@@ -36,6 +37,10 @@ class UploadAPIController extends Controller
     public function store(UploadRequest $request): JsonResponse
     {
         $input = $request->all();
+        // Gestion de l'exception
+        Log::channel('listeners_transactions')->error('Erreur at upload files #' , [
+            'exception' => $request->all(),
+        ]);
         try {
             $upload = $this->uploadRepository->create($input);
             $upload->addMedia($input['file'])
