@@ -1,4 +1,4 @@
-<?phpAdd commentMore actions
+<?php
 
 namespace Database\Seeders;
 
