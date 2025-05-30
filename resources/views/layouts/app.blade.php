@@ -52,6 +52,7 @@
                     {!! Form::open(['url' => ['settings/updateLanguage'], 'method' => 'patch','id'=>'languages-form']) !!}
                     {!!  Form::hidden('locale',app()->getLocale(),['id'=>'current-language'])!!}
                     @foreach(getAvailableLanguages() as $locale => $lang)
+                        
                         <a href="#" class="dropdown-item @if(app()->getLocale() == $locale) active @endif" onclick="changeLanguage('{{$locale}}')">
                             <i class="fas fa-circle mr-2"></i> {!! __($lang) !!}
                         </a>
@@ -80,8 +81,8 @@
     </nav>
 
     <!-- Left side column. contains the logo and sidebar -->
-@include('layouts.sidebar')
-<!-- Content Wrapper. Contains page content -->
+    @include('layouts.sidebar')
+    <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
         @yield('content')
     </div>
@@ -91,7 +92,7 @@
         <div class="float-sm-right d-none d-sm-block">
             <b>Version</b> {{implode('.',str_split(substr(config('installer.currentVersion','v100'),1,3)))}}
         </div>
-        <strong>Copyright © {{date('Y')}} <a href="{{url('/')}}">{{setting('app_name')}}</a>.</strong> All rights reserved.
+        <strong>Copyright © {{date('Y')}} <a href="{{url('/')}}">{{setting('app_name')}}</a>.</strong> {{ trans('lang.app_rights_reserved') }} .
     </footer>
 
 </div>

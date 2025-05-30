@@ -1,10 +1,12 @@
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-{{setting('theme_contrast')}}-{{setting('theme_color')}} shadow">
-    <!-- Brand Logo -->
-    <a href="{{url('dashboard')}}" class="brand-link border-bottom-0 {{setting('logo_bg_color','bg-white')}}">
-        <img src="{{$app_logo ?? ''}}" alt="{{setting('app_name')}}" class="brand-image">
-        <span class="brand-text font-weight-light">{{setting('app_name')}}</span> </a>
-
+     <!-- Brand Logo (statique en haut) -->
+    <div class="brand-link border-bottom-0 {{setting('logo_bg_color','bg-white')}} flex-shrink-0">
+        <a href="{{url('dashboard')}}" class="d-flex align-items-center">
+            <img src="{{$app_logo ?? ''}}" alt="{{setting('app_name')}}" class="brand-image me-2">
+            <span class="brand-text font-weight-light">{{setting('app_name')}}</span>
+        </a>
+    </div>
     <!-- Sidebar -->
     <div class="sidebar">
         <!-- Sidebar Menu -->

@@ -28,7 +28,6 @@ class Authenticate extends Middleware
             $this->authenticate($request, $guards);
             return $next($request);
         } catch (AuthenticationException $e) {
-            
             if ($request->ajax()) {
                 return response()->json(['error' => "Not authenticated"], 401);
             } else {
@@ -47,6 +46,6 @@ class Authenticate extends Middleware
      */
     protected function redirectTo(Request $request): string|null
     {
-        return $request->expectsJson() ? null : route('api.login');
+        return $request->expectsJson() ? null : route('login');
     }
 }

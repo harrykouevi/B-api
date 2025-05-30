@@ -60,7 +60,8 @@ class UserController extends Controller
      */
     public function index(UserDataTable $userDataTable): mixed
     {
-        return $userDataTable->render('settings.users.index');
+        // return $userDataTable->render('settings.users.index');
+        return $userDataTable->render('users.index');
     }
 
     /**
@@ -83,7 +84,7 @@ class UserController extends Controller
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->userRepository->model());
             $customFields = generateCustomField($customFields, $customFieldsValues);
         }
-        return view('settings.users.profile', compact(['user', 'role', 'rolesSelected', 'customFields', 'customFieldsValues']));
+        return view('users.profile', compact(['user', 'role', 'rolesSelected', 'customFields', 'customFieldsValues']));
     }
 
     /**
@@ -143,7 +144,7 @@ class UserController extends Controller
             $html = generateCustomField($customFields);
         }
 
-        return view('settings.users.create')
+        return view('users.create')
             ->with("role", $role)
             ->with("customFields", $html ?? false)
             ->with("rolesSelected", $rolesSelected);
@@ -166,7 +167,7 @@ class UserController extends Controller
             return redirect(route('users.index'));
         }
 
-        return view('settings.users.profile')->with('user', $user);
+        return view('users.profile')->with('user', $user);
     }
 
     public function loginAsUser(Request $request, $id): RedirectResponse
@@ -213,7 +214,7 @@ class UserController extends Controller
 
             return redirect(route('users.index'));
         }
-        return view('settings.users.edit')
+        return view('users.edit')
             ->with('user', $user)->with("role", $role)
             ->with("rolesSelected", $rolesSelected)
             ->with("customFields", $html);
@@ -261,6 +262,7 @@ class UserController extends Controller
         if ($user['phone_number'] != $input['phone_number']) {
             $input['phone_verified_at'] = null;
         }
+       
         try {
             $user = $this->userRepository->update($input, $id);
             if (empty($user)) {

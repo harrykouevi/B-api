@@ -1312,7 +1312,6 @@ return [
     'custom_page_published_help' => 'Insert Published',
     'custom_page_published_placeholder' => 'Insert Published',
     'custom_page_updated_at' => 'Updated At',
-    'lang.partener_ship'  => 'Partenership',
     'wallet' => 'Wallet',
     'wallet_plural' => 'Wallets',
     'wallet_desc' => 'Wallets Management',

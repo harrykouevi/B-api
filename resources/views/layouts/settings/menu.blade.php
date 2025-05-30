@@ -20,12 +20,12 @@
                     <i class="fas fa-inbox"></i> {{trans('lang.role_plural')}}
                 </a>
             </li>
-
+            {{-- 
             <li class="nav-item">
                 <a href="{!! route('users.index') !!}" class="nav-link {{  Request::is('users*') ? 'selected' : '' }}">
                     <i class="fas fa-users"></i> {{trans('lang.user_plural')}}
                 </a>
-            </li>
+            </li> --}}
 
         </ul>
     </div>
@@ -101,11 +101,11 @@
                 </a>
             </li>
 
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                 <a href="{!! url('settings/mail/smtp') !!}" class="nav-link {{ Request::is('settings/mail*') ? 'selected' : '' }}">
                     <i class="fas fa-envelope"></i> {{trans('lang.app_setting_mail')}}
                 </a>
-            </li>
+            </li> --}}
 
             <li class="nav-item">
                 <a href="{!! url('settings/translation/en') !!}" class="nav-link {{ Request::is('settings/translation*') ? 'selected' : '' }}">
@@ -113,11 +113,11 @@
                 </a>
             </li>
 
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                 <a href="{!! route('customFields.index') !!}" class="nav-link {{ Request::is('settings/customFields*') ? 'selected' : '' }}">
                     <i class="fas fa-list"></i> {{trans('lang.custom_field_plural')}}
                 </a>
-            </li>
+            </li> --}}
 
         </ul>
     </div>

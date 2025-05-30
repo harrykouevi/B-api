@@ -52,7 +52,8 @@ class DashboardController extends Controller
         $salonsCount = $this->salonRepository->count();
         $salons = $this->salonRepository->orderBy('id', 'desc')->limit(4);
         $earning = $this->earningRepository->all()->sum('total_earning');
-        $ajaxEarningUrl = route('payments.byMonth', ['api_token' => auth()->user()->api_token]);
+        $ajaxEarningUrl = env('API_URL') . '/api/payments/byMonth?api_token=' . auth()->user()->api_token;
+        // $ajaxEarningUrl = route('payments.byMonth', ['api_token' => auth()->user()->api_token]);
         return view('dashboard.index')
             ->with("ajaxEarningUrl", $ajaxEarningUrl)
             ->with("bookingsCount", $bookingsCount)
