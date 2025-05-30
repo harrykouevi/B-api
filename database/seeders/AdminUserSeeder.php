@@ -20,7 +20,7 @@ class AdminUserSeeder extends Seeder
         $user = User::create([
                 'name' => 'admin 1',
                 'email' => 'admin@example.com',
-                'phone_number' => '+228',
+                'phone_number' => '+0022890365486',
                 'phone_verified_at' => now(),
                 'email_verified_at' => now(),
                 'password' => Hash::make('password125'),
