@@ -1,11 +1,34 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# 💇‍♀️ Plateforme de Gestion de Salons de Coiffure
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+Bienvenue dans la plateforme complète dédiée aux professionnels de la coiffure et à leurs clients. Cette solution permet aux salons de gérer leur activité en ligne (rendez-vous, boutique, personnel…) tout en offrant aux clients une expérience fluide pour la réservation et l'achat de produits capillaires.
+
+---
+
+## 🚀 Fonctionnalités Principales
+
+### Pour les Clients
+- 🗓️ **Réservation de rendez-vous en ligne** : Consultez les services et disponibilités des salons proches, et réservez en quelques clics.
+- 🗺️ **Géolocalisation des salons** : Trouvez rapidement un salon autour de vous grâce à une carte interactive.
+- ⭐ **Avis et recommandations** : Lisez et déposez des avis pour partager votre expérience avec d'autres utilisateurs.
+- 🛍️ **Achat de produits capillaires** : Accédez à la boutique en ligne de chaque salon pour commander des produits de qualité.
+
+### Pour les Professionnels
+- 💈 **Gestion multi-salons** : Créez et administrez plusieurs salons, chacun avec ses propres services, horaires, employés, etc.
+- 🧑‍💼 **Gestion des employés** : Planification, assignation de services, et suivi des performances.
+- 🛍️ **Création de boutique en ligne** : Mettez en avant et vendez vos produits directement depuis la plateforme.
+- 📊 **Dashboard d'administration** : Visualisez les statistiques de rendez-vous, ventes et performances de votre salon.
+
+---
+
+## 🧱 Architecture du Projet
+
+Ce projet est divisé en deux parties :
+
+- **Interface d'administration** (Web - Laravel Blade ou Vue.js)
+- **API RESTful** (Laravel) destinée à l'application mobile Flutter
+
+---
+
 
 ## About Laravel
 
