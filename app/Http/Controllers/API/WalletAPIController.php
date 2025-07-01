@@ -120,11 +120,46 @@ class WalletAPIController extends Controller
     public function storeDefault(): JsonResponse
     { 
         try {
-         
-        
             $resp = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0 ,setting('app_default_wallet_id'),auth()->user());
-
             
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()),422);
+        } catch (Exception $e) {
+           
+            return $this->sendError($e->getMessage());
+        }
+        return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
+    }
+
+    /**
+     * Add amount to wallet
+     * @param $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deposit($id, Request $request): JsonResponse
+    { 
+        $this->walletRepository->pushCriteria(new EnabledCriteria());
+        $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
+        $wallet = $this->walletRepository->findWithoutFail($id);
+        if (empty($wallet)) {
+            return $this->sendError('Wallet not found');
+        }
+
+        try {
+            $this->validate($request, [
+                'amount' => 'required|numeric|min:0.01',
+            ]);
+
+          
+            //avec ce code c'est une transaction de compte à compte
+            $resp = $this->paymentService->createPayment( $request->get('amount') ,setting('app_default_wallet_id'),auth()->user());
+            //ici c'est une transaction de l'exterieeur de l'app vers un compte
+            $resp = $this->paymentService->makeDeposit( $request->get('amount'), $wallet );
+
+            $input = [];
+            $input['balance'] = $wallet->balance + $request->get('amount');
+            $wallet = $this->walletRepository->update($input, $id);
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {

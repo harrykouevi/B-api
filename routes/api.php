@@ -151,6 +151,7 @@ Route::middleware('auth:api')->group(function () {
     ]);
 
     Route::post('defaut-wallets', [WalletAPIController::class, 'storeDefault'])->name('api.storedefault');
+    Route::post('wallets/deposit', [WalletAPIController::class, 'deposit'])->name('api.wallet.deposit');
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
 
     Route::post('send-notification', [WalletAPIController::class, 'sendNotification'])->name('notifications.test');

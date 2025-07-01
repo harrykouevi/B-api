@@ -20,21 +20,21 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-         // $this->call(RolesTableSeeder::class);
-        // $this->call(PermissionsTableSeeder::class); 
-        // $this->call(RoleHasPermissionsTableSeeder::class);
-        // $this->call(AppSettingsTableSeeder::class);
-        // $this->call(FaqCategoriesTableSeeder::class);
-        // $this->call(CustomPagesTableSeeder::class);
-        // $this->call(CurrenciesTableSeeder::class);
-        // $this->call(FaqsTableSeeder::class);
-        // $this->call(MediaTableSeeder::class);
-        // $this->call(SlidesTableSeeder::class);
-        // $this->call(BookingStatusesTableSeeder::class);
-        // $this->call(PaymentMethodsTableSeeder::class);
-        // $this->call(PaymentStatusesTableSeeder::class);
-        // $this->call(UsersTableSeeder::class);
-        // $this->call(WalletsTableSeeder::class);
+         $this->call(RolesTableSeeder::class);
+        $this->call(PermissionsTableSeeder::class); 
+        $this->call(RoleHasPermissionsTableSeeder::class);
+        $this->call(AppSettingsTableSeeder::class);
+        $this->call(FaqCategoriesTableSeeder::class);
+        $this->call(CustomPagesTableSeeder::class);
+        $this->call(CurrenciesTableSeeder::class);
+        $this->call(FaqsTableSeeder::class);
+        $this->call(MediaTableSeeder::class);
+        $this->call(SlidesTableSeeder::class);
+        $this->call(BookingStatusesTableSeeder::class);
+        $this->call(PaymentMethodsTableSeeder::class);
+        $this->call(PaymentStatusesTableSeeder::class);
+        $this->call(UsersTableSeeder::class);
+        $this->call(WalletsTableSeeder::class);
         $this->call(AdminUserSeeder::class);
         
 
