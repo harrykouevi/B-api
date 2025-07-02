@@ -1,57 +1,34 @@
-<!-- Id Field -->
-<div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-    {!! Form::label('id', 'Id:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <p>{!! $salonReview->id !!}</p>
-    </div>
-</div>
+<div class="card  rounded"><div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-4">ID</dt>
+                <dd class="col-sm-8">{{ $salonReview->id }}</dd>
+<dt class="col-sm-4">Review</dt>
+                <dd class="col-sm-8">{{ $salonReview->review }}</dd>
 
-<!-- Review Field -->
-<div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-    {!! Form::label('review', 'Review:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <p>{!! $salonReview->review !!}</p>
-    </div>
-</div>
+<dt class="col-sm-4">Note</dt>
+                <dd class="col-sm-8">
+                    <span class="badge bg-warning text-dark">
+                        {{ $salonReview->rate }} ★
+                    </span>
+                </dd>
 
-<!-- Rate Field -->
-<div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-    {!! Form::label('rate', 'Rate:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <p>{!! $salonReview->rate !!}</p>
-    </div>
-</div>
+<dt class="col-sm-4">Utilisateur</dt>
+                <dd class="col-sm-8">#{{ $salonReview->user_id }}</dd>
 
-<!-- User Id Field -->
-<div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-    {!! Form::label('user_id', 'User Id:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <p>{!! $salonReview->user_id !!}</p>
-    </div>
-</div>
+<dt class="col-sm-4">Service</dt>
+                <dd class="col-sm-8">#{{ $salonReview->e_service_id }}</dd>
 
-<!-- E Service Id Field -->
-<div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-    {!! Form::label('e_service_id', 'E Service Id:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <p>{!! $salonReview->e_service_id !!}</p>
-    </div>
-</div>
+                <dt class="col-sm-4">Créé le</dt>
+                <dd class="col-sm-8">
+                    <i class="bi bi-clock me-1"></i>{{ $salonReview->created_at->format('d/m/Y H:i') }}
+                </dd>
 
-<!-- Created At Field -->
-<div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-    {!! Form::label('created_at', 'Created At:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <p>{!! $salonReview->created_at !!}</p>
+                <dt class="col-sm-4">Mis à jour le</dt>
+                <dd class="col-sm-8">
+                    <i class="bi bi-clock-history me-1"></i>{{ $salonReview->updated_at->format('d/m/Y H:i') }}
+                </dd>
+            </dl>
+        </div>
     </div>
-</div>
-
-<!-- Updated At Field -->
-<div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-    {!! Form::label('updated_at', 'Updated At:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <p>{!! $salonReview->updated_at !!}</p>
-    </div>
-</div>
 
 

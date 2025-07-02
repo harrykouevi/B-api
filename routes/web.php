@@ -16,10 +16,16 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
-
+use Illuminate\Support\Facades\Route ;
+use Illuminate\Support\Facades\Auth ;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SalonController;
+use App\Http\Controllers\SalonPayoutController;
+use App\Http\Controllers\SalonReviewController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WalletTransactionController;
 
 Route::get('login/{service}', 'Auth\LoginController@redirectToProvider');
 Route::get('login/{service}/callback', 'Auth\LoginController@handleProviderCallback');
@@ -119,9 +125,7 @@ Route::middleware('auth')->group(function () {
         'show'
     ]);
     Route::post('salons/remove-media', 'SalonController@removeMedia');
-    Route::resource('salons', 'SalonController')->except([
-        'show'
-    ]);
+    Route::resource('salons', SalonController::class);
 
     Route::get('requestedSalons', 'SalonController@requestedSalons')->name('requestedSalons.index');
 
@@ -154,10 +158,8 @@ Route::middleware('auth')->group(function () {
     ]);
 
 
-    Route::resource('salonReviews', 'SalonReviewController')->except([
-        'show'
-    ]);
-    Route::resource('payments', 'PaymentController')->except([
+    Route::resource('salonReviews', SalonReviewController::class);
+   Route::resource('payments', PaymentController::class )->except([
         'create', 'store', 'edit', 'update', 'destroy'
     ]);
     Route::post('paymentMethods/remove-media', 'PaymentMethodController@removeMedia');
@@ -183,7 +185,7 @@ Route::middleware('auth')->group(function () {
     ]);
 
     Route::get('salonPayouts/create/{id}', 'SalonPayoutController@create')->name('salonPayouts.create');
-    Route::resource('salonPayouts', 'SalonPayoutController')->except([
+    Route::resource('salonPayouts', SalonPayoutController::class)->except([
         'show', 'edit', 'update', 'create'
     ]);
     Route::resource('optionGroups', 'OptionGroupController')->except([
@@ -205,7 +207,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('wallets', 'WalletController')->except([
         'show'
     ]);
-    Route::resource('walletTransactions', 'WalletTransactionController')->except([
+    Route::resource('walletTransactions',  WalletTransactionController::class)->except([
         'show', 'edit', 'update', 'destroy'
     ]);
 });

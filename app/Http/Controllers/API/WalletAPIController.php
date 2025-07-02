@@ -122,6 +122,7 @@ class WalletAPIController extends Controller
         try {
             $resp = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0 ,setting('app_default_wallet_id'),auth()->user());
             
+        
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
@@ -130,6 +131,8 @@ class WalletAPIController extends Controller
         }
         return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
+
+  
 
     /**
      * Add amount to wallet
@@ -160,7 +163,7 @@ class WalletAPIController extends Controller
             $input = [];
             $input['balance'] = $wallet->balance + $request->get('amount');
             $wallet = $this->walletRepository->update($input, $id);
-        } catch (ValidationException $e) {
+              } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
            

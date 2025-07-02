@@ -238,7 +238,7 @@ function getLinksColumn(array|Collection $array = [], string $baseUrl = '', stri
  */
 function getLinksColumnByRouteName(array|Collection $array = [], string $routeName = '', string $idAttribute = 'id', string $titleAttribute = 'title'): string
 {
-    $html = '<a href="${href}" class="text-bold text-dark">${title}</a>';
+    $html = '<a href="${href}" class="text-bold text-blue">${title}</a>';
     $result = [];
     foreach ($array as $link) {
         if (!empty($link)) {

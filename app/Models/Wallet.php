@@ -94,7 +94,7 @@ class Wallet extends Model
 
     public function getExtendedNameAttribute(): string
     {
-        return $this->user->name . " (" . $this->name . " - " . $this->balance . ")";
+         return $this->name . " - " . $this->user->name  ;
     }
 
     /**

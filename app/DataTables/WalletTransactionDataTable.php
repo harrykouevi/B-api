@@ -33,6 +33,14 @@ class WalletTransactionDataTable extends DataTable
     public function dataTable(mixed $query): DataTableAbstract
     {
         $dataTable = new EloquentDataTable($query);
+        $dataTable->filter(function ($query) {
+
+            // Filtre par type de transaction
+            if (request()->has('action_search') && !is_null(request('action_search'))) {
+                $query->where('action', request('action_search'));
+            }
+
+        });
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
             ->editColumn('updated_at', function ($walletTransaction) {
@@ -46,6 +54,13 @@ class WalletTransactionDataTable extends DataTable
                     $walletTransaction->amount = -$walletTransaction->amount;
                 }
                 return getPriceColumn($walletTransaction, 'amount', isset($walletTransaction->wallet) ? $walletTransaction->wallet->currency : null);
+            })
+            ->editColumn('payment.id', function ($walletTransaction) {
+                if (auth()->user()->hasRole('admin')) {
+                    return  getLinksColumnByRouteName([$walletTransaction->payment], 'payments.show', 'id', 'extended_id') ;
+                } else {
+                    return isset($walletTransaction->payment) ? $walletTransaction->payment->id : "";
+                }
             })
             ->editColumn('wallet.name', function ($walletTransaction) {
                 if (auth()->user()->hasRole('admin')) {
@@ -85,6 +100,11 @@ class WalletTransactionDataTable extends DataTable
             [
                 'data' => 'action',
                 'title' => trans('lang.wallet_transaction_action'),
+            ],
+                 [
+                'data' => 'payment.id',
+                'title' => trans('lang.payment'),
+
             ],
             [
                 'data' => 'wallet.name',
@@ -127,12 +147,16 @@ class WalletTransactionDataTable extends DataTable
     public function query(WalletTransaction $model): \Illuminate\Database\Eloquent\Builder
     {
         if (auth()->check() && !auth()->user()->hasRole('admin')) {
-            return $model->newQuery()->with("wallet")->with("user")
+            return $model->newQuery()->with("wallet")->with("user")->with("payment")
                 ->join('wallets', 'wallets.id', '=', 'wallet_transactions.wallet_id')
                 ->where('wallets.user_id', auth()->id())
-                ->select("$model->table.*");
+                ->select("$model->table.*")
+                ->orderBy('wallet_transactions.payment_id', 'desc');
         } else {
-            return $model->newQuery()->with("wallet")->with("user")->select("$model->table.*");
+            return $model->newQuery()->with("wallet")->with("user")->with("payment")
+                ->select("$model->table.*")
+                ->orderBy('wallet_transactions.payment_id', 'desc');
+        //  }
         }
     }
 
@@ -145,12 +169,16 @@ class WalletTransactionDataTable extends DataTable
     {
         return $this->builder()
             ->columns($this->getColumns())
+            ->setTableId('wallet-transactions-table')
             ->minifiedAjax()
             ->parameters(array_merge(
                 config('datatables-buttons.parameters'), [
                     'language' => json_decode(
                         file_get_contents(base_path('resources/lang/' . app()->getLocale() . '/datatable.json')
-                        ), true)
+                        ), true),
+                    'searching' => false, // désactive recherche globale
+                    'processing' => true,
+                    'serverSide' => true,
                 ]
             ));
     }

@@ -34,6 +34,32 @@ class PaymentDataTable extends DataTable
     public function dataTable(mixed $query): DataTableAbstract
     {
         $dataTable = new EloquentDataTable($query);
+
+        // Gestion des filtres personnalisés (via request())
+       $dataTable->filter(function ($query) {
+           // if ($search = request()->get('search')['value']) {
+           //     $query->where(function ($q) use ($search) {
+           //         $q->whereHas('user', function ($qUser) use ($search) {
+           //             $qUser->where('name', 'like', "%{$search}%");
+           //         });
+           //     });
+           // }
+           // Filtre par nom d'utilisateur
+           if (request()->has('user_name') && request('user_name') !== '') {
+               $query->whereHas('user', function ($q) {
+                   $q->where('name', 'like', '%' . request('user_name') . '%');
+               });
+           }
+           // Filtre par status de paiement
+           if (request()->has('payment_status_id') && !is_null(request('payment_status_id'))) {
+               $query->where('payment_status_id', request('payment_status_id'));
+           }
+           // Filtre par méthode de paiement
+           if (request()->has('payment_method_id') &&  !is_null(request('payment_method_id') )) {
+               $query->where('payment_method_id', request('payment_method_id'));
+           }
+       });
+
         $columns = array_column($this->getColumns(), 'data');
         $dataTable = $dataTable
             ->editColumn('updated_at', function ($payment) {
@@ -83,7 +109,7 @@ class PaymentDataTable extends DataTable
             (auth()->check() && auth()->user()->hasAnyRole(['admin', 'provider'])) ? [
                 'data' => 'user.name',
                 'title' => trans('lang.payment_user_id'),
-
+                'name' => 'user.name', 'searchable' => true, 'orderable' => true,
             ] : null,
             [
                 'data' => 'payment_method.name',
@@ -163,12 +189,16 @@ class PaymentDataTable extends DataTable
     {
         return $this->builder()
             ->columns($this->getColumns())
+            ->setTableId('payments-table')
             ->minifiedAjax()
             ->parameters(array_merge(
                 config('datatables-buttons.parameters'), [
                     'language' => json_decode(
                         file_get_contents(base_path('resources/lang/' . app()->getLocale() . '/datatable.json')
-                        ), true)
+                            ), true) ,
+                    'searching' => false, // désactive recherche globale
+                    'processing' => true,
+                    'serverSide' => true,
                 ]
             ));
     }

@@ -73,6 +73,11 @@ class Payment extends Model
 
     ];
 
+    public function getExtendedIdAttribute(): string
+    {
+        return $this->id . " - " . $this->created_at->timestamp ;
+    }
+
     public function getCustomFieldsAttribute(): array
     {
         $hasCustomField = in_array(static::class, setting('custom_field_models', []));

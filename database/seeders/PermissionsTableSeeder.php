@@ -1093,6 +1093,20 @@ class PermissionsTableSeeder extends Seeder
                 'updated_at' => now(),
             ),
             array(
+                'id' => 223,
+                'name' => 'salons.show',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 224,
+                'name' => 'salonReviews.show',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
                 'id' => 161,
                 'name' => 'galleries.create',
                 'guard_name' => 'web',
