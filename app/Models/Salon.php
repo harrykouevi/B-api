@@ -357,12 +357,12 @@ class Salon extends Model implements HasMedia, Castable
     //     return $this->address?->address;
     // }
 
-    public function getCityAttribute(): float
+    public function getCityAttribute(): ?string
     {
         return $this->address?->city;
     }
 
-    public function getDistrictAttribute(): float
+    public function getDistrictAttribute(): ?string
     {
         return $this->address?->district;
     }
