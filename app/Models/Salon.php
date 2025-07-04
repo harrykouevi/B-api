@@ -352,7 +352,7 @@ class Salon extends Model implements HasMedia, Castable
         return $this->salonReviews()->count();
     }
 
-    public function getAddressNameAttribute(): float
+    public function getAddressNameAttribute(): ?string
     {
         return $this->address?->address;
     }
