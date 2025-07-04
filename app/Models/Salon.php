@@ -130,7 +130,10 @@ class Salon extends Model implements HasMedia, Castable
         'rate',
         'closed',
         'total_reviews',
-        'has_valid_subscription'
+        'has_valid_subscription',
+        'address',
+        'city',
+        'district'
     ];
 
     protected $hidden = [
