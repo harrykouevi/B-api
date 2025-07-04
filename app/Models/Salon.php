@@ -131,7 +131,7 @@ class Salon extends Model implements HasMedia, Castable
         'closed',
         'total_reviews',
         'has_valid_subscription',
-        'address',
+        // 'address',
         'city',
         'district'
     ];
@@ -352,10 +352,10 @@ class Salon extends Model implements HasMedia, Castable
         return $this->salonReviews()->count();
     }
 
-    public function getAddressAttribute(): float
-    {
-        return $this->address?->address;
-    }
+    // public function getAddressAttribute(): float
+    // {
+    //     return $this->address?->address;
+    // }
 
     public function getCityAttribute(): float
     {
