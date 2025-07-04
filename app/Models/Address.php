@@ -43,6 +43,8 @@ class Address extends Model implements Castable
         'address' => 'required|max:255',
         'latitude' => 'required|numeric|min:-200|max:200',
         'longitude' => 'required|numeric|min:-200|max:200',
+        "district" => 'nullable|max:255',
+        "city" => 'nullable|max:255'
     ];
     public $table = 'addresses';
     public $fillable = [
@@ -50,6 +52,8 @@ class Address extends Model implements Castable
         'address',
         'latitude',
         'longitude',
+        "district",
+        "city",
         'default',
         'user_id'
     ];
@@ -63,6 +67,8 @@ class Address extends Model implements Castable
         'address' => 'string',
         'latitude' => 'double',
         'longitude' => 'double',
+        'district' => 'string',
+        'city' => 'string',
         'default' => 'boolean',
         'user_id' => 'integer'
     ];

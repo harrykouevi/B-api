@@ -205,6 +205,30 @@ class Salon extends Model implements HasMedia, Castable
         return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
     }
 
+    /**
+     * Retourne une fonction de filtrage permettant de déterminer si un salon est fermé ou ouvert,
+     * en se basant dynamiquement sur ses horaires de disponibilité.
+     *
+     * Cette fonction est conçue pour être utilisée avec une collection Laravel :
+     * ex: $salons->filter(Salon::scopedClosed(true))
+     *
+     * @param bool $closed  
+     * @return \Closure     
+     */
+    public static function scopedClosed(bool $closed)
+    {
+        return function ($salon) use ($closed) {
+            $openingHoursArray = [];
+            foreach ($salon->availabilityHours as $element) {
+                $openingHoursArray[$salon->toEnglishday($element['day'])][] =
+                    $element['start_at'] . '-' . $element['end_at'];
+            }
+            $openingHours = \Spatie\OpeningHours\OpeningHours::createAndMergeOverlappingRanges($openingHoursArray);
+            return $openingHours->isClosed() == $closed;
+        };
+    }
+
+
     public function scopeNear($query, $latitude, $longitude, $areaLatitude, $areaLongitude)
     {
         // Calculate the distant in mile
@@ -323,6 +347,21 @@ class Salon extends Model implements HasMedia, Castable
     public function getTotalReviewsAttribute(): float
     {
         return $this->salonReviews()->count();
+    }
+
+    public function getAddressAttribute(): float
+    {
+        return $this->address->address;
+    }
+
+    public function getCityAttribute(): float
+    {
+        return $this->address->city;
+    }
+
+    public function getDistrictAttribute(): float
+    {
+        return $this->address->district;
     }
 
     public function getHasValidSubscriptionAttribute(): ?bool

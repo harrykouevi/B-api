@@ -24,13 +24,15 @@ class Authenticate extends Middleware
      */
     public function handle($request, Closure $next, ...$guards): mixed
     {
+       
         try {
             $this->authenticate($request, $guards);
             return $next($request);
         } catch (AuthenticationException $e) {
-            if ($request->ajax()) {
+            if ($request->isJson()) {
                 return response()->json(['error' => "Not authenticated"], 401);
             } else {
+                
                 throw new AuthenticationException(
                     'Unauthenticated.', $guards, $this->redirectTo($request)
                 );

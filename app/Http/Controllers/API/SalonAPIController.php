@@ -11,9 +11,11 @@ namespace App\Http\Controllers\API;
 
 use App\Criteria\Salons\NearCriteria;
 use App\Criteria\Salons\SalonsOfUserCriteria;
+use App\Criteria\Salons\WithAvailabilityHoursCriteria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateSalonRequest;
 use App\Http\Requests\UpdateSalonRequest;
+use App\Models\Salon;
 use App\Repositories\SalonRepository;
 use App\Repositories\UploadRepository;
 use Carbon\Carbon;
@@ -24,6 +26,8 @@ use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
+use Illuminate\Support\Collection;
+
 
 /**
  * Class SalonController
@@ -44,6 +48,19 @@ class SalonAPIController extends Controller
         parent::__construct();
     }
 
+     /**
+     *@param Request $request
+     * @param Collection $collection
+     */
+    protected function filterOpenedClosed(Request $request, Collection $collection):  Collection
+    {
+        if($request->has('closed')){
+            $closed = $request->input('closed');
+            $collection = $collection->filter( Salon::scopedClosed($closed) );
+        }
+        return $collection ;
+    }
+
     /**
      * Display a listing of the Salon.
      * GET|HEAD /salons
@@ -57,10 +74,12 @@ class SalonAPIController extends Controller
             $this->salonRepository->pushCriteria(new RequestCriteria($request));
             $this->salonRepository->pushCriteria(new LimitOffsetCriteria($request));
             $this->salonRepository->pushCriteria(new NearCriteria($request));
+            // $this->salonRepository->pushCriteria(new WithAvailabilityHoursCriteria($request));
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
         $salons = $this->salonRepository->all();
+        $salons = $this->filterOpenedClosed($request, $salons);
         $this->filterCollection($request, $salons);
 
         return $this->sendResponse($salons->toArray(), 'Salons retrieved successfully');
