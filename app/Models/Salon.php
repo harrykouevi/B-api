@@ -252,7 +252,7 @@ class Salon extends Model implements HasMedia, Castable
 
         return $query
             ->join('addresses', 'salons.address_id', '=', 'addresses.id')
-            ->whereRaw("$distance < salons.availability_range")
+            // ->whereRaw("$distance < salons.availability_range")
             ->select(DB::raw($distance . " AS distance"), DB::raw($area . " AS area"), "salons.*")
             ->orderBy('area');
     }

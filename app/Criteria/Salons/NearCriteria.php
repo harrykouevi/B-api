@@ -48,7 +48,7 @@ class NearCriteria implements CriteriaInterface
             return $model->near(...$coordination);
         } else if ($this->request->has(['myLat', 'myLon'])) {
             $coordination = $this->request->only('myLat', 'myLon');
-            $coordination = array_values($coordination);
+            $coordination = array_values($coordination); 
             array_push($coordination, ...$coordination);
             return $model->near(...$coordination);
         } else {
