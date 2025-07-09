@@ -12,6 +12,8 @@ namespace App\Http\Controllers\API;
 use App\Events\BookingChangedEvent;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
+
 use App\Notifications\StatusChangedPayment;
 use App\Repositories\BookingRepository;
 use App\Repositories\PaymentRepository;
@@ -163,7 +165,11 @@ class PaymentAPIController extends Controller
                 $payment = $payment[0];
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-                    Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                    try{ 
+                        Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                    } catch (Exception $e) {
+                        Log::error($e->getMessage());
+                    }
                 }
 
             } else {
@@ -174,6 +180,7 @@ class PaymentAPIController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
+        
         return $this->sendResponse(!is_null($payment)? $payment->toArray() : $payment, __('lang.saved_successfully', ['operator' => __('lang.payment')]));
     }
 
