@@ -141,7 +141,8 @@ class PaymentAPIController extends Controller
             $this->paymentRepository->update($input, $id);
             $payment = $this->paymentRepository->with(['paymentMethod', 'paymentStatus'])->find($id);
             try{
-                Log::error($payment->booking->user);
+                Log::error(['PaymentAPIController-update',$payment->booking->user]);
+
                 Notification::send([$payment->booking->user], new StatusChangedPayment($payment->booking));
 
             } catch (Exception $e) {
