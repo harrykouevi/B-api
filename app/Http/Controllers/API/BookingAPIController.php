@@ -193,6 +193,8 @@ class BookingAPIController extends Controller
         }
 
         try {
+            Log::error($salon->users);
+
             Notification::send($salon->users, new NewBooking($booking));
         } catch (Exception $e) {
             Log::error($e->getMessage());

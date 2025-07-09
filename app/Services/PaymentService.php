@@ -17,14 +17,10 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Exception;
 use Illuminate\Support\Facades\Log;
-
 use App\Models\Payment;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
-use App\Notifications\NewDebitPayment ;
-use App\Notifications\StatusChangedPayment;
-use PhpParser\Node\Expr\Cast\Double;
 
 class PaymentService
 {
@@ -81,6 +77,8 @@ class PaymentService
             // if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $payer_wallet->id);
             if($amount != 0) { 
                 try{
+                    Log::error($user);
+
                     Notification::send([$user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
