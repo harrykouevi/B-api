@@ -26,7 +26,7 @@ class AffiliateCast implements CastsAttributes
     {
         if (!empty($value)) {
             $decodedValue = json_decode($value, true);
-            $affiliate = new AffiliateModel($value);
+            $affiliate = new AffiliateModel($decodedValue);
             $affiliate->fillable[] = 'id';
             $affiliate->id = $decodedValue['id'];
             return $affiliate;
@@ -34,6 +34,7 @@ class AffiliateCast implements CastsAttributes
         return new AffiliateModel();
     }
 
+    
 
     /**
      * @inheritDoc
