@@ -16,6 +16,7 @@ use App\Repositories\PaymentRepository;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\Payment;
 use App\Models\User;
@@ -78,7 +79,14 @@ class PaymentService
           
             // if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
             // if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $payer_wallet->id);
-            if($amount != 0) Notification::send([$user], new NewReceivedPayment($payment,$wallet));
+            if($amount != 0) { 
+                try{
+                    Notification::send([$user], new NewReceivedPayment($payment,$wallet));
+                } catch (Exception $e) {
+                    Log::error($e->getMessage());
+                }
+            }
+           
             return [$payment , $wallet] ;
         }
         return Null ;
@@ -108,7 +116,14 @@ class PaymentService
           
             // if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
             // if($payment) $app_wallet =  $this->walletRepository->update(['balance'=> $app_wallet->balance - $amount ] , $payer_wallet->id);
-            if($amount != 0) Notification::send([$user], new NewReceivedPayment($payment,$wallet));
+            if($amount != 0) {
+                try{
+                    Notification::send([$user], new NewReceivedPayment($payment,$wallet));
+
+                } catch (Exception $e) {
+                    Log::error($e->getMessage());
+                }
+            }
             return [$payment , $wallet] ;
         }
         return Null ;

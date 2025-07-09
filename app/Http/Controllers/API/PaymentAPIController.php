@@ -105,7 +105,12 @@ class PaymentAPIController extends Controller
             $input['payment']['user_id'] = $booking->user_id;
             $payment = $this->paymentRepository->create($input['payment']);
             $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-            Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+            try{
+                Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+
+            } catch (Exception $e) {
+                Log::error($e->getMessage());
+            }
 
         } catch (ValidatorException) {
             return $this->sendError(__('lang.not_found', ['operator' => __('lang.payment')]));
@@ -133,8 +138,13 @@ class PaymentAPIController extends Controller
         try {
             $this->paymentRepository->update($input, $id);
             $payment = $this->paymentRepository->with(['paymentMethod', 'paymentStatus'])->find($id);
-            Notification::send($payment->booking->user, new StatusChangedPayment($payment->booking));
+            try{
+                Notification::send($payment->booking->user, new StatusChangedPayment($payment->booking));
 
+            } catch (Exception $e) {
+                Log::error($e->getMessage());
+            }
+            
             event(new BookingChangedEvent($payment->booking));
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());

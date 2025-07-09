@@ -10,6 +10,8 @@ namespace App\Listeners;
 
 use App\Notifications\StatusChangedBooking;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 /**
  * Class SendBookingStatusNotificationsListener
@@ -30,20 +32,25 @@ class SendBookingStatusNotificationsListener
      */
     public function handle(object $event): void
     {
-        if ($event->booking->at_salon) {
-            if ($event->booking->bookingStatus->order < 20) {
-                Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-            } else if ($event->booking->bookingStatus->order >= 20 && $event->booking->bookingStatus->order < 40) {
-                Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+        try{
+
+            if ($event->booking->at_salon) {
+                if ($event->booking->bookingStatus->order < 20) {
+                    Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                } else if ($event->booking->bookingStatus->order >= 20 && $event->booking->bookingStatus->order < 40) {
+                    Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+                } else {
+                    Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                }
             } else {
-                Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                if ($event->booking->bookingStatus->order < 40) {
+                    Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                } else {
+                    Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+                }
             }
-        } else {
-            if ($event->booking->bookingStatus->order < 40) {
-                Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-            } else {
-                Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
-            }
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
         }
     }
 }

@@ -17,6 +17,7 @@ use App\Repositories\PaymentRepository;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Prettus\Validator\Exceptions\ValidatorException;
+use Exception;
 
 abstract class ParentBookingController extends Controller
 {
@@ -86,7 +87,12 @@ abstract class ParentBookingController extends Controller
 
     protected function sendNotificationToProviders(): void
     {
-        Notification::send($this->booking->salon->users, new NewBooking($this->booking));
+        try {
+            Notification::send($this->booking->salon->users, new NewBooking($this->booking));
+
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+        }
     }
 
 }

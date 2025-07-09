@@ -16,6 +16,8 @@ use App\Notifications\NewMessage;
 use App\Repositories\NotificationRepository;
 use App\Repositories\UserRepository;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -101,7 +103,11 @@ class NotificationAPIController extends Controller
             $messageId = $request->get('id');
             $users = $this->userRepository->findWhereIn('id', $usersId);
             $from = $this->userRepository->find($fromId);
-            \Illuminate\Support\Facades\Notification::send($users, new NewMessage($from, $text, $messageId));
+            try{
+              \Illuminate\Support\Facades\Notification::send($users, new NewMessage($from, $text, $messageId));
+            } catch (Exception $e) {
+                Log::error($e->getMessage());
+            }
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
