@@ -139,7 +139,8 @@ class PaymentAPIController extends Controller
             $this->paymentRepository->update($input, $id);
             $payment = $this->paymentRepository->with(['paymentMethod', 'paymentStatus'])->find($id);
             try{
-                Notification::send($payment->booking->user, new StatusChangedPayment($payment->booking));
+                Log::error($payment->booking->user);
+                Notification::send([$payment->booking->user], new StatusChangedPayment($payment->booking));
 
             } catch (Exception $e) {
                 Log::error($e->getMessage());
@@ -176,7 +177,8 @@ class PaymentAPIController extends Controller
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                     try{ 
-                        Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                        Log::error($booking->salon->users);
+                        Notification::send([$booking->salon->users], new StatusChangedPayment($booking));
                     } catch (Exception $e) {
                         Log::error($e->getMessage());
                     }
