@@ -73,16 +73,14 @@ class PaymentService
          
             $payment = $this->processPayment($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
           
-            // if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
-            // if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $payer_wallet->id);
             if($amount != 0) { 
                 try{
-                    Log::error(['PaymentServicee-createPayment',$user->toArray()]);
-                    $f= new User($user->toArray()) ;
-                    $f->id = $user->toArray()['id'] ;
-                    Log::error(['PaymentServicee-createPayment',$f]);
+                   
+                    // $f= new User($user->toArray()) ;
+                    // $f->id = $user->toArray()['id'] ;
+                    // Log::error(['PaymentServicee-createPayment',$f]);
 
-                    Notification::send($f, new NewReceivedPayment($payment,$wallet));
+                    Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
