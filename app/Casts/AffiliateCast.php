@@ -24,6 +24,10 @@ class AffiliateCast implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes): AffiliateModel
     {
+         // Si valeur null => return null
+        if (is_null($value)) {
+            return new AffiliateModel();
+        }
         if (!empty($value)) {
             $decodedValue = json_decode($value, true);
             $affiliate = new AffiliateModel($decodedValue);
@@ -42,15 +46,23 @@ class AffiliateCast implements CastsAttributes
     public function set($model, string $key, $value, array $attributes): array
     {
 
+        // Si on fournit un tableau au lieu d'un Affiliate, on convertit
+        if (is_array($value)) {
+            $value = new AffiliateModel($value);
+        }
+
         if (!$value instanceof AffiliateModel) {
             throw new InvalidArgumentException('The given value is not an Affiliate instance.');
         }
 
-        return ['sponsorship' => json_encode([
-            'id' => $value['id'],
-            'link' => $value['link'],
-            'code' => $value['code'],
-            'user_id' => $value['user_id'],
-        ])];
+        // return ['sponsorship' => json_encode([
+        //     'id' => $value['id'],
+        //     'link' => $value['link'],
+        //     'code' => $value['code'],
+        //     'user_id' => $value['user_id'],
+        // ])];
+         // Sauvegarde sous forme de JSON
+        return $value->toArray(); // Assure-toi que Affiliate a une méthode toArray()
+    
     }
 }
