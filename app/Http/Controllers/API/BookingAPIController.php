@@ -16,6 +16,8 @@ use App\Events\BookingStatusChangedEvent;
 use App\Http\Controllers\Controller;
 use App\Models\Address;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
+
 use App\Notifications\NewBooking;
 use App\Repositories\AddressRepository;
 use App\Repositories\BookingRepository;
@@ -193,7 +195,7 @@ class BookingAPIController extends Controller
         try {
             Notification::send($salon->users, new NewBooking($booking));
         } catch (Exception $e) {
-            
+            Log::error($e->getMessage());
         }
         return $this->sendResponse($booking->toArray(), __('lang.saved_successfully', ['operator' => __('lang.booking')]));
     }
