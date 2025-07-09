@@ -88,6 +88,8 @@ abstract class ParentBookingController extends Controller
     protected function sendNotificationToProviders(): void
     {
         try {
+                Log::error(['sendNotificationToProviders',$this->booking->salon->users]);
+
             Notification::send($this->booking->salon->users, new NewBooking($this->booking));
 
         } catch (Exception $e) {
