@@ -77,9 +77,9 @@ class PaymentService
             // if($payment) $payer_wallet =  $this->walletRepository->update(['balance'=> $payer_wallet->balance - $amount ] , $payer_wallet->id);
             if($amount != 0) { 
                 try{
-                    Log::error(['PaymentServicee',$user]);
+                    Log::error(['PaymentServicee-createPayment',$user->toArray()]);
 
-                    Notification::send([$user], new NewReceivedPayment($payment,$wallet));
+                    Notification::send($user->toArray(), new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
