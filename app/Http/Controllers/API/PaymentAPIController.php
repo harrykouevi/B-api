@@ -106,6 +106,8 @@ class PaymentAPIController extends Controller
             $payment = $this->paymentRepository->create($input['payment']);
             $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
             try{
+                Log::error(['PaymentAPIController',$booking->salon->users]);
+
                 Notification::send($booking->salon->users, new StatusChangedPayment($booking));
 
             } catch (Exception $e) {

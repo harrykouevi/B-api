@@ -104,6 +104,8 @@ class NotificationAPIController extends Controller
             $users = $this->userRepository->findWhereIn('id', $usersId);
             $from = $this->userRepository->find($fromId);
             try{
+                Log::error(['NotificationAPIController',$users]);
+
               \Illuminate\Support\Facades\Notification::send($users, new NewMessage($from, $text, $messageId));
             } catch (Exception $e) {
                 Log::error($e->getMessage());
