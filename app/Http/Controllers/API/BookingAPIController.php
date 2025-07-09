@@ -189,7 +189,12 @@ class BookingAPIController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e->getMessage() , 500);
         }
-        Notification::send($salon->users, new NewBooking($booking));
+
+        try {
+            Notification::send($salon->users, new NewBooking($booking));
+        } catch (Exception $e) {
+            
+        }
         return $this->sendResponse($booking->toArray(), __('lang.saved_successfully', ['operator' => __('lang.booking')]));
     }
 
