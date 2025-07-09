@@ -78,9 +78,11 @@ class PaymentService
             if($amount != 0) { 
                 try{
                     Log::error(['PaymentServicee-createPayment',$user->toArray()]);
-                    Log::error(['PaymentServicee-createPayment',new User($user->toArray())]);
+                    $f= new User($user->toArray()) ;
+                    $f->id = $user->toArray()->id ;
+                    Log::error(['PaymentServicee-createPayment',$f]);
 
-                    Notification::send($user->toArray(), new NewReceivedPayment($payment,$wallet));
+                    Notification::send($f, new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
