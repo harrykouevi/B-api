@@ -182,14 +182,14 @@ class BookingAPIController extends Controller
             $input['booking_status_id'] = $this->bookingStatusRepository->find(1)->id;
 
             $booking = $this->bookingRepository->create($input);
-            Notification::send($salon->users, new NewBooking($booking));
+            
         } catch (ValidationException $e) {
            
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage() , 500);
         }
-
+        Notification::send($salon->users, new NewBooking($booking));
         return $this->sendResponse($booking->toArray(), __('lang.saved_successfully', ['operator' => __('lang.booking')]));
     }
 

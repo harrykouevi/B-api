@@ -16,6 +16,8 @@
 | contains the "web" middleware group. Now create something great!
 |
 */
+
+use App\Http\Controllers\AddressController;
 use Illuminate\Support\Facades\Route ;
 use Illuminate\Support\Facades\Auth ;
 use App\Http\Controllers\DashboardController;
@@ -72,7 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::post('uploads/store', [UploadController::class, 'store'])->name('medias.create');
     Route::get('users/profile', [UserController::class, 'profile'])->name('users.profile');
     Route::post('users/remove-media', 'UserController@removeMedia');
-    Route::resource('users', 'UserController');
+    Route::resource('users', UserController::class);
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::group(['middleware' => ['permission:medias']], function () {
@@ -129,7 +131,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('requestedSalons', 'SalonController@requestedSalons')->name('requestedSalons.index');
 
-    Route::resource('addresses', 'AddressController')->except([
+    Route::resource('addresses', AddressController::class)->except([
         'show'
     ]);
     Route::resource('awards', 'AwardController');

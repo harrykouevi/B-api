@@ -11,6 +11,7 @@
     </a>
     @endcan
     @can('users.destroy')
+    @if($id == 1)
     {!! Form::open(['route' => ['users.destroy', $id], 'method' => 'delete']) !!}
     {!! Form::button('<i class="fas fa-trash"></i>', [
     'data-toggle' => 'tooltip',
@@ -22,6 +23,7 @@
                             text: data.message,type: 'error', confirmButtonClass: 'btn-danger'});"
     ]) !!}
     {!! Form::close() !!}
+    @endif
     @endcan
     {{-- <div class="dropdown">
         <a class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
