@@ -33,6 +33,7 @@ class SendBookingStatusNotificationsListener
     public function handle(object $event): void
     {
         try{
+                        Log::error(['handle',$event->booking->user]);
 
             if ($event->booking->at_salon) {
                 if ($event->booking->bookingStatus->order < 20) {

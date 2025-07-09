@@ -26,6 +26,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
+use Illuminate\Support\Facades\Log;
 
 
 /**
@@ -239,6 +240,7 @@ class WalletAPIController extends Controller
     public function sendNotification() : JsonResponse
     {
         try {
+                        Log::error(['sendNotification',auth()->user()]);
            
                 Notification::send(auth()->user(), "yes yes yes yes");
           
