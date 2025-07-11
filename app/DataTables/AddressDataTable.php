@@ -35,6 +35,9 @@ class AddressDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         $dataTable = $dataTable
+            ->editColumn('address', function ($address) {
+                return $address->address. " <span class='badge px-2 py-1 bg-success'  >" . (!is_null($address->city) ? ' ( '.$address->city .(!is_null($address->district) ? ' - '.$address->district.' ) ' : ' ) ' ) : (!is_null($address->district) ? ' ( '.$address->district.' ) ' : null ) ). "</span>" ;
+                })
             ->editColumn('updated_at', function ($address) {
                 return getDateColumn($address, 'updated_at');
             })

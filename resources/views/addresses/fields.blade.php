@@ -49,6 +49,36 @@
         </div>
     </div>
 </div>
+@if(isset($address) && route('addresses.edit', $address->id) == url()->current())
+<div class="d-flex flex-column col-sm-12 col-md-6">
+
+    <!-- district Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('district', trans("lang.address_district"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::text('district', null,  ['class' => 'form-control','step'=>'any', 'placeholder'=>  trans("lang.address_district_placeholder")]) !!}
+            <div class="form-text text-muted">
+                {{ trans("lang.address_district_help") }}
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="d-flex flex-column col-sm-12 col-md-6">
+
+   
+    <!-- city Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('city', trans("lang.address_city"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::text('city', null,  ['class' => 'form-control','step'=>'any', 'placeholder'=>  trans("lang.address_city_placeholder")]) !!}
+            <div class="form-text text-muted">
+                {{ trans("lang.address_city_help") }}
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 <div class="col-12" style="height:400px; ">
     <div style="width: 100%; height: 100%" id="map"></div>
 </div>
