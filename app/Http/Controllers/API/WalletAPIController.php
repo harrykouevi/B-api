@@ -41,17 +41,17 @@ class WalletAPIController extends Controller
     /**  @var  CurrencyRepository */
     private CurrencyRepository $currencyRepository;
 
-     /**
+    /**
      * @var PaymentService
      */
     private PaymentService $paymentService;
 
-    public function __construct(PaymentService $paymentService ,WalletRepository $walletRepo, CurrencyRepository $currencyRepository )
+    public function __construct(PaymentService $paymentService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository)
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
         $this->currencyRepository = $currencyRepository;
-        $this->paymentService =  $paymentService ;
+        $this->paymentService = $paymentService;
 
     }
 
@@ -104,7 +104,7 @@ class WalletAPIController extends Controller
             $input['enabled'] = 1;
             $wallet = $this->walletRepository->create($input);
         } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()),422);
+            return $this->sendError(array_values($e->errors()), 422);
         }
         return $this->sendResponse($wallet->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
@@ -119,21 +119,20 @@ class WalletAPIController extends Controller
      * @return JsonResponse
      */
     public function storeDefault(): JsonResponse
-    { 
+    {
         try {
-            $resp = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0 ,setting('app_default_wallet_id'),auth()->user());
-            
-        
+            $resp = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user());
+
+
         } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()),422);
+            return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
-           
+
             return $this->sendError($e->getMessage());
         }
         return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
 
-  
 
     /**
      * Add amount to wallet
@@ -142,7 +141,7 @@ class WalletAPIController extends Controller
      * @return JsonResponse
      */
     public function deposit($id, Request $request): JsonResponse
-    { 
+    {
         $this->walletRepository->pushCriteria(new EnabledCriteria());
         $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
         $wallet = $this->walletRepository->findWithoutFail($id);
@@ -155,19 +154,19 @@ class WalletAPIController extends Controller
                 'amount' => 'required|numeric|min:0.01',
             ]);
 
-          
+
             //avec ce code c'est une transaction de compte à compte
-            $resp = $this->paymentService->createPayment( $request->get('amount') ,setting('app_default_wallet_id'),auth()->user());
+            $resp = $this->paymentService->createPayment($request->get('amount'), setting('app_default_wallet_id'), auth()->user());
             //ici c'est une transaction de l'exterieeur de l'app vers un compte
-            $resp = $this->paymentService->makeDeposit( $request->get('amount'), $wallet );
+            $resp = $this->paymentService->makeDeposit($request->get('amount'), $wallet);
 
             $input = [];
             $input['balance'] = $wallet->balance + $request->get('amount');
             $wallet = $this->walletRepository->update($input, $id);
-              } catch (ValidationException $e) {
-            return $this->sendError(array_values($e->errors()),422);
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
-           
+
             return $this->sendError($e->getMessage());
         }
         return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
@@ -237,18 +236,80 @@ class WalletAPIController extends Controller
      *
      * @return JsonResponse
      */
-    public function sendNotification() : JsonResponse
+    public function sendNotification(): JsonResponse
     {
         try {
-                        Log::error(['sendNotification',auth()->user()]);
-           
-                Notification::send(auth()->user(), "yes yes yes yes");
-          
+            Log::error(['sendNotification', auth()->user()]);
+
+            Notification::send(auth()->user(), "yes yes yes yes");
+
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
 
         return $this->sendResponse(true, __('lang.deleted_successfully', ['operator' => __('lang.wallet')]));
 
+    }
+
+    private function validateRechargeRequest(Request $request): ?JsonResponse
+    {
+        $maxAllowed = 100000;
+
+        $validator = \Validator::make($request->all(), [
+            'user_id' => 'required|integer|exists:users,id',
+            'amount' => "required|numeric|min:1|max:$maxAllowed",
+        ],
+            [
+            'user_id.required' => 'Le champ user_id est obligatoire.',
+            'user_id.integer' => 'Le champ user_id doit être un entier.',
+            'user_id.exists' => 'L\'utilisateur spécifié n\'existe pas.',
+            'amount.required' => 'Le champ amount est obligatoire.',
+            'amount.numeric' => 'Le champ amount doit être un nombre.',
+            'amount.min' => "Le montant doit être au moins 1.",
+            'amount.max' => "Le montant ne peut pas dépasser $maxAllowed.",
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => true,
+                'messages' => $validator->errors()->all(),
+            ], 400);
+        }
+
+        return null;
+    }
+
+
+    public function increaseWallet(Request $request): JsonResponse
+    {
+        $validationError = $this->validateRechargeRequest($request);
+        if ($validationError) {
+            return $validationError;
+        }
+
+        try {
+            $userId = $request->get('user_id');
+            $amount = $request->get('amount');
+            $this->walletRepository->pushCriteria(new EnabledCriteria());
+            $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
+            $wallets = $this->walletRepository->all();
+
+            if ($wallets->isEmpty()) {
+                return $this->sendError('Aucun wallet trouvé pour cet utilisateur', 404);
+
+            }
+            $wallet = $wallets->first();
+            $resultat = response()->json([
+                'transaction_id' => '$transaction->id_simulé',
+                'status' => 'pending',
+            ]);
+            //faire la simulation du service de paiement ici avec cinetPay
+            return $this->sendResponse($resultat,"Recharge terminé");
+
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()), 422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 500);
+        }
     }
 }

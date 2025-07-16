@@ -155,5 +155,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
 
     Route::post('send-notification', [WalletAPIController::class, 'sendNotification'])->name('notifications.test');
+    Route::post('recharge/', [WalletAPIController::class, 'increaseWallet'])->name('increase_wallet');
 
 });
