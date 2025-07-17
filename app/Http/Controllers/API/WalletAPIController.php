@@ -17,6 +17,7 @@ use App\Models\Notification;
 use App\Models\Wallet;
 use App\Repositories\CurrencyRepository;
 use App\Repositories\WalletRepository;
+use App\Services\CinetPayService;
 use App\Services\PaymentService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -46,12 +47,15 @@ class WalletAPIController extends Controller
      */
     private PaymentService $paymentService;
 
-    public function __construct(PaymentService $paymentService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository)
+    private CinetPayService $cinetPayService;
+
+    public function __construct(CinetPayService $cinetPayService, $paymentService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository)
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
         $this->currencyRepository = $currencyRepository;
         $this->paymentService = $paymentService;
+        $this->cinetPayService = $cinetPayService;
 
     }
 
@@ -298,13 +302,23 @@ class WalletAPIController extends Controller
                 return $this->sendError('Aucun wallet trouvé pour cet utilisateur', 404);
 
             }
+            $transactionId = uniqid('txn_');
             $wallet = $wallets->first();
-            $resultat = response()->json([
-                'transaction_id' => '$transaction->id_simulé',
-                'status' => 'pending',
-            ]);
-            //faire la simulation du service de paiement ici avec cinetPay
-            return $this->sendResponse($resultat,"Recharge terminé");
+            $response = $this->cinetPayService->initPayment(
+                $amount,
+                'XOF', // ou autre devise
+                $transactionId,
+                auth()->user()->email,
+                auth()->user()->phone_number,
+            );
+            if (isset($response['data']['payment_url'])) {
+                return $this->sendResponse( response()->json([
+                    'transaction_id' => $transactionId,
+                    'status' => 'pending',
+                    'payment_url' => $response['data']['payment_url'],
+                ]),"Recharge effectuée avec succès");
+            }
+            return $this->sendError('Erreur lors de l\'initialisation du paiement', 500);
 
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);
