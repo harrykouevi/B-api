@@ -16,6 +16,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\Wallet;
 use App\Repositories\CurrencyRepository;
+use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
 use App\Services\CinetPayService;
 use App\Services\PaymentService;
@@ -48,14 +49,16 @@ class WalletAPIController extends Controller
     private PaymentService $paymentService;
 
     private CinetPayService $cinetPayService;
+    private PaymentMethodRepository $paymentMethodRepository;
 
-    public function __construct(CinetPayService $cinetPayService, $paymentService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository)
+    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository,PaymentMethodRepository $paymentMethodRepository)
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
         $this->currencyRepository = $currencyRepository;
         $this->paymentService = $paymentService;
         $this->cinetPayService = $cinetPayService;
+        $this->paymentMethodRepository = $paymentMethodRepository;
 
     }
 
@@ -261,17 +264,27 @@ class WalletAPIController extends Controller
 
         $validator = \Validator::make($request->all(), [
             'user_id' => 'required|integer|exists:users,id',
-            'amount' => "required|numeric|min:1|max:$maxAllowed",
+            'amount' => [
+                'required',
+                'numeric',
+                "min:100",
+                "max:$maxAllowed",
+                function ($attribute, $value, $fail) {
+                    if ($value % 5 !== 0) {
+                        $fail("Le montant doit être un multiple de 5.");
+                    }
+                },
+            ],
         ],
             [
-            'user_id.required' => 'Le champ user_id est obligatoire.',
-            'user_id.integer' => 'Le champ user_id doit être un entier.',
-            'user_id.exists' => 'L\'utilisateur spécifié n\'existe pas.',
-            'amount.required' => 'Le champ amount est obligatoire.',
-            'amount.numeric' => 'Le champ amount doit être un nombre.',
-            'amount.min' => "Le montant doit être au moins 1.",
-            'amount.max' => "Le montant ne peut pas dépasser $maxAllowed.",
-        ]);
+                'user_id.required' => 'Le champ user_id est obligatoire.',
+                'user_id.integer' => 'Le champ user_id doit être un entier.',
+                'user_id.exists' => 'L\'utilisateur spécifié n\'existe pas.',
+                'amount.required' => 'Le champ amount est obligatoire.',
+                'amount.numeric' => 'Le champ amount doit être un nombre.',
+                'amount.min' => "Le montant doit être au moins 5.",
+                'amount.max' => "Le montant ne peut pas dépasser $maxAllowed.",
+            ]);
 
         if ($validator->fails()) {
             return response()->json([
@@ -286,6 +299,13 @@ class WalletAPIController extends Controller
 
     public function increaseWallet(Request $request): JsonResponse
     {
+        Log::info('increaseWallet called', [
+            'user_id' => $request->get('user_id'),
+            'amount' => $request->get('amount'),
+            'payment_method_route' => $request->get('payment_method_route'),
+            'phone_number' => $request->get('phone_number'),
+        ]);
+
         $validationError = $this->validateRechargeRequest($request);
         if ($validationError) {
             return $validationError;
@@ -294,30 +314,97 @@ class WalletAPIController extends Controller
         try {
             $userId = $request->get('user_id');
             $amount = $request->get('amount');
+            $paymentMethodRoute = $request->get('payment_method_route');
+
+            // Valider que le moyen de paiement existe et est activé
+            // à changer et en fonction du paiement méthode(recharge)
+            $paymentMethod = $this->paymentMethodRepository->findByField('route', $paymentMethodRoute)->first();
+
+            if (empty($paymentMethod) || !$paymentMethod->enabled) {
+                return $this->sendError('Moyen de paiement invalide ou désactivé', 422);
+            }
+
+
+
+            $validationRules = [
+                'user_id' => 'required|integer|exists:users,id',
+                'amount' => 'required|numeric|min:5|max:100000',
+                'payment_method_route' => 'required|string|exists:payment_methods,route',
+            ];
+
+            if ($paymentMethodRoute === 'CREDIT_CARD') {
+                $validationRules = array_merge($validationRules, [
+                    'phone_number' => 'required|string',
+                    'customer_name' => 'required|string',
+                    'customer_surname' => 'required|string',
+                    'customer_address' => 'required|string',
+                    'customer_city' => 'required|string',
+                    'customer_country' => 'required|string|size:2',
+                    'customer_state' => 'required|string|size:2',
+                    'customer_zip_code' => 'required|string|max:5',
+                ]);
+            } else {
+                // Pour Mobile Money et autres moyens, on demande au moins le numéro
+                $validationRules['phone_number'] = 'required|string';
+            }
+
+            $validator = \Validator::make($request->all(), $validationRules);
+
+            if ($validator->fails()) {
+                return $this->sendError($validator->errors()->all(), 422);
+            }
+
             $this->walletRepository->pushCriteria(new EnabledCriteria());
             $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
             $wallets = $this->walletRepository->all();
 
             if ($wallets->isEmpty()) {
                 return $this->sendError('Aucun wallet trouvé pour cet utilisateur', 404);
-
             }
+
             $transactionId = uniqid('txn_');
             $wallet = $wallets->first();
+
+            $description = "Recharge wallet utilisateur #$transactionId";
+
+            // Préparer les données client selon le moyen de paiement
+            if ($paymentMethodRoute === 'CREDIT_CARD') {
+                $customerData = [
+                    'customer_id' => (string)$userId,
+                    'customer_name' => $request->input('customer_name'),
+                    'customer_surname' => $request->input('customer_surname'),
+                    'customer_phone_number' => $request->input('phone_number'),
+                    'customer_email' => auth()->user()->email,
+                    'customer_address' => $request->input('customer_address'),
+                    'customer_city' => $request->input('customer_city'),
+                    'customer_country' => $request->input('customer_country'),
+                    'customer_state' => $request->input('customer_state'),
+                    'customer_zip_code' => $request->input('customer_zip_code'),
+                ];
+            } else {
+                $customerData = [
+                    'customer_phone_number' => $request->input('phone_number'),
+                ];
+            }
+
+            $notifyUrl = url('/api/payment/callback'); // ou une URL de test
+            $returnUrl = url('/payment/return');
+
             $response = $this->cinetPayService->initPayment(
                 $amount,
-                'XOF', // ou autre devise
+                'XOF',
                 $transactionId,
-                auth()->user()->email,
-                auth()->user()->phone_number,
+                $description,
+                $paymentMethodRoute,
+                $customerData,
+                $notifyUrl,
+                $returnUrl
             );
+
             if (isset($response['data']['payment_url'])) {
-                return $this->sendResponse( response()->json([
-                    'transaction_id' => $transactionId,
-                    'status' => 'pending',
-                    'payment_url' => $response['data']['payment_url'],
-                ]),"Recharge effectuée avec succès");
+                return $this->sendResponse($response, "Recharge effectuée avec succès");
             }
+
             return $this->sendError('Erreur lors de l\'initialisation du paiement', 500);
 
         } catch (ValidationException $e) {
