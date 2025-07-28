@@ -93,6 +93,25 @@ class PaymentMethod extends Model implements HasMedia
         "updated_at",
     ];
 
+    
+    /**
+     * Retourne une fonction de filtrage permettant de déterminer si un salon est fermé ou ouvert,
+     * en se basant dynamiquement sur ses horaires de disponibilité.
+     *
+     * Cette fonction est conçue pour être utilisée avec une collection Laravel :
+     * ex: $salons->filter(Salon::scopedClosed(true))
+     *
+     * @param bool $closed  
+     * @return \Closure     
+     */
+    public static function scopedFilter(bool $isGatewaymethod)
+    {
+        return function ($method) use ($isGatewaymethod) {
+            
+            return $method->is_gateway_method == $isGatewaymethod;
+        };
+    }
+
     /**
      * @param Media|null $media
      * @throws InvalidManipulation
