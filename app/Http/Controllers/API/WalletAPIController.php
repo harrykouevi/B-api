@@ -352,9 +352,11 @@ class WalletAPIController extends Controller
             ];
         }
 
-        // Pour les autres méthodes, on ne prend que le téléphone
+
+        log::info("Cas de telephone");
         return [
             'customer_phone_number' => $request->input('phone_number'),
+
         ];
     }
 
@@ -396,12 +398,13 @@ class WalletAPIController extends Controller
             $description = "Recharge wallet utilisateur #$transactionId";
 
             $customerData = $this->buildCustomerData($request, $paymentChannel, $userId);
+            Log::info('Sortie dans customerData ', ['user_id' => $user_id, 'request' => $request->all()]);
 
 
             $notifyUrl = url("/api/recharge/callback/{$userId}");
             $returnUrl = 'myapp://payment-return';
 
-
+            log::info("Début d'envoi");
             $response = $this->cinetPayService->initPayment(
                 $amount,
                 'XOF',
