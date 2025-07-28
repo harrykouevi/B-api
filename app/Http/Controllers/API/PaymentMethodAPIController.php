@@ -42,8 +42,8 @@ class PaymentMethodAPIController extends Controller
      */
     protected function _filter(Request $request, Collection $collection):  Collection
     {
-        if($request->has('is_gateway_method')){
-            $bool = $request->input('is_gateway_method');
+        if($request->has('gateway_method')){
+            $bool = $request->input('gateway_method');
             $collection = $collection->filter( PaymentMethod::scopedFilter($bool) );
         }
         return $collection ;
