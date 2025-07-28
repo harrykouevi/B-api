@@ -33,8 +33,10 @@ class CinetpayAPIController extends Controller
 
     public function notify(Request $request , int $user_id)
     {
+        Log::info('Entrée dans notify', ['user_id' => $user_id, 'request' => $request->all()]);
+
         // $secretKey = config('services.cinetpay.secret'); // à mettre dans .env
-        $secretKey = 'cinetpay.secret'; // à mettre dans .env
+        $secretKey = config('services.cinetpay.api_key');
 
         // Étape 1: Extraire toutes les données nécessaires
         $fields = [
@@ -72,8 +74,8 @@ class CinetpayAPIController extends Controller
 
         // Étape 2 : Vérifier avec CinetPay
         $response = Http::post('https://api-checkout.cinetpay.com/v2/payment/check', [
-            'apikey' => env('CINETPAY_API_KEY'),
-            'site_id' => $siteId,
+            'apikey' => config('services.cinetpay.api_key'),
+            'site_id' => config('services.cinetpay.site_id'),
             'transaction_id' => $transactionId,
         ]);
 

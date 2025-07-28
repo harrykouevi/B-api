@@ -398,8 +398,9 @@ class WalletAPIController extends Controller
             $customerData = $this->buildCustomerData($request, $paymentChannel, $userId);
 
 
-            $notifyUrl = url('/api/payment/callback');
-            $returnUrl = url('/payment/return');
+            $notifyUrl = url("/api/recharge/callback/{$userId}");
+            $returnUrl = 'myapp://payment-return';
+
 
             $response = $this->cinetPayService->initPayment(
                 $amount,

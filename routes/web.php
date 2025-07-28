@@ -18,6 +18,7 @@
 */
 
 use App\Http\Controllers\AddressController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route ;
 use Illuminate\Support\Facades\Auth ;
 use App\Http\Controllers\DashboardController;
@@ -214,4 +215,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('walletTransactions',  WalletTransactionController::class)->except([
         'show', 'edit', 'update', 'destroy'
     ]);
+
+    Route::match(['get', 'post'], '/payment/return', function (Request $request) {
+        return view('payments.return');
+    });
+    Route::get('/test-public', function () {
+        return 'Page publique accessible sans auth';
+    });
+
 });
