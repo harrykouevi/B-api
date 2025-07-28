@@ -402,6 +402,7 @@ class WalletAPIController extends Controller
 
 
             $notifyUrl = url("/api/recharge/callback/{$userId}");
+            log::info("notify Url",['url'=> $notifyUrl]);
             $returnUrl = 'myapp://payment-return';
 
             log::info("Début d'envoi");
