@@ -314,7 +314,7 @@ class WalletAPIController extends Controller
         return null;
     }
 
-    //méthode pour choisir le canal de paiement peu importe le nom entré en BD
+
     private function resolvePaymentChannel(string $methodName): ?string
     {
         $name = strtolower($methodName);

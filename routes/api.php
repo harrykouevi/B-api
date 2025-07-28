@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
 use App\Http\Controllers\API\BookingAPIController;
+use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
@@ -124,6 +125,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('payments/byMonth', 'API\PaymentAPIController@byMonth')->name('payments.byMonth');
     Route::post('payments/wallets/{id}', [PaymentAPIController::class ,'wallets'])->name('payments.wallets');
     Route::post('payments/cash', 'API\PaymentAPIController@cash')->name('payments.cash');
+    Route::post('payments/mobile', 'API\PaymentAPIController@cash')->name('payments.mobile');
     Route::resource('payment_methods', 'API\PaymentMethodAPIController')->only([
         'index'
     ]);
@@ -156,5 +158,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('send-notification', [WalletAPIController::class, 'sendNotification'])->name('notifications.test');
     Route::post('recharge/', [WalletAPIController::class, 'increaseWallet'])->name('increase_wallet');
+
+    Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
 
 });

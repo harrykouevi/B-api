@@ -123,6 +123,17 @@ class PaymentMethodsTableSeeder extends Seeder
             //     'created_at' => now(),
             //     'updated_at' => now(),
             // ),
+            array(
+                'id' => 12,
+                'name' => 'MobilePay',
+                'description' => 'Click to pay with MobilePay',
+                'route' => '/MobilePay',
+                'order' => 12,
+                'default' => 0,
+                'enabled' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
         ));
 
 

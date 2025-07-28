@@ -22,9 +22,11 @@ use Illuminate\Support\Facades\Route ;
 use Illuminate\Support\Facades\Auth ;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PayPalController;
 use App\Http\Controllers\SalonController;
 use App\Http\Controllers\SalonPayoutController;
 use App\Http\Controllers\SalonReviewController;
+use App\Http\Controllers\StripeController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WalletTransactionController;
@@ -33,13 +35,13 @@ Route::get('login/{service}', 'Auth\LoginController@redirectToProvider');
 Route::get('login/{service}/callback', 'Auth\LoginController@handleProviderCallback');
 Auth::routes();
 
-Route::get('payments/failed', 'PayPalController@index')->name('payments.failed');
+Route::get('payments/failed', [PayPalController::class, 'index'])->name('payments.failed');
 Route::get('payments/razorpay/checkout', 'RazorPayController@checkout');
 Route::post('payments/razorpay/pay-success/{bookingId}', 'RazorPayController@paySuccess');
 Route::get('payments/razorpay', 'RazorPayController@index');
 
 Route::get('payments/stripe/checkout', 'StripeController@checkout');
-Route::get('payments/stripe/pay-success/{bookingId}/{paymentMethodId}', 'StripeController@paySuccess');
+Route::get('payments/stripe/pay-success/{bookingId}/{paymentMethodId}', [StripeController::class ,'paySuccess']);
 Route::get('payments/stripe', 'StripeController@index');
 
 Route::get('payments/paymongo/checkout', 'PayMongoController@checkout');

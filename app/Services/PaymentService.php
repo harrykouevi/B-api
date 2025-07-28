@@ -21,6 +21,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
+use App\Repositories\PaymentMethodRepository;
 
 class PaymentService
 {
@@ -47,7 +48,10 @@ class PaymentService
         $this->currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
     }
 
-    /**
+
+ 
+
+     /**
     * make Payment .
     * This method processes a payment transaction where a payer initiates the payment
     * to a specified receiver. It requires the receiver's user object and the payer's
@@ -66,16 +70,17 @@ class PaymentService
         $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
         if($wallet == Null){
             $wallet = $this->createWallet($user , 0) ;
+
         }
         $user = $wallet->user ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
          
-            $payment = $this->processPayment($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-          
+            
             if($amount != 0) { 
                 try{
-                   
+                    $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
+          
                     // $f= new User($user->toArray()) ;
                     // $f->id = $user->toArray()['id'] ;
                     Log::error(['PaymentServicee-createPayment',$wallet->user]);
@@ -91,46 +96,49 @@ class PaymentService
         return Null ;
     }
 
-
     /**
-    * This method processes a payment transaction where a payer initiates the payment
-    * to a specified receiver. It requires the receiver's user object and the payer's
-    * wallet, which can be either an integer identifier or a Wallet object.
-    *
-    * @param float $amount The amount of deposit.
-    * @param Wallet  $wallet that receiving the deposit.
-    * @return Array|Null
-    */
-    public function makeDeposit(float $amount ,Wallet $wallet ) : array | Null
+     * Effectue une transaction de paiement externe.
+     *
+     * Cette méthode traite une transaction dans laquelle un Utilisateur est impliqué dans le paiement..
+     * Le payeur peut être la plateforme (en cas de retrait) ou l'utilisateur lui-même (en cas de crédit).
+     *
+     * @param float       $amount Montant du paiement.
+     * @param User        $user   Utilisateur impliqué dans le paiement.
+     * @param PaymentType $type   Type de paiement : 'credit' (l'utilisateur est le payeur) ou 'debit' (la plateforme est le payeur).
+     *
+     * @return array|null Détails de la transaction ou null en cas d’échec.
+     */
+    public function createPaymentLinkWithExternal(float $amount ,User $user , PaymentType $type) : array | Null
     {
-        
-        $app_wallet = $this->walletRepository->find(setting('app_default_wallet_id'))  ;
-        // app_wallet shall receive a commission
+      
+        $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first() ;
+        Log::info(['Wallet already exist ?',$wallet->id ?? Null, $type]);
+        if($wallet == Null){
+            $wallet = $this->createWallet($user , 0) ;
+            Log::info(['Wallet creation',$wallet->id ?? Null,$type]);
 
+        }
         $user = $wallet->user ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
-         
-            $payment = $this->process($this->getPaymentDetail($amount,$app_wallet,$user), [$wallet , $app_wallet]) ;
-          
-            // if($payment) $wallet =  $this->walletRepository->update(['balance'=> $wallet->balance + $amount ] , $wallet->id);
-            // if($payment) $app_wallet =  $this->walletRepository->update(['balance'=> $app_wallet->balance - $amount ] , $payer_wallet->id);
-            if($amount != 0) {
+            
+            $payment = Null ;
+            if($amount != 0) { 
+                $payment = $this->withExternalTransaction($this->getWithExternalPaymentDetail($amount,$user ,$type ), $wallet ,$type) ;
+                Log::error(['PaymentServicee-createPayment',$wallet->user]);
+
                 try{
-                    Log::error(['PaymentServicee',$user]);
-
-                    Notification::send([$user], new NewReceivedPayment($payment,$wallet));
-
+                    // Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
             }
+           
             return [$payment , $wallet] ;
         }
         return Null ;
     }
 
-    
 
 
     /**
@@ -140,7 +148,7 @@ class PaymentService
      * 
      * @return Payment | Null
      */
-    private function processPayment(Array $input , array $wallets):Payment | Null
+    private function toWalletFromWallet(Array $input , array $wallets):Payment | Null
     {
         
         $wallet =  $wallets[0] ;
@@ -178,103 +186,75 @@ class PaymentService
 
 
     /**
-     * make Payment .
-     * @param Array $input
-     * @param Array $wallets
-     * 
-     * @return Payment | Null
+     * Traite une transaction de paiement externe avec enregistrement des mouvements sur les portefeuilles.
+     *
+     * Cette méthode crée un paiement, puis génère deux ou trois transactions associées :
+     * - une transaction principale sur le portefeuille de l'utilisateur concerné (crédit ou débit),
+     * - une transaction de frais éventuels sur le portefeuille de la plateforme.
+     *
+     * @param array   $input  Données du paiement (clé 'payment' attendue avec les champs requis).
+     * @param Wallet  $wallet Portefeuille de l'utilisateur effectuant ou recevant le paiement.
+     * @param PaymentType  $type   Type de transaction : 'credit' ou 'debit'.
+     *
+     * @return Payment|null   Objet Payment créé, ou null si la transaction est ignorée (montant nul ou devise invalide).
      */
-    private function process(Array $input , array $wallets):Payment | Null
+    private function withExternalTransaction(Array $input , Wallet $wallet , PaymentType $type ):Payment | Null
     {
         
-        $wallet =  $wallets[0] ;
-        $app_wallet =  $wallets[1] ;
+        // $wallet =  $wallets[0] ;
+        $ptf_wallet =  $this->walletRepository->find(setting('app_default_wallet_id')) ; 
 
+        if (!isset($ptf_wallet)) {
+            throw new \Exception("Le portefeuille plateforme est introuvable.");
+        }
+
+        if (!isset($wallet)) {
+            throw new \Exception("Le wallet principal est introuvable.");
+        }
+      
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
-
             if($input['payment']['amount'] != 0){
+                    
+                if (empty($input['payment']['payment_method_id']) || !app(PaymentMethodRepository::class)->find($input['payment']['payment_method_id'])) {
+                    throw new \Exception("payment_method_id invalide ou manquant.");
+                }
                 
-                $input['payment']['description'] =  "Compte crédité ".strval($wallet->user_id)." make a deposit on his wallet ". strval($wallet->id) .". ";
                 $payment = $this->paymentRepository->create($input['payment']);
-
-                $transaction['amount'] = $input['payment']['amount'];
-                $transaction['payment_id'] = $payment->id;
-                
+    
+                $transaction = [];
                 for ($i=0; $i <= 1  ; $i++) { 
+                    
                     if($i == 0){
+                        $transaction['payment_id'] = $payment->id;
                         $transaction['user_id'] = $wallet->user_id;
+                        $transaction['amount'] = $input['payment']['amount'] - (($type == PaymentType::CREDIT)? setting('debit_fees',0)  : setting('debit_fees',0)) ;
                         $transaction['wallet_id'] = $wallet->id;
-                        $transaction['description'] = 'compte credité';
+                        $transaction['description'] = ($type == PaymentType::CREDIT)? 'compte credité' : 'compte débité';
+                        $transaction['action'] =  ($type == PaymentType::CREDIT)? 'credit' : 'debit';
+                    }
+                    if($i == 1  && ( ($type == PaymentType::CREDIT && setting('debit_fees',0) > 0) || ($type == PaymentType::DEBIT && setting('debit_fees',0) > 0) )){
+                        $transaction['payment_id'] = $payment->id;
+                        $transaction['user_id'] = $ptf_wallet->user_id;
+                        $transaction['amount'] = ($type == PaymentType::CREDIT)? setting('debit_fees',0) : setting('debit_fees',0) ;
+                        $transaction['wallet_id'] = $ptf_wallet->id;
+                        $transaction['description'] = 'compte credité with transaction fee for external paiement #'.$payment->id;
                         $transaction['action'] =  'credit';
                     }
-                    //si j'ai prevue commissionné l'application
-                    if($i == 1){
-                        $transaction['user_id'] = $app_wallet->user_id;
-                        $transaction['wallet_id'] = $app_wallet->id;
-                        $transaction['description'] = 'compte credité';
-                        $transaction['action'] =  'credit';
+                    if(!empty($transaction)){
+                        $this->walletTransactionRepository->create($transaction);
                     }
-
-                    $this->walletTransactionRepository->create($transaction);
+                    $transaction = [] ;
                 }
                 return $payment ;
             }
         }
         return Null ;
     }
-
-
-        /**
-     * make Payment .
-     * @param Array $input
-     * @param Array $wallets
-     * 
-     * @return Payment | Null
-     */
-    private function processWithDraw(Array $input , array $wallets):Payment | Null
-    {
-        
-        $wallet =  $wallets[0] ;
-        $app_wallet =  $wallets[1] ;
-
-        $currency = json_decode($wallet->currency, true);
-        if ($currency['code'] == setting('default_currency_code')) {
-
-            if($input['payment']['amount'] != 0){
-                
-                $input['payment']['description'] =  "Compte dédité ".strval($wallet->user_id)." make a withdraw on his wallet ". strval($wallet->id) .". ";
-                $payment = $this->paymentRepository->create($input['payment']);
-
-                $transaction['amount'] = $input['payment']['amount'];
-                $transaction['payment_id'] = $payment->id;
-                
-                for ($i=0; $i <= 1  ; $i++) { 
-                    if($i == 0){
-                        $transaction['user_id'] = $wallet->user_id;
-                        $transaction['wallet_id'] = $wallet->id;
-                        $transaction['description'] = 'compte débité';
-                        $transaction['action'] =  'credit';
-                    }
-                    //si j'ai prevue commissionné l'application
-                    if($i == 1){
-                        $transaction['user_id'] = $app_wallet->user_id;
-                        $transaction['wallet_id'] = $app_wallet->id;
-                        $transaction['description'] = 'compte credité';
-                        $transaction['action'] =  'credit';
-                    }
-
-                    $this->walletTransactionRepository->create($transaction);
-                }
-                return $payment ;
-            }
-        }
-        return Null ;
-    }
-
+  
 
     /**
-    * getPaymentDetail .
+    * Génère les détails d'un paiement entre wallet
     *
     * @param float $amount The amount of the payment.
     * @param Wallet $wallet The wallet of the payer initiating the payment.
@@ -294,17 +274,42 @@ class PaymentService
         return $input;
     }
 
+    /**
+     * Génère les détails d'un paiement externe.
+     *
+     * @param float  $amount Montant du paiement.
+     * @param User   $user   Utilisateur impliqué dans le paiement.
+     * @param string $type   Type de paiement : 'credit' ou autre pour débit.
+     *
+     * @return array Détails structurés du paiement à utiliser pour un enregistrement externe.
+     */
+    private function getWithExternalPaymentDetail(float $amount ,User $user , PaymentType $type){
+
+        $input = [];
+        $input['payment']['amount'] = $amount;
+        $input['payment']['description'] =( ($type == PaymentType::CREDIT) ? "credit made to " : " débit from"   ). " user #". strval($user->id) ." .  ". strval($user->name)." wallet" ;
+        $input['payment']['payment_status_id'] = 2; // done
+        $input['payment']['payment_method_id'] = 12;
+        $input['payment']['user_id'] =  $user->id;
+
+        return $input;
+    }
+
 
 
     /**
-     * make Wallet .
+     * Crée un portefeuille (wallet) pour un utilisateur donné avec un solde initial.
      *
-     * @return Wallet
+     * Le portefeuille est créé uniquement si une devise par défaut ($this->currency) est définie.
+     *
+     * @param User  $user   L'utilisateur pour lequel le portefeuille est créé.
+     * @param float $amount Le solde initial du portefeuille.
+     *
+     * @return Wallet|null  Le portefeuille créé, ou null si la devise n'est pas définie.
      */
     private function createWallet(User $user,float $amount ):Wallet|Null
     {
-        
-        
+        Log::info(['function createWallet,  show xurrency',$this->currency->id ?? Null]) ;
         if (!is_null($this->currency)) {
            
             $input = [];
@@ -317,4 +322,9 @@ class PaymentService
         }
         return Null;
     }
+}
+
+enum PaymentType: string {
+    case CREDIT = 'credit';
+    case DEBIT = 'debit';
 }
