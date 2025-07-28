@@ -204,29 +204,32 @@ class AffiliateAPIController extends Controller
         return redirect()->to('com.example.barbershop://affiliate-link?affiliate_link_id=' . $affiliationCode_ );
     }
     
+
+    /**
+     * Enables an authenticated user to be referred by another user through an referral code. 
+     * Once the code is validated, the referrer and referred user receive benefits .
+     * POST|HEAD 
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function confirmConversion(string $affiliationCode_ , Request $request)
     {
         try {
             // if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
-            if( is_null($affiliation) ) throw new InvalidArgumentException('parrainage do not exist');
+            if( is_null($affiliation) ) throw new InvalidArgumentException('referral do not exist');
 
             $conversion = $this->partenerShipService->proceedPartenerShip(auth()->user(),$affiliation) ;
 
-           
             if( $conversion ){ 
-                // Attribue la récompense au partenaire
+                //recuperation du user a qui appartient le code
                 $partner = $affiliation->user;
                 if( $partner){ 
+                    //si il est trouvé user a qui appartient le code recois son bunus
                     $amount =  auth()->user()->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
                     $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner );
                 }
-
-           
-                // $this->userRepository->update([
-                //     'sponsorship' => $affiliation,
-                //     'sponsorship_at' => now(),
-                // ],auth()->user()->id);
 
             }
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));

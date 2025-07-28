@@ -68,41 +68,44 @@ class PartenerShipService
 
 
     /**
-    * proceedPartenerShip
-    *
-    * @param Affiliate $affiliation 
-    * @return Conversion | Null
-    */
-    public function proceedPartenerShip(User $user , Affiliate|Null $affiliation ) : Conversion | Null
+     * Handles the partnership process for a user with an optional affiliate.
+     *
+     * @param User $user The user attempting to be referred.
+     * @param Affiliate $affiliation The affiliate
+     * @return Conversion|null Returns the conversion if successful, or null otherwise.
+     */
+    public function proceedPartenerShip(User $user , Affiliate $affiliation ) : Conversion | Null
     {
         
         if ($user == Null )  return Null ;
-        if ($user!= Null && $user->sponsorship_at != Null )  throw new \Exception("already get sponsored");
         if ($affiliation == Null ) throw new \Exception("unprocessable partenership") ;
         
         // Increment le nombre de fois que le code d'affiliation à tenté d'etre utilisé
         $input['click'] =  $affiliation->click + 1 ;
         $affiliation =$this->affiliateRepository->update($input, $affiliation->id);
 
+        if ($user!= Null && $user->sponsorship_at != Null )  throw new \Exception("already get sponsored");
         if ($user->id == $affiliation->user_id) throw new \Exception("unprocessable partenership") ;
         //if ($affiliation->user->sponsorhip_at != Null && $user->id == $affiliation->user->sponsorhip->user_id) throw new \Exception("unprocessable partenership") ;
 
         // Met à jour la conversion en tant que réussie
         //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
+
+        // Creer une conversion en tant que réussie
         $conversion = $this->conversionRepository->create([
             'affiliate_id' => $affiliation->id ,
             'affiliation' => $affiliation ,
             'status' => 'success'
         ]);
 
+        // Met à jour les données de l'utilisateur afin de pouvoir vérifier ultérieurement s'il a déjà été parrainé
         $user->update([
             'sponsorship' => $affiliation,
             'sponsorship_at' => now(),
         ]);
 
-       
 
-        // Attribue la récompense à la personne qui a utilisé un code d'affiliation
+        // Attribue la récompense à l'utilisateur qui a utilisé un code d'affiliation
         $amount = $user->hasRole('customer') ? setting('referral_rewards') : setting('owner_referral_rewards') ;
         $paymentInfo = ["amount"=> $amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
         event(new DoPaymentEvent($paymentInfo));

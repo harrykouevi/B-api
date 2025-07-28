@@ -44,8 +44,9 @@
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^2.15",
         "fakerphp/faker": "^1.23",
-        "nunomaduro/collision": "^v7.10.0",
-        "phpunit/phpunit": "^9.3.3"
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "7.0",
+        "phpunit/phpunit": "10.0"
     },
     "config": {
         "optimize-autoloader": true,
