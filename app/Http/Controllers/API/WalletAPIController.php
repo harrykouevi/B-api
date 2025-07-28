@@ -398,7 +398,7 @@ class WalletAPIController extends Controller
             $description = "Recharge wallet utilisateur #$transactionId";
 
             $customerData = $this->buildCustomerData($request, $paymentChannel, $userId);
-            Log::info('Sortie dans customerData ', ['user_id' => $user_id, 'request' => $request->all()]);
+            Log::info('Sortie dans customerData ', ['user_id' => $userId, 'request' => $request->all()]);
 
 
             $notifyUrl = url("/api/recharge/callback/{$userId}");
@@ -423,8 +423,10 @@ class WalletAPIController extends Controller
             return $this->sendError('Erreur lors de l\'initialisation du paiement', 500);
 
         } catch (ValidationException $e) {
+            Log::info("Erreur", ['exception' => $e->getMessage()]);
             return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
+            Log::info("Erruer:", ['exception' => $e->getMessage()]);
             return $this->sendError($e->getMessage(), 500);
         }
     }
