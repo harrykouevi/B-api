@@ -415,6 +415,7 @@ class WalletAPIController extends Controller
                 $notifyUrl,
                 $returnUrl
             );
+            log::info("reponse",['reponse'=> $response]);
 
             if (isset($response['data']['payment_url'])) {
                 return $this->sendResponse($response, "Recharge effectuée avec succès");
