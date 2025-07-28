@@ -258,7 +258,7 @@ class WalletAPIController extends Controller
 
     }
 
-    private function validateRechargeRequest(Request $request): ?JsonResponse
+    private function validateRechargeRequest(Request $request, string $paymentChannel): ?JsonResponse
     {
         $maxAllowed = 100000;
 
@@ -276,7 +276,7 @@ class WalletAPIController extends Controller
                 },
             ],
         ],
-            [
+            $rules = [
                 'user_id.required' => 'Le champ user_id est obligatoire.',
                 'user_id.integer' => 'Le champ user_id doit être un entier.',
                 'user_id.exists' => 'L\'utilisateur spécifié n\'existe pas.',
@@ -292,66 +292,95 @@ class WalletAPIController extends Controller
                 'messages' => $validator->errors()->all(),
             ], 400);
         }
+        if ($paymentChannel === 'CREDIT_CARD') {
+            $rules = array_merge($rules, [
+                'customer_name' => 'required|string',
+                'customer_surname' => 'required|string',
+                'customer_address' => 'required|string',
+                'customer_city' => 'required|string',
+                'customer_zip_code' => 'required|string|max:5',
+            ]);
+        }
+
+        $validator = \Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => true,
+                'messages' => $validator->errors()->all(),
+            ], 422);
+        }
+
+        return null;
+    }
+
+    //méthode pour choisir le canal de paiement peu importe le nom entré en BD
+    private function resolvePaymentChannel(string $methodName): ?string
+    {
+        $name = strtolower($methodName);
+
+        if (str_contains($name, 'mobile') || str_contains($name, 'money')) {
+            return 'MOBILE_MONEY';
+        }
+
+        if (str_contains($name, 'card') || str_contains($name, 'credit')|| str_contains($name, 'Credit')|| str_contains($name, 'crédit')|| str_contains($name, 'Carte') || str_contains($name, 'carte')) {
+            return 'CREDIT_CARD';
+        }
 
         return null;
     }
 
 
-    public function increaseWallet(Request $request): JsonResponse
-    {
-        Log::info('increaseWallet called', [
-            'user_id' => $request->get('user_id'),
-            'amount' => $request->get('amount'),
-            'payment_method_route' => $request->get('payment_method_route'),
-            'phone_number' => $request->get('phone_number'),
-        ]);
 
-        $validationError = $this->validateRechargeRequest($request);
-        if ($validationError) {
-            return $validationError;
+
+
+    private function buildCustomerData(Request $request, string $paymentChannel, int $userId): array
+    {
+        log::info("dans la fonction");
+        if ($paymentChannel === 'CREDIT_CARD') {
+            return [
+                'customer_id' => (string) $userId,
+                'customer_name' => $request->input('customer_name'),
+                'customer_surname' => $request->input('customer_surname'),
+                'customer_phone_number' => $request->input('customer_phone_number'),
+                'customer_email' => $request->input('customer_email'),
+                'customer_address' => $request->input('customer_address'),
+                'customer_city' => $request->input('customer_city'),
+                'customer_country' => ('TG'),
+                'customer_state' => ('TG'),
+                'customer_zip_code' => $request->input('customer_zip_code'),
+            ];
         }
 
+        // Pour les autres méthodes, on ne prend que le téléphone
+        return [
+            'customer_phone_number' => $request->input('phone_number'),
+        ];
+    }
+
+    //méthode de rechage du wallet(reception des données utilisateur et envoie au service de paiement)
+    public function increaseWallet(Request $request): JsonResponse
+    {
         try {
+            $paymentMethodName = strtolower($request->get('payment_method_name'));
+            $paymentChannel = $this->resolvePaymentChannel($paymentMethodName);
+
+            if (!$paymentChannel) {
+                return $this->sendError('Méthode de paiement non reconnue', 422);
+            }
+
+            $validationError = $this->validateRechargeRequest($request, $paymentChannel);
+            if ($validationError) {
+                return $validationError;
+            }
+
             $userId = $request->get('user_id');
             $amount = $request->get('amount');
-            $paymentMethodRoute = $request->get('payment_method_route');
 
-            // Valider que le moyen de paiement existe et est activé
-            // à changer et en fonction du paiement méthode(recharge)
-            $paymentMethod = $this->paymentMethodRepository->findByField('route', $paymentMethodRoute)->first();
+            $paymentMethod = $this->paymentMethodRepository->findByField('route', $paymentChannel)->first();
 
             if (empty($paymentMethod) || !$paymentMethod->enabled) {
                 return $this->sendError('Moyen de paiement invalide ou désactivé', 422);
-            }
-
-
-
-            $validationRules = [
-                'user_id' => 'required|integer|exists:users,id',
-                'amount' => 'required|numeric|min:5|max:100000',
-                'payment_method_route' => 'required|string|exists:payment_methods,route',
-            ];
-
-            if ($paymentMethodRoute === 'CREDIT_CARD') {
-                $validationRules = array_merge($validationRules, [
-                    'phone_number' => 'required|string',
-                    'customer_name' => 'required|string',
-                    'customer_surname' => 'required|string',
-                    'customer_address' => 'required|string',
-                    'customer_city' => 'required|string',
-                    'customer_country' => 'required|string|size:2',
-                    'customer_state' => 'required|string|size:2',
-                    'customer_zip_code' => 'required|string|max:5',
-                ]);
-            } else {
-                // Pour Mobile Money et autres moyens, on demande au moins le numéro
-                $validationRules['phone_number'] = 'required|string';
-            }
-
-            $validator = \Validator::make($request->all(), $validationRules);
-
-            if ($validator->fails()) {
-                return $this->sendError($validator->errors()->all(), 422);
             }
 
             $this->walletRepository->pushCriteria(new EnabledCriteria());
@@ -364,30 +393,12 @@ class WalletAPIController extends Controller
 
             $transactionId = uniqid('txn_');
             $wallet = $wallets->first();
-
             $description = "Recharge wallet utilisateur #$transactionId";
 
-            // Préparer les données client selon le moyen de paiement
-            if ($paymentMethodRoute === 'CREDIT_CARD') {
-                $customerData = [
-                    'customer_id' => (string)$userId,
-                    'customer_name' => $request->input('customer_name'),
-                    'customer_surname' => $request->input('customer_surname'),
-                    'customer_phone_number' => $request->input('phone_number'),
-                    'customer_email' => auth()->user()->email,
-                    'customer_address' => $request->input('customer_address'),
-                    'customer_city' => $request->input('customer_city'),
-                    'customer_country' => $request->input('customer_country'),
-                    'customer_state' => $request->input('customer_state'),
-                    'customer_zip_code' => $request->input('customer_zip_code'),
-                ];
-            } else {
-                $customerData = [
-                    'customer_phone_number' => $request->input('phone_number'),
-                ];
-            }
+            $customerData = $this->buildCustomerData($request, $paymentChannel, $userId);
 
-            $notifyUrl = url('/api/payment/callback'); // ou une URL de test
+
+            $notifyUrl = url('/api/payment/callback');
             $returnUrl = url('/payment/return');
 
             $response = $this->cinetPayService->initPayment(
@@ -395,7 +406,7 @@ class WalletAPIController extends Controller
                 'XOF',
                 $transactionId,
                 $description,
-                $paymentMethodRoute,
+                $paymentChannel,
                 $customerData,
                 $notifyUrl,
                 $returnUrl
@@ -413,4 +424,5 @@ class WalletAPIController extends Controller
             return $this->sendError($e->getMessage(), 500);
         }
     }
+
 }

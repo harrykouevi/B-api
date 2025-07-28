@@ -42,7 +42,7 @@ class CinetPayService
         ?string $notifyUrl = null,
         ?string $returnUrl = null
     ): array {
-        // Vérifier que le montant est un entier multiple de 5
+
         if ((int)$amount != $amount || $amount % 5 !== 0) {
             throw new InvalidArgumentException("Le montant doit être un entier multiple de 5.");
         }
@@ -93,24 +93,6 @@ class CinetPayService
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
         ])->post("{$this->baseUrl}/v2/payment", $data);
-
-        // Retourner la réponse JSON décodée
-        return $response->json();
-    }
-
-    /**
-     * Vérifier le statut d'une transaction via son transaction_id
-     *
-     * @param string $transactionId
-     * @return array
-     */
-    public function checkPaymentStatus(string $transactionId): array
-    {
-        $response = Http::get("{$this->baseUrl}/v2/payment/check", [
-            'apikey' => $this->apiKey,
-            'site_id' => $this->siteId,
-            'transaction_id' => $transactionId,
-        ]);
 
         return $response->json();
     }
