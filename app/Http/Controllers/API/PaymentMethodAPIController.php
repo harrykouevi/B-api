@@ -17,6 +17,8 @@ use Illuminate\Http\Request;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
+use Illuminate\Support\Collection;
+
 
 /**
  * Class PaymentMethodController
@@ -33,6 +35,21 @@ class PaymentMethodAPIController extends Controller
         $this->paymentMethodRepository = $paymentMethodRepo;
     }
 
+     /**
+     *@param Request $request
+     * @param Collection $collection
+     * @return Collection $collection
+     */
+    protected function _filter(Request $request, Collection $collection):  Collection
+    {
+        if($request->has('gateway_method')){
+            $bool = $request->input('gateway_method');
+            $collection = $collection->filter( PaymentMethod::scopedFilter($bool) );
+        }
+        return $collection ;
+    }
+
+
     /**
      * Display a listing of the PaymentMethod.
      * GET|HEAD /paymentMethods
@@ -42,6 +59,7 @@ class PaymentMethodAPIController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        
         try {
             $this->paymentMethodRepository->pushCriteria(new RequestCriteria($request));
             $this->paymentMethodRepository->pushCriteria(new LimitOffsetCriteria($request));
@@ -49,6 +67,7 @@ class PaymentMethodAPIController extends Controller
             return $this->sendError($e->getMessage());
         }
         $paymentMethods = $this->paymentMethodRepository->all();
+        $paymentMethods = $this->_filter($request,$paymentMethods);
 
         return $this->sendResponse($paymentMethods->toArray(), 'Payment Methods retrieved successfully');
     }
