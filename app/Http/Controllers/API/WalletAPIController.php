@@ -403,7 +403,8 @@ class WalletAPIController extends Controller
 
             $notifyUrl = url("/api/recharge/callback/{$userId}");
             log::info("notify Url",['url'=> $notifyUrl]);
-            $returnUrl = 'myapp://payment-return';
+            $returnUrl = url('/payment/return');
+
 
             log::info("Début d'envoi");
             $response = $this->cinetPayService->initPayment(
