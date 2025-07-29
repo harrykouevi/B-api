@@ -20,11 +20,20 @@ class Locale
     public function handle(Request $request, Closure $next): mixed
     {
         try {
+            // Début modifié -------------------------------------------------
+            $defaultLocale = config('app.locale', 'en'); // Récupérer APP_LOCALE
+            $locale = $defaultLocale; // Priorité à la config
+
             if (Session::has('locale')) {
                 $locale = Session::get('locale');
-            } else if (!($locale = $this->parseHttpLocale($request))) {
-                $locale = setting('language', app()->getLocale());
+            } else {
+                $headerLocale = $this->parseHttpLocale($request);
+                if (!empty($headerLocale)) {
+                    $locale = $headerLocale;
+                }
             }
+            // Fin modification ----------------------------------------------
+
             app()->setLocale($locale);
             Carbon::setLocale($locale);
         } catch (Exception $exception) {
@@ -32,6 +41,7 @@ class Locale
 
         return $next($request);
     }
+
 
     private function parseHttpLocale(Request $request): string
     {
