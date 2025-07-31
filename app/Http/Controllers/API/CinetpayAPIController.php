@@ -79,9 +79,14 @@ class CinetpayAPIController extends Controller
             'transaction_id' => $transactionId,
         ]);
 
+
+
         if ($response->successful()) {
             $data = $response->json();
-
+            Log::info('Statut de la transaction', [
+                'status' => $data['data']['status'],
+                'message' => $request->input('cpm_error_message')
+            ]);
             if ($data['code'] == '00' && $data['data']['status'] == 'ACCEPTED') {
                 
                 $user = $this->userRepository->find($user_id) ;
