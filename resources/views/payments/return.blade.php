@@ -1,6 +1,6 @@
 @php
     use Illuminate\Support\Facades\Http;
-
+    use Illuminate\Support\Facades\Log;
     $transaction_id = request()->query('transaction');
 
     $status = 'unknown';
@@ -14,7 +14,9 @@
         ]);
 
         if ($response->successful()) {
+             Log::info('Page de retour', ['response' => $response]);
             $data = $response->json();
+            Log::info('Page de retour 2', ['data' => $data]);
             if ($data['code'] === '00' && $data['data']['status'] === 'ACCEPTED') {
                 $status = 'success';
                 $message = 'Merci pour votre paiement. Votre wallet a été rechargé avec succès.';
