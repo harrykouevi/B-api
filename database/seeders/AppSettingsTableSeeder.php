@@ -45,7 +45,7 @@ class AppSettingsTableSeeder extends Seeder
             array(
                 'id' => 18,
                 'key' => 'app_name',
-                'value' => 'Barber Shop',//modified
+                'value' => 'CHARM',//modified
             ),
             array(
                 'id' => 19,

@@ -108,35 +108,49 @@ class PaymentService
      *
      * @return array|null Détails de la transaction ou null en cas d’échec.
      */
-    public function createPaymentLinkWithExternal(float $amount ,User $user , PaymentType $type) : array | Null
+    public function createPaymentLinkWithExternal(float $amount, User $user, PaymentType $type): ?array
     {
-      
-        $wallet = $this->walletRepository->findByField('user_id',  $user->id)->first() ;
-        Log::info(['Wallet already exist ?',$wallet->id ?? Null, $type]);
-        if($wallet == Null){
-            $wallet = $this->createWallet($user , 0) ;
-            Log::info(['Wallet creation',$wallet->id ?? Null,$type]);
+        try {
+            $wallet = $this->walletRepository->findByField('user_id', $user->id)->first();
 
-        }
-        $user = $wallet->user ;
-        $currency = json_decode($wallet->currency, true);
-        if ($currency['code'] == setting('default_currency_code')) {
-            
-            $payment = Null ;
-            if($amount != 0) { 
-                $payment = $this->withExternalTransaction($this->getWithExternalPaymentDetail($amount,$user ,$type ), $wallet ,$type) ;
-                Log::error(['PaymentServicee-createPayment',$wallet->user]);
-
-                try{
-                    // Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
-                } catch (Exception $e) {
-                    Log::error($e->getMessage());
+            if (!$wallet) {
+                $wallet = $this->createWallet($user, 0);
+                if (!$wallet) {
+                    throw new Exception('Failed to create wallet');
                 }
             }
-           
-            return [$payment , $wallet] ;
+
+            $currency = json_decode($wallet->currency, true);
+            if ($currency['code'] !== setting('default_currency_code')) {
+                return null;
+            }
+
+            if ($amount == 0) {
+                return [null, $wallet]; // Retour cohérent même pour amount=0
+            }
+
+            $payment = $this->withExternalTransaction(
+                $this->getWithExternalPaymentDetail($amount, $user, $type),
+                $wallet,
+                $type
+            );
+
+            // Notification optionnelle
+            try {
+                if ($payment && $wallet->user) {
+                    Notification::send([$wallet->user], new NewReceivedPayment($payment, $wallet));
+                }
+            } catch (Exception $e) {
+                Log::error('Notification failed: ' . $e->getMessage());
+                // On continue malgré l'échec de la notification
+            }
+
+            return [$payment, $wallet];
+
+        } catch (Exception $e) {
+            Log::error('Payment processing failed: ' . $e->getMessage());
+            return null;
         }
-        return Null ;
     }
 
 
