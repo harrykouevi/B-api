@@ -1,7 +1,7 @@
 @php
     use Illuminate\Support\Facades\Http;
 
-    $transaction_id = request()->query('transaction_id');
+    $transaction_id = request()->query('transaction');
 
     $status = 'unknown';
     $message = '';
