@@ -56,6 +56,8 @@ Route::prefix('salon_owner')->group(function () {
 
 
 Route::post('login', 'API\UserAPIController@login');
+//ici
+Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
 Route::post('register', [UserAPIController::class, 'register']);
 Route::post('v2/register', [UserAPIController::class, 'v2_register']);
 Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
@@ -159,7 +161,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('send-notification', [WalletAPIController::class, 'sendNotification'])->name('notifications.test');
     Route::post('recharge/', [WalletAPIController::class, 'increaseWallet'])->name('increase_wallet');
 
-    Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
+
 
 
 });
