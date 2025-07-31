@@ -34,9 +34,11 @@ use App\Http\Controllers\WalletTransactionController;
 
 Route::get('login/{service}', 'Auth\LoginController@redirectToProvider');
 
+
 Route::match(['get', 'post'], '/payment/return', function (Request $request) {
     return view('payments.return');
-});
+})->name('payments.return');
+
 Route::get('login/{service}/callback', 'Auth\LoginController@handleProviderCallback');
 Auth::routes();
 
