@@ -193,15 +193,29 @@ class BookingAPIController extends Controller
         }
 
         try {
-            Log::error(['BookingAPIController',$salon->users]);
+            // Log des IDs utilisateurs pour vérification sans risquer les références circulaires
+            Log::debug('Notifying salon users', [
+                'salon_id' => $salon->id,
+                'user_ids' => $salon->users->pluck('id')->toArray()
+            ]);
+            Log::info('Notification sent to salon users', [
+                'salon_id' => $salon->id,
+                'users_count' => $salon->users->count(),
+                'booking_id' => $booking->id
+            ]);
 
+            // Envoi de la notification avec les données essentielles
             Notification::send(
                 $salon->users,
-                new NewBooking($booking->withoutRelations())
+                new NewBooking($booking->setRelations([]))
             );
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Notification error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString() // Ajout de la stack trace pour le débogage
+            ]);
         }
+
         return $this->sendResponse($booking->toArray(), __('lang.saved_successfully', ['operator' => __('lang.booking')]));
     }
 
