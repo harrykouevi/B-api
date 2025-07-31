@@ -70,7 +70,7 @@ class StatusChangedPayment extends Notification
     {
         $message = new FcmMessage();
         $notification = [
-            'body' => trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => $this->booking->payment->paymentStatus->status]),
+            'body' => trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => trans('lang.payment_statuses.'.$this->booking->payment->paymentStatus->status)],'fr'),
             'title' => trans('lang.notification_status_changed_payment'),
 
         ];

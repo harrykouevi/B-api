@@ -77,8 +77,8 @@ class NewReceivedPayment extends Notification
     {
         $message = new FcmMessage();
         $notification = [
-            'body' => trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status]),
-            'title' => trans('lang.notification_status_changed_payment'),
+            'body' => trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status],'fr'),
+            'title' => trans('lang.notification_status_changed_payment',[],'fr'),
 
         ];
         $data = [
