@@ -8,6 +8,7 @@
 
 namespace App\Services;
 
+use App\Notifications\RechargePayment;
 use App\Repositories\BookingRepository;
 use App\Repositories\WalletRepository;
 use App\Repositories\CurrencyRepository;
@@ -135,10 +136,9 @@ class PaymentService
                 $type
             );
 
-            // Notification optionnelle
             try {
                 if ($payment && $wallet->user) {
-                    Notification::send([$wallet->user], new NewReceivedPayment($payment, $wallet));
+                    Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
                 }
             } catch (Exception $e) {
                 Log::error('Notification failed: ' . $e->getMessage());

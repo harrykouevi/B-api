@@ -626,6 +626,7 @@ return [
     'notification_your_booking' => 'Numéro de réservation :booking_id est :booking_status',
     'notification_new_booking' => 'Nouvelle réservation # :id_réservation de :user_name',
     'notification_payment' => 'Le paiement pour # :booking_id est :payment_status',
+    'notification_recharge' => 'Recharge de portfeuille effectuée avec succès',
     'number' => 'Numéro',
     'ok' => 'D\'ACCORD',
     'or' => 'Ou',

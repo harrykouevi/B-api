@@ -60,9 +60,9 @@ class StatusChangedPayment extends Notification
     public function toMail(mixed $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => $this->booking->payment->paymentStatus->status]) . " | " . setting('app_name', ''))
+            ->subject(trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => $this->booking->payment->paymentStatus->status],'fr') . " | " . setting('app_name', ''))
             ->markdown("notifications::booking", ['booking' => $this->booking])
-            ->greeting(trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => $this->booking->payment->paymentStatus->status]))
+            ->greeting(trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => $this->booking->payment->paymentStatus->status],'fr'))
             ->action(trans('lang.booking_details'), route('bookings.show', $this->booking->id));
     }
 

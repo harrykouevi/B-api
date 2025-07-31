@@ -71,8 +71,8 @@ class NewBooking extends Notification
     {
         $message = new FcmMessage();
         $notification = [
-            'title' => trans('lang.notification_booking_assigned_description', ['booking_id' => $this->booking->id]),
-            'body' => trans('lang.notification_new_booking', ['booking_id' => $this->booking->id, 'user_name' => $this->booking->user->name]),
+            'title' => trans('lang.notification_booking_assigned_description', ['booking_id' => $this->booking->id],'fr'),
+            'body' => trans('lang.notification_new_booking', ['booking_id' => $this->booking->id, 'user_name' => $this->booking->user->name],'fr'),
 
         ];
         $data = [

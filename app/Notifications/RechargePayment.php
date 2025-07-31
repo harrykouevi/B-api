@@ -15,7 +15,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewReceivedPayment extends Notification
+class RechargePayment extends Notification
 {
     use Queueable;
 
@@ -67,9 +67,9 @@ class NewReceivedPayment extends Notification
     public function toMail(mixed $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status],'fr') . " | " . setting('app_name', ''))
+            ->subject(trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status], 'fr') . " | " . setting('app_name', ''))
             ->markdown("notifications::wallet", ['wallet' => $this->wallet])
-            ->greeting(trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status],'fr'))
+            ->greeting(trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status],'fr'))
             ->action(trans('lang.wallet_details'), route('wallets.show', $this->wallet->id));
     }
 
