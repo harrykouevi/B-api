@@ -36,7 +36,7 @@ class CinetpayAPIController extends Controller
         Log::info('Entrée dans notify', ['user_id' => $user_id, 'request' => $request->all()]);
 
         // $secretKey = config('services.cinetpay.secret'); // à mettre dans .env
-        $secretKey = config('services.cinetpay.api_key');
+        $secretKey = config('services.cinetpay.secret_key');
 
         // Étape 1: Extraire toutes les données nécessaires
         $fields = [
