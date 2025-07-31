@@ -71,7 +71,7 @@ class StatusChangedBooking extends Notification
         $message = new FcmMessage();
         $notification = [
             'title' => trans('lang.notification_status_changed_booking',[],'fr'),
-            'body' => trans('lang.notification_your_booking', ['booking_id' => $this->booking->id, 'booking_status' => $this->booking->bookingStatus->status],'fr'),
+            'body' => trans('lang.notification_your_booking', ['booking_id' => $this->booking->id, 'booking_status' => trans('lang.booking_statuses.'.$this->booking->bookingStatus->status)],'fr'),
 
         ];
         $data = [

@@ -69,7 +69,7 @@ class RechargePayment extends Notification
         return (new MailMessage)
             ->subject(trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status], 'fr') . " | " . setting('app_name', ''))
             ->markdown("notifications::wallet", ['wallet' => $this->wallet])
-            ->greeting(trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status],'fr'))
+            ->greeting(trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status)],'fr'))
             ->action(trans('lang.wallet_details'), route('wallets.show', $this->wallet->id));
     }
 

@@ -1364,4 +1364,15 @@ return [
         'refunded' => 'Remboursé',
     ],
 
+    'booking_statuses' => [
+        'Received' => 'Reçu',
+        'Accepted' => 'Accepté',
+        'On the Way' => 'En cours',
+        'Ready' => 'Prête',
+        'In Progress' => 'En progression',
+        'Completed' => 'Complété',
+        'Done' => 'Terminé',
+        'Failed' => 'Échoué',
+    ],
+
 ];
