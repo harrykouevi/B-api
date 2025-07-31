@@ -19,6 +19,7 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'payments/razorpay/*',
-        'recharge/callback/*'
+        'recharge/callback/*',
+        'payment/return'
     ];
 }
