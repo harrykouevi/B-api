@@ -16,7 +16,7 @@ use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
-
+use Illuminate\Http\Request;
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
@@ -31,6 +31,10 @@ use App\Http\Controllers\API\UploadAPIController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+Route::get('/test', function (Request $request) {
+    dd(env('APP_LOCALE')) ;
+})->name('test');
 
 Route::prefix('salon_owner')->group(function () {
     // Route::post('login', 'API\SalonOwner\UserAPIController@login')->name('api.login');
