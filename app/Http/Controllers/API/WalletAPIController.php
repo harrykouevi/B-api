@@ -15,6 +15,7 @@ use App\Criteria\Wallets\WalletsOfUserCriteria;
 use App\Http\Controllers\Controller;
 use App\Models\Notification;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Repositories\CurrencyRepository;
 use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
@@ -23,6 +24,7 @@ use App\Services\PaymentService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
@@ -434,5 +436,47 @@ class WalletAPIController extends Controller
             return $this->sendError($e->getMessage(), 500);
         }
     }
+
+    public function withdrawOnWallet(Request $request): JsonResponse
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:500',
+            'description' => 'nullable|string|max:255',
+            'user_id'=>'required|integer|exists:users,id',
+            'wallet_id'=>'required|integer|exists:wallets,id',
+        ]);
+
+        $userId = $request->input('user_id');
+        $walletId = $request->input('wallet_id');
+        $this->walletRepository->pushCriteria(new EnabledCriteria());
+        $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
+        $wallet = $this->walletRepository->find($walletId);
+
+        if(!$wallet){
+            return response()->json(
+                ['error'=>'Wallet non trouvé ou non autorisé'],404
+            );
+        }
+
+        if (!WalletTransaction::canWithdraw($wallet, $request->amount)) {
+            return response()->json([
+                'error' => 'Montant invalide ou solde insuffisant'
+            ], 400);
+        }
+
+        $transaction = WalletTransaction::createWithdrawal([
+            'wallet_id' => $wallet->id,
+            'user_id' => $request->user_id,
+            'amount' => $request->amount,
+            'description' => $request->description ?? 'Demande de retrait',
+            'status' => WalletTransaction::STATUS_PENDING
+        ]);
+
+        return response()->json([
+            'message' => 'Demande de retrait enregistrée',
+            'transaction' => $transaction
+        ], 201);
+    }
+
 
 }

@@ -163,6 +163,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('send-notification', [WalletAPIController::class, 'sendNotification'])->name('notifications.test');
     Route::post('recharge/', [WalletAPIController::class, 'increaseWallet'])->name('increase_wallet');
+    Route::post('retrait/', [WalletAPIController::class, 'withdrawOnWallet'])->name('withdraw_on_wallet');
 
 
 

@@ -31,6 +31,19 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class WalletTransaction extends Model
 {
+    const STATUS_PENDING = 'pending';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_REJECTED = 'rejected';
+
+    public static function getStatuses(): array
+    {
+        return [
+            self::STATUS_PENDING => 'En attente',
+            self::STATUS_COMPLETED => 'Complété',
+            self::STATUS_REJECTED => 'Rejeté',
+        ];
+    }
+
     use Uuids;
     use HasFactory;
 
@@ -44,7 +57,8 @@ class WalletTransaction extends Model
         'description' => 'nullable|max:255',
         'action' => ["required", "regex:/^(credit|debit)$/i"],
         'wallet_id' => 'required|exists:wallets,id',
-        'payment_id' => 'required|exists:payments,id',
+        'payment_id' => 'sometimes|exists:payments,id',
+        'status' => 'sometimes|string',
     ];
     public $table = 'wallet_transactions';
     public $fillable = [
@@ -53,7 +67,8 @@ class WalletTransaction extends Model
         'action',
         'wallet_id',
         'payment_id',
-        'user_id'
+        'user_id',
+        'status'
     ];
     /**
      * The attributes that should be casted to native types.
@@ -63,7 +78,8 @@ class WalletTransaction extends Model
     protected $casts = [
         'amount' => 'double',
         'description' => 'string',
-        'action' => 'string'
+        'action' => 'string',
+        'status' => 'string'
     ];
     /**
      * New Attributes
@@ -126,4 +142,19 @@ class WalletTransaction extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    public static function canWithdraw(Wallet $wallet, float $amount): bool
+    {
+        return $amount >= 500 && $wallet->balance >= $amount;
+    }
+
+    public static function createWithdrawal(array $data): WalletTransaction
+    {
+        $data['action'] = 'retrait';
+        $data['status'] = $data['status'] ?? self::STATUS_PENDING;
+
+        return self::create($data);
+    }
+
+
 }
