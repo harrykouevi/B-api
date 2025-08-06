@@ -61,6 +61,13 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
+Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,
+    'handleTransferNotification'
+])->name('cinetpay.transfer.webhook');
+
+// Route pour le ping (GET)
+Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
+
 Route::post('register', [UserAPIController::class, 'register']);
 Route::post('v2/register', [UserAPIController::class, 'v2_register']);
 Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');

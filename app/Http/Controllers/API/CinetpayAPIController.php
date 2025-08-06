@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Models\WalletTransaction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Repositories\UserRepository;
@@ -23,7 +25,7 @@ class CinetpayAPIController extends Controller
      */
     private UserRepository $userRepository;
 
-    
+
     public function __construct(PaymentService $paymentService , UserRepository $userRepository )
     {
         parent::__construct();
@@ -105,4 +107,110 @@ class CinetpayAPIController extends Controller
 
         return response()->json(['message' => 'Notification traitée']);
     }
+
+
+    public function handleTransferNotification(Request $request): JsonResponse
+    {
+        try {
+            Log::info('Webhook CinetPay - Notification de transfert reçue', [
+                'request_data' => $request->all(),
+                'headers' => $request->headers->all()
+            ]);
+
+            // Extraire les données de la requête
+            $transactionId = $request->input('transaction_id');
+            $clientTransactionId = $request->input('client_transaction_id');
+            $lot = $request->input('lot');
+            $amount = $request->input('amount');
+            $receiver = $request->input('receiver');
+            $sendingStatus = $request->input('sending_status');
+            $comment = $request->input('comment');
+            $treatmentStatus = $request->input('treatment_status');
+            $operatorTransactionId = $request->input('operator_transaction_id');
+            $validatedAt = $request->input('validated_at');
+
+            // Vérifier que l'identifiant client est présent
+            if (!$clientTransactionId) {
+                Log::warning('Webhook CinetPay - Identifiant client manquant');
+                return response()->json(['error' => 'Client transaction ID is required'], 400);
+            }
+
+            // Utiliser la méthode du service pour extraire l'ID
+            $walletTransactionId = app(CinetPayService::class)->extractWalletTransactionId($clientTransactionId);
+
+            if (!$walletTransactionId) {
+                Log::warning('Webhook CinetPay - Format d\'identifiant client invalide', [
+                    'client_transaction_id' => $clientTransactionId
+                ]);
+                return response()->json(['error' => 'Invalid client transaction ID format'], 400);
+            }
+
+            // Trouver la transaction wallet correspondante
+            $walletTransaction = WalletTransaction::find($walletTransactionId);
+
+            if (!$walletTransaction) {
+                Log::warning('Webhook CinetPay - Transaction wallet non trouvée', [
+                    'wallet_transaction_id' => $walletTransactionId,
+                    'client_transaction_id' => $clientTransactionId
+                ]);
+                return response()->json(['error' => 'Wallet transaction not found'], 404);
+            }
+
+            // Mettre à jour la transaction avec les informations de CinetPay
+            $updateData = [
+                'payment_id' => $transactionId, // Mettre à jour avec l'ID CinetPay
+                'description' => $walletTransaction->description . ' | Status: ' . $treatmentStatus . ' | Sending: ' . $sendingStatus,
+            ];
+
+            // Mettre à jour le statut en fonction des informations reçues
+            $walletTransaction->updateStatusFromCinetPay($treatmentStatus, $sendingStatus);
+
+            // Mettre à jour la transaction
+            $walletTransaction->update($updateData);
+
+            // Log de la mise à jour
+            Log::info('Webhook CinetPay - Transaction wallet mise à jour', [
+                'wallet_transaction_id' => $walletTransactionId,
+                'status' => $walletTransaction->status,
+                'treatment_status' => $treatmentStatus,
+                'sending_status' => $sendingStatus
+            ]);
+
+            // Retourner une réponse de succès
+            return response()->json([
+                'message' => 'Notification traitée avec succès',
+                'transaction_id' => $transactionId,
+                'client_transaction_id' => $clientTransactionId
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors du traitement du webhook CinetPay', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'error' => 'Erreur lors du traitement de la notification',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Méthode pour vérifier que l'URL est accessible (ping)
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function ping(Request $request): JsonResponse
+    {
+        Log::info('Webhook CinetPay - Ping reçu', [
+            'method' => $request->method(),
+            'ip' => $request->ip()
+        ]);
+
+        return response()->json(['status' => 'ok'], 200);
+    }
+
 }

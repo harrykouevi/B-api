@@ -156,5 +156,67 @@ class WalletTransaction extends Model
         return self::create($data);
     }
 
+    /**
+     * Mettre à jour le statut de la transaction selon le statut CinetPay
+     *
+     * @param string $treatmentStatus
+     * @param string $sendingStatus
+     * @return bool
+     */
+    /**
+     * Mettre à jour le statut de la transaction selon le statut CinetPay
+     *
+     * @param string $treatmentStatus
+     * @param string $sendingStatus
+     * @return bool
+     */
+    public function updateStatusFromCinetPay(string $treatmentStatus, string $sendingStatus): bool
+    {
+        $updateData = [];
 
+        // Mettre à jour le statut en fonction des informations reçues
+        if ($treatmentStatus === 'VAL' && $sendingStatus === 'CONFIRM') {
+            // Transfert validé et confirmé
+            $updateData['status'] = self::STATUS_COMPLETED;
+        } elseif (in_array($treatmentStatus, ['REJECT', 'CANCEL'])) {
+            // Transfert rejeté ou annulé
+            $updateData['status'] = self::STATUS_REJECTED;
+
+            // Créditer à nouveau le wallet utilisateur seulement si le statut change
+            if ($this->status !== self::STATUS_REJECTED) {
+                if ($this->wallet) {
+                    $this->wallet->increment('balance', $this->amount);
+                }
+            }
+        } elseif ($treatmentStatus === 'NEW') {
+            // Transfert en attente de confirmation
+            $updateData['status'] = self::STATUS_PENDING;
+        }
+
+        if (!empty($updateData)) {
+            return $this->update($updateData);
+        }
+
+        return false;
+    }
+
+    /**
+     * Vérifier si la transaction est confirmée
+     *
+     * @return bool
+     */
+    public function isConfirmed(): bool
+    {
+        return $this->status === self::STATUS_COMPLETED;
+    }
+
+    /**
+     * Vérifier si la transaction est rejetée
+     *
+     * @return bool
+     */
+    public function isFailed(): bool
+    {
+        return $this->status === self::STATUS_REJECTED;
+    }
 }

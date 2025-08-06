@@ -437,46 +437,159 @@ class WalletAPIController extends Controller
         }
     }
 
+    /**
+     * @throws RepositoryException
+     * @throws \PHPUnit\Exception
+     */
+    /**
+     * @throws RepositoryException
+     * @throws \PHPUnit\Exception
+     */
     public function withdrawOnWallet(Request $request): JsonResponse
     {
-        $request->validate([
+        // Validation des données
+        $validatedData = $request->validate([
             'amount' => 'required|numeric|min:500',
             'description' => 'nullable|string|max:255',
-            'user_id'=>'required|integer|exists:users,id',
-            'wallet_id'=>'required|integer|exists:wallets,id',
+            'user_id' => 'required|integer|exists:users,id',
+            'wallet_id' => 'required|integer|exists:wallets,id',
+            'phone_number' => 'required|string',
+            'country_prefix' => 'required|string',
+            'payment_method' => 'nullable|string|in:WAVECI,WAVESN', // Selon le pays
         ]);
 
-        $userId = $request->input('user_id');
-        $walletId = $request->input('wallet_id');
-        $this->walletRepository->pushCriteria(new EnabledCriteria());
-        $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
-        $wallet = $this->walletRepository->find($walletId);
+        try {
+            $userId = $validatedData['user_id'];
+            $walletId = $validatedData['wallet_id'];
+            $amount = (float) $validatedData['amount'];
+            $phoneNumber = $validatedData['phone_number'];
+            $countryPrefix = $validatedData['country_prefix'];
+            $paymentMethod = $validatedData['payment_method'] ?? null;
 
-        if(!$wallet){
-            return response()->json(
-                ['error'=>'Wallet non trouvé ou non autorisé'],404
+            // Vérifier que le wallet appartient à l'utilisateur et est actif
+            $this->walletRepository->pushCriteria(new EnabledCriteria());
+            $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
+            $wallet = $this->walletRepository->find($walletId);
+
+            if (!$wallet) {
+                return response()->json([
+                    'error' => 'Wallet non trouvé ou non autorisé'
+                ], 404);
+            }
+
+            // Vérifier que le montant est valide et que le solde est suffisant
+            if (!WalletTransaction::canWithdraw($wallet, $amount)) {
+                return response()->json([
+                    'error' => 'Montant invalide ou solde insuffisant',
+                    'message' => 'Le montant doit être un multiple de 5 et supérieur ou égal à 500. Vérifiez également que votre solde est suffisant.'
+                ], 400);
+            }
+
+            // Créer la transaction de retrait (statut initial: pending)
+            $withdrawal = WalletTransaction::createWithdrawal([
+                'wallet_id' => $wallet->id,
+                'user_id' => $userId,
+                'amount' => $amount,
+                'description' => $validatedData['description'] ?? 'Demande de retrait',
+                'status' => WalletTransaction::STATUS_PENDING
+            ]);
+
+            // Vérifier le solde CinetPay
+            $balanceResponse = $this->cinetPayService->checkBalanceAndAuthorizeWithdrawal($amount);
+
+            if (!$balanceResponse['success']) {
+                // Marquer la transaction comme rejetée
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                return response()->json([
+                    'error' => 'Erreur lors de la vérification du solde CinetPay',
+                    'message' => $balanceResponse['message'] ?? 'Erreur inconnue'
+                ], 500);
+            }
+
+            if (!$balanceResponse['authorized']) {
+                // Marquer la transaction comme rejetée
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                return response()->json([
+                    'error' => 'Solde CinetPay insuffisant',
+                    'message' => $balanceResponse['message'],
+                    'balance_info' => $balanceResponse['balance_info']
+                ], 400);
+            }
+
+            // Exécuter le transfert via CinetPay (le contact doit déjà exister)
+            $transferResponse = $this->cinetPayService->executeTransfer(
+                $withdrawal,
+                $phoneNumber,
+                $countryPrefix,
+                $paymentMethod
             );
-        }
 
-        if (!WalletTransaction::canWithdraw($wallet, $request->amount)) {
+            if (!$transferResponse['success']) {
+                // Marquer la transaction comme rejetée
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                // Gérer spécifiquement le cas où le contact n'existe pas
+                if (isset($transferResponse['code']) && $transferResponse['code'] === 723) {
+                    return response()->json([
+                        'error' => 'Contact non trouvé',
+                        'message' => 'Le contact n\'existe pas dans CinetPay. Veuillez contacter le service support.'
+                    ], 400);
+                }
+
+                return response()->json([
+                    'error' => 'Erreur lors de l\'exécution du transfert',
+                    'message' => $transferResponse['message'] ?? 'Erreur inconnue'
+                ], 500);
+            }
+
+            // Mettre à jour la transaction avec les informations de CinetPay
+            $withdrawal->update([
+                'payment_id' => $transferResponse['client_transaction_id'],
+                'description' => $withdrawal->description . ' (ID: ' . $transferResponse['transaction_id'] . ')'
+            ]);
+
+            // Débiter le wallet
+            $wallet->update([
+                'balance' => $wallet->balance - $amount
+            ]);
+
+            // Log de l'opération
+            Log::info('Retrait initié avec succès', [
+                'user_id' => $userId,
+                'wallet_id' => $walletId,
+                'amount' => $amount,
+                'transaction_id' => $transferResponse['transaction_id'],
+                'client_transaction_id' => $transferResponse['client_transaction_id']
+            ]);
+
             return response()->json([
-                'error' => 'Montant invalide ou solde insuffisant'
-            ], 400);
+                'message' => 'Retrait initié avec succès.',
+                'transaction_id' => $transferResponse['transaction_id'],
+                'client_transaction_id' => $transferResponse['client_transaction_id'],
+                'treatment_status' => $transferResponse['treatment_status'],
+                'sending_status' => $transferResponse['sending_status'],
+                'withdrawal' => $withdrawal
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors du retrait', [
+                'error' => $e->getMessage(),
+                'user_id' => $request->user_id ?? null,
+                'wallet_id' => $request->wallet_id ?? null
+            ]);
+
+            // Si une transaction a été créée, la marquer comme rejetée
+            if (isset($withdrawal) && $withdrawal instanceof WalletTransaction) {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+            }
+
+            return response()->json([
+                'error' => 'Erreur lors du traitement du retrait',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        $transaction = WalletTransaction::createWithdrawal([
-            'wallet_id' => $wallet->id,
-            'user_id' => $request->user_id,
-            'amount' => $request->amount,
-            'description' => $request->description ?? 'Demande de retrait',
-            'status' => WalletTransaction::STATUS_PENDING
-        ]);
-
-        return response()->json([
-            'message' => 'Demande de retrait enregistrée',
-            'transaction' => $transaction
-        ], 201);
     }
-
 
 }
