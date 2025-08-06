@@ -486,11 +486,12 @@ class WalletAPIController extends Controller
             }
 
             // Créer la transaction de retrait (statut initial: pending)
+            $operatorLabel = $paymentMethod ? " ({$paymentMethod})" : '';
             $withdrawal = WalletTransaction::createWithdrawal([
                 'wallet_id' => $wallet->id,
                 'user_id' => $userId,
                 'amount' => $amount,
-                'description' => $validatedData['description'] ?? 'Demande de retrait',
+                'description' => ($validatedData['description'] ?? 'Demande de retrait') . $operatorLabel,
                 'status' => WalletTransaction::STATUS_PENDING
             ]);
 
@@ -591,5 +592,209 @@ class WalletAPIController extends Controller
             ], 500);
         }
     }
+
+    public function getWithdrawalHistory(Request $request): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+            $perPage = $request->get('per_page', 15);
+            $status = $request->get('status');
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
+            $operator = $request->get('operator');
+
+            // Construire la requête de base
+            $query = WalletTransaction::with(['wallet', 'user'])
+                ->where('user_id', $userId)
+                ->where('action', 'retrait')
+                ->orderBy('created_at', 'desc');
+
+            // Filtrage par statut
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            // Filtrage par période
+            if ($startDate) {
+                $query->where('created_at', '>=', $startDate);
+            }
+
+            if ($endDate) {
+                $query->where('created_at', '<=', $endDate);
+            }
+
+            // Filtrage par opérateur (basé sur la méthode de paiement)
+            if ($operator) {
+                // Vous pouvez adapter cette logique selon comment vous stockez l'opérateur
+                // Par exemple, si vous l'ajoutez dans la description ou un champ dédié
+            }
+
+            // Pagination
+            $withdrawals = $query->paginate($perPage);
+
+            // Transformer les données pour inclure plus d'informations
+            $withdrawals->getCollection()->transform(function ($withdrawal) {
+                return $this->transformWithdrawalData($withdrawal);
+            });
+
+            return $this->sendResponse($withdrawals, 'Historique des retraits récupéré avec succès');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération de l\'historique des retraits', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return $this->sendError('Erreur lors de la récupération de l\'historique des retraits');
+        }
+    }
+
+    /**
+     * Transformer les données de retrait pour l'affichage
+     *
+     * @param WalletTransaction $withdrawal
+     * @return array
+     */
+    private function transformWithdrawalData(WalletTransaction $withdrawal): array
+    {
+        $data = $withdrawal->toArray();
+
+        // Ajouter des informations supplémentaires
+        $data['status_label'] = $withdrawal->getStatusLabelAttribute();
+        $data['operator'] = $this->extractOperatorFromDescription($withdrawal->description);
+        $data['cinetpay_transaction_id'] = $withdrawal->payment_id;
+        $data['client_transaction_id'] = $this->generateClientTransactionId($withdrawal->id);
+
+        // Extraire les informations CinetPay depuis la description si disponibles
+        $cinetpayInfo = $this->extractCinetpayInfoFromDescription($withdrawal->description);
+        $data = array_merge($data, $cinetpayInfo);
+
+        return $data;
+    }
+
+    /**
+     * Extraire l'opérateur depuis la description
+     *
+     * @param string $description
+     * @return string|null
+     */
+    private function extractOperatorFromDescription(string $description): ?string
+    {
+        // Vous pouvez adapter cette logique selon comment vous stockez l'opérateur
+        if (strpos($description, 'TMONEY') !== false) {
+            return 'TMONEY';
+        } elseif (strpos($description, 'FLOOZ') !== false) {
+            return 'FLOOZ';
+        }
+
+        return null;
+    }
+
+    /**
+     * Extraire les informations CinetPay depuis la description
+     *
+     * @param string $description
+     * @return array
+     */
+    private function extractCinetpayInfoFromDescription(string $description): array
+    {
+        $info = [];
+
+        // Extraire l'ID de transaction CinetPay
+        if (preg_match('/ID: ([^\)]+)/', $description, $matches)) {
+            $info['cinetpay_transaction_id'] = $matches[1];
+        }
+
+        // Extraire le statut
+        if (preg_match('/Status: ([^|]+)/', $description, $matches)) {
+            $info['treatment_status'] = trim($matches[1]);
+        }
+
+        if (preg_match('/Sending: ([^|]+)/', $description, $matches)) {
+            $info['sending_status'] = trim($matches[1]);
+        }
+
+        return $info;
+    }
+
+    /**
+     * Générer le client_transaction_id à partir de l'ID de transaction
+     *
+     * @param int $withdrawalId
+     * @return string
+     */
+    private function generateClientTransactionId(int $withdrawalId): string
+    {
+        // Trouver la transaction CinetPay correspondante pour obtenir le timestamp
+        // Vous pouvez stocker le timestamp dans un champ dédié si nécessaire
+        return "WD_{$withdrawalId}_" . time();
+    }
+
+    public function scopeWithdrawals($query)
+    {
+        return $query->where('action', 'retrait');
+    }
+
+    /**
+     * Scope pour filtrer par utilisateur
+     *
+     * @param $query
+     * @param int $userId
+     * @return mixed
+     */
+    public function scopeForUser($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+/**
+* Scope pour filtrer par période
+*
+* @param $query
+* @param string $startDate
+* @param string $endDate
+* @return mixed
+*/
+    public function scopeBetweenDates($query, string $startDate, string $endDate)
+    {
+        return $query->whereBetween('created_at', [$startDate, $endDate]);
+    }
+
+    /**
+     * Obtenir les détails d'un retrait spécifique
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function getWithdrawalDetails(int $id): JsonResponse
+    {
+        try {
+            $userId = auth()->id();
+
+            $withdrawal = WalletTransaction::with(['wallet', 'user'])
+                ->where('user_id', $userId)
+                ->where('action', 'retrait')
+                ->where('id', $id)
+                ->first();
+
+            if (!$withdrawal) {
+                return $this->sendError('Retrait non trouvé', 404);
+            }
+
+            $data = $this->transformWithdrawalData($withdrawal);
+
+            return $this->sendResponse($data, 'Détails du retrait récupérés avec succès');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération des détails du retrait', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'withdrawal_id' => $id
+            ]);
+
+            return $this->sendError('Erreur lors de la récupération des détails du retrait');
+        }
+    }
+
 
 }

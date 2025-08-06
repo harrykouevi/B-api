@@ -157,13 +157,41 @@ class CinetpayAPIController extends Controller
             }
 
             // Mettre à jour la transaction avec les informations de CinetPay
+            $description = $walletTransaction->description;
+            $description .= " | CinetPay ID: {$transactionId}";
+            $description .= " | Status: {$treatmentStatus}";
+            $description .= " | Sending: {$sendingStatus}";
+            if ($lot) {
+                $description .= " | Lot: {$lot}";
+            }
+            if ($operatorTransactionId) {
+                $description .= " | Operator ID: {$operatorTransactionId}";
+            }
+
             $updateData = [
-                'payment_id' => $transactionId, // Mettre à jour avec l'ID CinetPay
-                'description' => $walletTransaction->description . ' | Status: ' . $treatmentStatus . ' | Sending: ' . $sendingStatus,
+                'payment_id' => $transactionId,
+                'description' => $description,
             ];
 
             // Mettre à jour le statut en fonction des informations reçues
-            $walletTransaction->updateStatusFromCinetPay($treatmentStatus, $sendingStatus);
+            if ($treatmentStatus === 'VAL' && $sendingStatus === 'CONFIRM') {
+                // Transfert validé et confirmé
+                $updateData['status'] = WalletTransaction::STATUS_COMPLETED;
+            } elseif (in_array($treatmentStatus, ['REJECT', 'CANCEL'])) {
+                // Transfert rejeté ou annulé
+                $updateData['status'] = WalletTransaction::STATUS_REJECTED;
+
+                // Créditer à nouveau le wallet utilisateur seulement si le statut change
+                if ($walletTransaction->status !== WalletTransaction::STATUS_REJECTED) {
+                    $wallet = $walletTransaction->wallet;
+                    if ($wallet) {
+                        $wallet->increment('balance', $walletTransaction->amount);
+                    }
+                }
+            } elseif ($treatmentStatus === 'NEW') {
+                // Transfert en attente de confirmation
+                $updateData['status'] = WalletTransaction::STATUS_PENDING;
+            }
 
             // Mettre à jour la transaction
             $walletTransaction->update($updateData);
@@ -196,6 +224,7 @@ class CinetpayAPIController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Méthode pour vérifier que l'URL est accessible (ping)
