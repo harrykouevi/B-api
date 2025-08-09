@@ -124,6 +124,8 @@ Route::middleware('auth:api')->group(function () {
     ]);
     Route::post('uploads/store', [UploadAPIController::class ,'store']);
     Route::post('uploads/clear',  [UploadAPIController::class ,'clear']);
+    Route::post('/delete-by-url', [UploadAPIController::class, 'deleteByUrl']);
+    Route::delete('/delete-by-path', [UploadAPIController::class, 'deleteByPath']);
     Route::post('users/{user}', 'API\UserAPIController@update');
     Route::delete('users', 'API\UserAPIController@destroy');
 
