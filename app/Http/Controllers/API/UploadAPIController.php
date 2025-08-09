@@ -80,10 +80,19 @@ class UploadAPIController extends Controller
      * @param string $imageUrl
      * @return JsonResponse
      */
-    public function deleteByUrl(string $imageUrl): JsonResponse // Changé le type de retour
+    public function deleteByUrl(Request $request): JsonResponse
     {
         try {
+            $imageUrl = $request->input('image_url');
+
+            if (!$imageUrl) {
+                return $this->sendResponse(false, 'Image URL is required');
+            }
+
             Log::info('Searching for upload by URL: ' . $imageUrl);
+
+            // Décoder l'URL si elle est encodée
+            $imageUrl = urldecode($imageUrl);
 
             // Extraire le nom de fichier de l'URL
             $fileName = basename($imageUrl);
@@ -98,9 +107,10 @@ class UploadAPIController extends Controller
 
             if ($upload) {
                 Log::info('Found upload by media URL, UUID: ' . $upload->uuid);
+
                 // Créer une requête pour passer à la méthode clear
-                $request = new Request(['uuid' => $upload->uuid]);
-                return $this->clear($request);
+                $clearRequest = new Request(['uuid' => $upload->uuid]);
+                return $this->clear($clearRequest);
             }
 
             // Option 2: Chercher par pattern dans les propriétés custom ou name
@@ -111,9 +121,10 @@ class UploadAPIController extends Controller
                     if (str_contains($mediaUrl, $fileName) ||
                         str_contains($imageUrl, $media->name ?? '')) {
                         Log::info('Found upload by media pattern, UUID: ' . $upload->uuid);
+
                         // Créer une requête pour passer à la méthode clear
-                        $request = new Request(['uuid' => $upload->uuid]);
-                        return $this->clear($request);
+                        $clearRequest = new Request(['uuid' => $upload->uuid]);
+                        return $this->clear($clearRequest);
                     }
                 }
             }
@@ -196,9 +207,20 @@ class UploadAPIController extends Controller
      * @param string $path
      * @return JsonResponse
      */
-    public function deleteByPath(string $path): JsonResponse // Changé le type de retour
+    /**
+     * Delete by path (alternative endpoint)
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function deleteByPath(Request $request): JsonResponse
     {
         try {
+            $path = $request->input('path');
+
+            if (!$path) {
+                return $this->sendResponse(false, 'Path is required');
+            }
+
             // Extraire le nom de fichier du chemin
             $fileName = basename($path);
 
@@ -209,8 +231,8 @@ class UploadAPIController extends Controller
 
             if ($upload) {
                 // Créer une requête pour passer à la méthode clear
-                $request = new Request(['uuid' => $upload->uuid]);
-                return $this->clear($request);
+                $clearRequest = new Request(['uuid' => $upload->uuid]);
+                return $this->clear($clearRequest);
             }
 
             return $this->sendResponse(false, 'No upload found for path');
