@@ -10,6 +10,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UploadRequest;
+use App\Models\Upload;
 use App\Repositories\UploadRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -56,10 +57,10 @@ class UploadAPIController extends Controller
     /**
      * clear cache from Upload table
      */
-    public function clear(UploadRequest $request): JsonResponse
+    public function clear(Request $request): JsonResponse // Changé UploadRequest en Request
     {
         $input = $request->all();
-        if (! $request->has('uuid')) {
+        if (!$request->has('uuid')) {
             return $this->sendResponse(false, 'Media not found');
         }
         try {
@@ -76,50 +77,52 @@ class UploadAPIController extends Controller
 
     /**
      * Delete media by URL
-     * @param Request $request
+     * @param string $imageUrl
      * @return JsonResponse
      */
-    public function deleteByUrl(Request $request): JsonResponse
+    public function deleteByUrl(string $imageUrl): JsonResponse // Changé le type de retour
     {
         try {
-            $imageUrl = $request->input('image_url');
+            Log::info('Searching for upload by URL: ' . $imageUrl);
 
-            if (empty($imageUrl)) {
-                return $this->sendError(false, 'Image URL is required');
+            // Extraire le nom de fichier de l'URL
+            $fileName = basename($imageUrl);
+            Log::info('Extracted filename: ' . $fileName);
+
+            // Chercher l'upload qui correspond à cette URL
+            // Option 1: Si vous stockez l'URL complète dans media
+            $upload = Upload::whereHas('media', function($query) use ($imageUrl, $fileName) {
+                $query->where('original_url', 'like', '%' . $fileName . '%')
+                    ->orWhere('original_url', $imageUrl);
+            })->first();
+
+            if ($upload) {
+                Log::info('Found upload by media URL, UUID: ' . $upload->uuid);
+                // Créer une requête pour passer à la méthode clear
+                $request = new Request(['uuid' => $upload->uuid]);
+                return $this->clear($request);
             }
 
-            Log::info('Attempting to delete image by URL: ' . $imageUrl);
-
-            // Méthode 1: Extraire l'ID depuis l'URL
-            $extractedId = $this->extractIdFromUrl($imageUrl);
-            if ($extractedId) {
-                Log::info('Extracted ID from URL: ' . $extractedId);
-                $result = $this->uploadRepository->clear($extractedId);
-                if ($result) {
-                    return $this->sendResponse(true, 'Media deleted successfully using extracted ID');
+            // Option 2: Chercher par pattern dans les propriétés custom ou name
+            $uploads = Upload::with('media')->get();
+            foreach ($uploads as $upload) {
+                foreach ($upload->media as $media) {
+                    $mediaUrl = $media->getUrl();
+                    if (str_contains($mediaUrl, $fileName) ||
+                        str_contains($imageUrl, $media->name ?? '')) {
+                        Log::info('Found upload by media pattern, UUID: ' . $upload->uuid);
+                        // Créer une requête pour passer à la méthode clear
+                        $request = new Request(['uuid' => $upload->uuid]);
+                        return $this->clear($request);
+                    }
                 }
             }
 
-            // Méthode 2: Chercher dans la base de données par URL
-            $result = $this->uploadRepository->deleteByUrl($imageUrl);
-            if ($result) {
-                return $this->sendResponse(true, 'Media deleted successfully using URL lookup');
-            }
-
-            // Méthode 3: Supprimer le fichier physique directement
-            $physicalDeleteResult = $this->deletePhysicalFile($imageUrl);
-            if ($physicalDeleteResult) {
-                return $this->sendResponse(true, 'Physical file deleted successfully');
-            }
-
-            return $this->sendError(false, 'Media not found or could not be deleted');
-
+            Log::info('No upload found for URL: ' . $imageUrl);
+            return $this->sendResponse(false, 'No upload found for URL');
         } catch (Exception $e) {
-            Log::error('Error deleting image by URL: ' . $e->getMessage(), [
-                'url' => $request->input('image_url'),
-                'exception' => $e
-            ]);
-            return $this->sendError(false, 'Error when deleting media: ' . $e->getMessage());
+            Log::error('Error in deleteByUrl: ' . $e->getMessage());
+            return $this->sendResponse(false, 'Error deleting media by URL');
         }
     }
 
@@ -190,36 +193,40 @@ class UploadAPIController extends Controller
 
     /**
      * Delete by path (alternative endpoint)
-     * @param Request $request
+     * @param string $path
      * @return JsonResponse
      */
-    public function deleteByPath(Request $request): JsonResponse
+    public function deleteByPath(string $path): JsonResponse // Changé le type de retour
     {
         try {
-            $path = $request->query('path');
+            // Extraire le nom de fichier du chemin
+            $fileName = basename($path);
 
-            if (empty($path)) {
-                return $this->sendError(false, 'Path is required');
+            // Chercher l'upload qui correspond à ce chemin
+            $upload = Upload::whereHas('media', function($query) use ($path, $fileName) {
+                $query->where('original_url', 'like', '%' . $fileName . '%');
+            })->first();
+
+            if ($upload) {
+                // Créer une requête pour passer à la méthode clear
+                $request = new Request(['uuid' => $upload->uuid]);
+                return $this->clear($request);
             }
 
-            Log::info('Attempting to delete by path: ' . $path);
-
-            // Supprimer le fichier physique
-            $storagePath = str_replace('/storage/', '', $path);
-            if (file_exists(storage_path($storagePath))) {
-                unlink(storage_path($storagePath));
-
-                // Essayer aussi de supprimer de la DB
-                $this->uploadRepository->deleteByPath($path);
-
-                return $this->sendResponse(true, 'File deleted successfully');
-            }
-
-            return $this->sendError(false, 'File not found');
-
+            return $this->sendResponse(false, 'No upload found for path');
         } catch (Exception $e) {
-            Log::error('Error deleting by path: ' . $e->getMessage());
-            return $this->sendError(false, 'Error when deleting file: ' . $e->getMessage());
+            Log::error('Error in deleteByPath: ' . $e->getMessage());
+            return $this->sendResponse(false, 'Error deleting media by path');
+        }
+    }
+
+    public function findByUuid(string $uuid)
+    {
+        try {
+            return Upload::where('uuid', $uuid)->first();
+        } catch (Exception $e) {
+            Log::error('Error finding upload by UUID: ' . $e->getMessage());
+            return null;
         }
     }
 }
