@@ -31,7 +31,11 @@ class UpdateSalonRequest extends FormRequest
      */
     public function rules(): array
     {
-        return Salon::$rules;
+        $rules = Salon::$rules ;
+        if (auth()->user()->hasRole('admin')) {
+            unset($rules['accepted']);
+        }
+        return $rules;
     }
 
     /**
@@ -43,6 +47,7 @@ class UpdateSalonRequest extends FormRequest
         if (!auth()->user()->hasRole('admin')) {
             // $this->offsetUnset('accepted');
         }
+
         return parent::validationData();
     }
 
