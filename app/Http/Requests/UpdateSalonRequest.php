@@ -31,7 +31,11 @@ class UpdateSalonRequest extends FormRequest
      */
     public function rules(): array
     {
-        return Salon::$rules;
+        $rules = Salon::$rules ;
+        if (auth()->user()->hasRole('admin')) {
+            unset($rules['availability_range']);
+        }
+        return $rules;
     }
 
     /**
@@ -40,8 +44,8 @@ class UpdateSalonRequest extends FormRequest
     public function validationData(): array
     {
         $this->offsetUnset('availability_range');
-        if (auth()->user()->hasRole('admin')) {
-            $this->offsetUnset('accepted');
+        if (!auth()->user()->hasRole('admin')) {
+            // $this->offsetUnset('accepted');
         }
 
         return parent::validationData();
