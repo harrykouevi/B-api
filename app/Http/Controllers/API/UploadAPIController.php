@@ -71,7 +71,7 @@ class UploadAPIController extends Controller
         try {
             $identifier = $input['uuid'];
 
-            // Vérifier si c'est un UUID ou un ID numérique
+            // Vérifier si c'est un UUID, un ID numérique ou une URL
             $upload = null;
 
             // Si c'est un format UUID standard
@@ -82,6 +82,22 @@ class UploadAPIController extends Controller
             else if (is_numeric($identifier)) {
                 $upload = Upload::find($identifier);
             }
+            // Si c'est une URL, essayer d'extraire l'UUID ou l'ID
+            else if (filter_var($identifier, FILTER_VALIDATE_URL)) {
+                // Essayer d'extraire l'ID numérique de l'URL
+                if (preg_match('/\/public\/(\d+)\//', $identifier, $matches)) {
+                    $id = $matches[1];
+                    $upload = Upload::find($id);
+                }
+
+                // Si pas trouvé, essayer d'extraire l'UUID de l'URL
+                if (!$upload) {
+                    // Pattern pour trouver un UUID dans une URL
+                    if (preg_match('/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i', $identifier, $uuidMatches)) {
+                        $upload = Upload::where('uuid', $uuidMatches[0])->first();
+                    }
+                }
+            }
 
             if (!$upload) {
                 Log::info('Upload not found for identifier: ' . $identifier);
@@ -89,6 +105,9 @@ class UploadAPIController extends Controller
             }
 
             Log::info('Found upload for identifier: ' . $identifier . ', UUID: ' . $upload->uuid . ', ID: ' . $upload->id);
+
+            // Supprimer physiquement les fichiers associés
+            $this->deletePhysicalFilesForUpload($upload);
 
             // Utiliser l'UUID réel pour la suppression
             $result = $this->uploadRepository->clear($upload->uuid);
@@ -104,6 +123,7 @@ class UploadAPIController extends Controller
             return $this->sendResponse(false, 'Error when delete media');
         }
     }
+
 
 
     /**
