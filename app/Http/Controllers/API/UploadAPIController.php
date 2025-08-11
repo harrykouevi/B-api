@@ -110,8 +110,8 @@ class UploadAPIController extends Controller
             $fileName = basename($imageUrl);
             Log::info('Extracted filename: ' . $fileName);
 
-            // Chercher l'upload qui correspond à cette URL
-            $upload = Upload::whereHas('media', function($query) use ($imageUrl, $fileName) {
+            // Méthode 1: Chercher par Upload avec ses médias
+            $upload = Upload::whereHas('media', function($query) use ($fileName) {
                 $query->where('file_name', 'like', '%' . $fileName . '%')
                     ->orWhere('name', 'like', '%' . $fileName . '%');
             })->first();
@@ -124,28 +124,50 @@ class UploadAPIController extends Controller
                 return $this->clear($clearRequest);
             }
 
-            // Chercher directement par Media orphelin
-            $media = App\Models\Media::where('file_name', 'like', '%' . $fileName . '%')
-                ->where('model_type', 'App\Models\Upload')
-                ->first();
+            // Méthode 2: Chercher directement les Media orphelins
+            $medias = App\Models\Media::where('file_name', 'like', '%' . $fileName . '%')
+                ->orWhere('name', 'like', '%' . $fileName . '%')
+                ->get();
 
-            if ($media) {
-                // Si Media orphelin trouvé, le supprimer directement
+            $deletedCount = 0;
+            foreach ($medias as $media) {
+                // Supprimer physiquement les fichiers
                 $mediaPath = storage_path('app/public/' . $media->id);
                 if (file_exists($mediaPath)) {
-                    \File::deleteDirectory($mediaPath);
+                    try {
+                        \File::deleteDirectory($mediaPath);
+                        Log::info('Physical media directory deleted: ' . $mediaPath);
+                    } catch (Exception $e) {
+                        Log::warning('Could not delete physical directory: ' . $mediaPath . ' - ' . $e->getMessage());
+                    }
                 }
 
+                // Supprimer de la base de données
                 $media->delete();
-                Log::info('Orphaned media deleted: ' . $fileName);
-                return $this->sendResponse(true, 'Orphaned media deleted successfully');
+                $deletedCount++;
+                Log::info('Orphaned media deleted from database: ' . $media->id);
             }
 
-            Log::info('No upload found for URL: ' . $imageUrl);
-            return $this->sendResponse(false, 'No upload found for URL');
+            if ($deletedCount > 0) {
+                Log::info('Deleted ' . $deletedCount . ' orphaned media entries');
+                return $this->sendResponse(true, 'Media deleted successfully');
+            }
+
+            // Méthode 3: Extraire l'ID du chemin et vérifier
+            if (preg_match('/\/public\/(\d+)\//', $imageUrl, $matches)) {
+                $id = $matches[1];
+                $upload = Upload::find($id);
+                if ($upload) {
+                    $clearRequest = new Request(['uuid' => $upload->uuid]);
+                    return $this->clear($clearRequest);
+                }
+            }
+
+            Log::info('No media found for URL: ' . $imageUrl);
+            return $this->sendResponse(false, 'No media found for URL');
         } catch (Exception $e) {
-            Log::error('Error in deleteByUrl: ' . $e->getMessage());
-            return $this->sendResponse(false, 'Error deleting media by URL');
+            Log::error('Error in deleteByUrl: ' . $e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
+            return $this->sendResponse(false, 'Error deleting media by URL: ' . $e->getMessage());
         }
     }
 
