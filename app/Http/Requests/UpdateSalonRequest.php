@@ -40,8 +40,7 @@ class UpdateSalonRequest extends FormRequest
     public function validationData(): array
     {
         $this->offsetUnset('availability_range');
-        dd(auth()->user()) ;
-        if (!auth()->user()->hasRole('admin')) {
+        if (auth()->user()->hasRole('admin')) {
             $this->offsetUnset('accepted');
         }
 
