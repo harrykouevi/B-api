@@ -33,7 +33,7 @@ class UpdateSalonRequest extends FormRequest
     {
         $rules = Salon::$rules ;
         if (auth()->user()->hasRole('admin')) {
-            unset($rules['availability_range']);
+            unset($rules['accepted']);
         }
         return $rules;
     }
