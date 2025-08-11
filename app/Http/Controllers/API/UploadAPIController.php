@@ -11,6 +11,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UploadRequest;
 use App\Models\Upload;
+use App\Models\Media;
 use App\Repositories\UploadRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -125,7 +126,7 @@ class UploadAPIController extends Controller
             }
 
             // Méthode 2: Chercher directement les Media orphelins
-            $medias = App\Models\Media::where('file_name', 'like', '%' . $fileName . '%')
+            $medias = \App\Models\Media::where('file_name', 'like', '%' . $fileName . '%')
                 ->orWhere('name', 'like', '%' . $fileName . '%')
                 ->get();
 
