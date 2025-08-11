@@ -65,10 +65,21 @@ class UploadAPIController extends Controller
     {
         $input = $request->all();
         if (!$request->has('uuid')) {
-            return $this->sendResponse(false, 'Media not found');
+            return $this->sendResponse(false, 'UUID parameter is required');
         }
 
         try {
+            $uuid = $input['uuid'];
+
+            // Vérifier d'abord si l'upload existe
+            $upload = Upload::where('uuid', $uuid)->first();
+            if (!$upload) {
+                Log::info('Upload not found for UUID: ' . $uuid);
+                return $this->sendResponse(false, 'Media not found or already deleted');
+            }
+
+            Log::info('Found upload for UUID: ' . $uuid . ', ID: ' . $upload->id);
+
             if (is_array($input['uuid'])) {
                 $result = $this->uploadRepository->clearWhereIn($input['uuid']);
             } else {
@@ -76,6 +87,7 @@ class UploadAPIController extends Controller
 
                 // Vérifier si la suppression a réussi
                 if ($result === false) {
+                    Log::info('Repository clear method returned false for UUID: ' . $uuid);
                     return $this->sendResponse(false, 'Media not found or already deleted');
                 }
             }
