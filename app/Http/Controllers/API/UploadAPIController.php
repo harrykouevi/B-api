@@ -107,6 +107,9 @@ class UploadAPIController extends Controller
             // Décoder l'URL si elle est encodée
             $imageUrl = urldecode($imageUrl);
 
+            // Supprimer physiquement le fichier en premier
+            $this->deletePhysicalFileByUrl($imageUrl);
+
             // Extraire le nom de fichier de l'URL
             $fileName = basename($imageUrl);
             Log::info('Extracted filename: ' . $fileName);
@@ -199,32 +202,64 @@ class UploadAPIController extends Controller
     private function deletePhysicalFileForMedia(Media $media)
     {
         try {
-            // Chemin du répertoire du média
-            $mediaPath = storage_path('app/public/' . $media->id);
-            if (file_exists($mediaPath)) {
-                \File::deleteDirectory($mediaPath);
-                Log::info('Physical media directory deleted: ' . $mediaPath);
-            }
-
-            // Chemins alternatifs possibles
+            // Chemins possibles pour les fichiers média
             $possiblePaths = [
+                // Chemin principal du média
+                storage_path('app/public/' . $media->id . '/' . $media->file_name),
+                storage_path('app/public/' . $media->id),
+
+                // Chemin pour les conversions
+                storage_path('app/public/' . $media->id . '/conversions'),
+
+                // Chemins alternatifs
+                public_path('storage/' . $media->id . '/' . $media->file_name),
                 public_path('storage/' . $media->id),
-                storage_path('app/public/' . $media->model_id . '/' . $media->file_name),
             ];
+
+            // Ajouter aussi le chemin basé sur l'URL fournie
+            $baseUrl = url('/');
+            if (preg_match('/storage\/app\/public\/(\d+)\/(.+)$/', $baseUrl . '/storage/app/public/' . $media->id . '/' . $media->file_name, $matches)) {
+                $id = $matches[1];
+                $filename = $matches[2];
+                $possiblePaths[] = storage_path('app/public/' . $id . '/' . $filename);
+            }
 
             foreach ($possiblePaths as $path) {
                 if (file_exists($path)) {
                     if (is_dir($path)) {
                         \File::deleteDirectory($path);
+                        Log::info('Physical directory deleted: ' . $path);
                     } else {
                         unlink($path);
+                        Log::info('Physical file deleted: ' . $path);
                     }
-                    Log::info('Physical file/directory deleted: ' . $path);
                 }
             }
+
+            // Supprimer aussi le dossier parent si vide
+            $parentDir = storage_path('app/public/' . $media->id);
+            if (is_dir($parentDir) && $this->isDirEmpty($parentDir)) {
+                rmdir($parentDir);
+                Log::info('Empty parent directory deleted: ' . $parentDir);
+            }
+
         } catch (Exception $e) {
-            Log::error('Error deleting physical file for media: ' . $e->getMessage());
+            Log::error('Error deleting physical file for media ID ' . $media->id . ': ' . $e->getMessage());
         }
+    }
+
+    private function isDirEmpty($dir) {
+        if (!is_dir($dir)) return false;
+
+        $handle = opendir($dir);
+        while (false !== ($entry = readdir($handle))) {
+            if ($entry != "." && $entry != "..") {
+                closedir($handle);
+                return false;
+            }
+        }
+        closedir($handle);
+        return true;
     }
 
     /**
@@ -290,6 +325,50 @@ class UploadAPIController extends Controller
         } catch (Exception $e) {
             Log::error('Error finding upload by UUID: ' . $e->getMessage());
             return null;
+        }
+    }
+    /**
+     * Delete physical file from storage based on URL
+     * @param string $url
+     * @return bool
+     */
+    private function deletePhysicalFileByUrl(string $url): bool
+    {
+        try {
+            // Extraire l'ID et le nom de fichier de l'URL
+            if (preg_match('/\/public\/(\d+)\/(.+)$/', $url, $matches)) {
+                $id = $matches[1];
+                $filename = $matches[2];
+
+                // Chemins possibles
+                $paths = [
+                    storage_path('app/public/' . $id . '/' . $filename),
+                    storage_path('app/public/' . $id),
+                    public_path('storage/' . $id . '/' . $filename),
+                    public_path('storage/' . $id),
+                ];
+
+                $deleted = false;
+                foreach ($paths as $path) {
+                    if (file_exists($path)) {
+                        if (is_dir($path)) {
+                            \File::deleteDirectory($path);
+                            Log::info('Physical directory deleted by URL: ' . $path);
+                        } else {
+                            unlink($path);
+                            Log::info('Physical file deleted by URL: ' . $path);
+                        }
+                        $deleted = true;
+                    }
+                }
+
+                return $deleted;
+            }
+
+            return false;
+        } catch (Exception $e) {
+            Log::error('Error deleting physical file by URL: ' . $e->getMessage());
+            return false;
         }
     }
 }
