@@ -69,27 +69,33 @@ class UploadAPIController extends Controller
         }
 
         try {
-            $uuid = $input['uuid'];
+            $identifier = $input['uuid'];
 
-            // Vérifier d'abord si l'upload existe
-            $upload = Upload::where('uuid', $uuid)->first();
+            // Vérifier si c'est un UUID ou un ID numérique
+            $upload = null;
+
+            // Si c'est un format UUID standard
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $identifier)) {
+                $upload = Upload::where('uuid', $identifier)->first();
+            }
+            // Si c'est un ID numérique
+            else if (is_numeric($identifier)) {
+                $upload = Upload::find($identifier);
+            }
+
             if (!$upload) {
-                Log::info('Upload not found for UUID: ' . $uuid);
+                Log::info('Upload not found for identifier: ' . $identifier);
                 return $this->sendResponse(false, 'Media not found or already deleted');
             }
 
-            Log::info('Found upload for UUID: ' . $uuid . ', ID: ' . $upload->id);
+            Log::info('Found upload for identifier: ' . $identifier . ', UUID: ' . $upload->uuid . ', ID: ' . $upload->id);
 
-            if (is_array($input['uuid'])) {
-                $result = $this->uploadRepository->clearWhereIn($input['uuid']);
-            } else {
-                $result = $this->uploadRepository->clear($input['uuid']);
+            // Utiliser l'UUID réel pour la suppression
+            $result = $this->uploadRepository->clear($upload->uuid);
 
-                // Vérifier si la suppression a réussi
-                if ($result === false) {
-                    Log::info('Repository clear method returned false for UUID: ' . $uuid);
-                    return $this->sendResponse(false, 'Media not found or already deleted');
-                }
+            if ($result === false) {
+                Log::info('Repository clear method returned false for UUID: ' . $upload->uuid);
+                return $this->sendResponse(false, 'Media not found or already deleted');
             }
 
             return $this->sendResponse($result, 'Media deleted successfully');
