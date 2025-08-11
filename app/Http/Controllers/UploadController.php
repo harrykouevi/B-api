@@ -42,7 +42,7 @@ class UploadController extends Controller
      * @param null $filename
      * @return BinaryFileResponse
      */
-    public function storage($id, $conversion, $filename = null): BinaryFileResponse
+    /*public function storage($id, $conversion, $filename = null): BinaryFileResponse
     {
         $array = explode('.', $conversion . $filename);
         $extension = strtolower(end($array));
@@ -53,6 +53,33 @@ class UploadController extends Controller
             return response()->file(storage_path('app/public/' . $id . '/' . $filename));
         }
 
+    }*/
+
+    public function storage($id, $conversion, $filename = null): BinaryFileResponse|\Illuminate\Http\Response
+    {
+        $array = explode('.', $conversion . $filename);
+        $extension = strtolower(end($array));
+
+        if (isset($filename)) {
+            $filePath = storage_path('app/public/' . $id . '/' . $conversion . '/' . $filename);
+        } else {
+            $filename = $conversion;
+            $filePath = storage_path('app/public/' . $id . '/' . $filename);
+        }
+
+        // Vérifier si le fichier existe
+        if (!file_exists($filePath)) {
+            // Option 1: Retourner une image par défaut
+            $defaultImagePath = public_path('images/image-not-found.jpg');
+            if (file_exists($defaultImagePath)) {
+                return response()->file($defaultImagePath);
+            }
+
+            // Option 2: Retourner une réponse 404 si aucune image par défaut
+            return response('Fichier inexistant', 404);
+        }
+
+        return response()->file($filePath);
     }
 
     public function collectionsNames(UploadRequest $request): JsonResponse

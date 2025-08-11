@@ -101,8 +101,8 @@ class UploadAPIController extends Controller
             // Chercher l'upload qui correspond à cette URL
             // Option 1: Si vous stockez l'URL complète dans media
             $upload = Upload::whereHas('media', function($query) use ($imageUrl, $fileName) {
-                $query->where('original_url', 'like', '%' . $fileName . '%')
-                    ->orWhere('original_url', $imageUrl);
+                $query->where('uuid', 'like', '%' . $fileName . '%')
+                    ->orWhere('uuid', $imageUrl);
             })->first();
 
             if ($upload) {
@@ -226,7 +226,7 @@ class UploadAPIController extends Controller
 
             // Chercher l'upload qui correspond à ce chemin
             $upload = Upload::whereHas('media', function($query) use ($path, $fileName) {
-                $query->where('original_url', 'like', '%' . $fileName . '%');
+                $query->where('uuid', 'like', '%' . $fileName . '%');
             })->first();
 
             if ($upload) {
