@@ -111,10 +111,9 @@ class UploadAPIController extends Controller
             Log::info('Extracted filename: ' . $fileName);
 
             // Chercher l'upload qui correspond à cette URL
-            // Option 1: Si vous stockez l'URL complète dans media
             $upload = Upload::whereHas('media', function($query) use ($imageUrl, $fileName) {
-                $query->where('uuid', 'like', '%' . $fileName . '%')
-                    ->orWhere('uuid', $imageUrl);
+                $query->where('file_name', 'like', '%' . $fileName . '%')
+                    ->orWhere('name', 'like', '%' . $fileName . '%');
             })->first();
 
             if ($upload) {
@@ -125,20 +124,21 @@ class UploadAPIController extends Controller
                 return $this->clear($clearRequest);
             }
 
-            // Option 2: Chercher par pattern dans les propriétés custom ou name
-            $uploads = Upload::with('media')->get();
-            foreach ($uploads as $upload) {
-                foreach ($upload->media as $media) {
-                    $mediaUrl = $media->getUrl();
-                    if (str_contains($mediaUrl, $fileName) ||
-                        str_contains($imageUrl, $media->name ?? '')) {
-                        Log::info('Found upload by media pattern, UUID: ' . $upload->uuid);
+            // Chercher directement par Media orphelin
+            $media = App\Models\Media::where('file_name', 'like', '%' . $fileName . '%')
+                ->where('model_type', 'App\Models\Upload')
+                ->first();
 
-                        // Créer une requête pour passer à la méthode clear
-                        $clearRequest = new Request(['uuid' => $upload->uuid]);
-                        return $this->clear($clearRequest);
-                    }
+            if ($media) {
+                // Si Media orphelin trouvé, le supprimer directement
+                $mediaPath = storage_path('app/public/' . $media->id);
+                if (file_exists($mediaPath)) {
+                    \File::deleteDirectory($mediaPath);
                 }
+
+                $media->delete();
+                Log::info('Orphaned media deleted: ' . $fileName);
+                return $this->sendResponse(true, 'Orphaned media deleted successfully');
             }
 
             Log::info('No upload found for URL: ' . $imageUrl);
