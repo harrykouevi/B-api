@@ -120,28 +120,23 @@ class UploadAPIController extends Controller
             if ($upload) {
                 Log::info('Found upload by media URL, UUID: ' . $upload->uuid);
 
+                // Supprimer physiquement les fichiers associés
+                $this->deletePhysicalFilesForUpload($upload);
+
                 // Créer une requête pour passer à la méthode clear
                 $clearRequest = new Request(['uuid' => $upload->uuid]);
                 return $this->clear($clearRequest);
             }
 
             // Méthode 2: Chercher directement les Media orphelins
-            $medias = \App\Models\Media::where('file_name', 'like', '%' . $fileName . '%')
+            $medias = Media::where('file_name', 'like', '%' . $fileName . '%')
                 ->orWhere('name', 'like', '%' . $fileName . '%')
                 ->get();
 
             $deletedCount = 0;
             foreach ($medias as $media) {
                 // Supprimer physiquement les fichiers
-                $mediaPath = storage_path('app/public/' . $media->id);
-                if (file_exists($mediaPath)) {
-                    try {
-                        \File::deleteDirectory($mediaPath);
-                        Log::info('Physical media directory deleted: ' . $mediaPath);
-                    } catch (Exception $e) {
-                        Log::warning('Could not delete physical directory: ' . $mediaPath . ' - ' . $e->getMessage());
-                    }
-                }
+                $this->deletePhysicalFileForMedia($media);
 
                 // Supprimer de la base de données
                 $media->delete();
@@ -159,6 +154,9 @@ class UploadAPIController extends Controller
                 $id = $matches[1];
                 $upload = Upload::find($id);
                 if ($upload) {
+                    // Supprimer physiquement les fichiers associés
+                    $this->deletePhysicalFilesForUpload($upload);
+
                     $clearRequest = new Request(['uuid' => $upload->uuid]);
                     return $this->clear($clearRequest);
                 }
@@ -198,45 +196,53 @@ class UploadAPIController extends Controller
         }
     }
 
+    private function deletePhysicalFileForMedia(Media $media)
+    {
+        try {
+            // Chemin du répertoire du média
+            $mediaPath = storage_path('app/public/' . $media->id);
+            if (file_exists($mediaPath)) {
+                \File::deleteDirectory($mediaPath);
+                Log::info('Physical media directory deleted: ' . $mediaPath);
+            }
+
+            // Chemins alternatifs possibles
+            $possiblePaths = [
+                public_path('storage/' . $media->id),
+                storage_path('app/public/' . $media->model_id . '/' . $media->file_name),
+            ];
+
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path)) {
+                    if (is_dir($path)) {
+                        \File::deleteDirectory($path);
+                    } else {
+                        unlink($path);
+                    }
+                    Log::info('Physical file/directory deleted: ' . $path);
+                }
+            }
+        } catch (Exception $e) {
+            Log::error('Error deleting physical file for media: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Delete physical file from storage
      * @param string $url
      * @return bool
      */
-    private function deletePhysicalFile(string $url): bool
+    private function deletePhysicalFilesForUpload(Upload $upload)
     {
         try {
-            // Extraire le chemin relatif depuis l'URL
-            $parsedUrl = parse_url($url);
-            $path = $parsedUrl['path'] ?? '';
-
-            // Convertir l'URL publique vers le chemin de stockage
-            // Ex: /storage/app/public/1368/... -> app/public/1368/...
-            $storagePath = str_replace('/storage/', '', $path);
-
-            if (file_exists(storage_path($storagePath))) {
-                unlink(storage_path($storagePath));
-                Log::info('Physical file deleted: ' . $storagePath);
-                return true;
+            $medias = $upload->media;
+            foreach ($medias as $media) {
+                $this->deletePhysicalFileForMedia($media);
             }
-
-            // Essayer aussi le chemin public
-            $publicPath = public_path($path);
-            if (file_exists($publicPath)) {
-                unlink($publicPath);
-                Log::info('Public file deleted: ' . $publicPath);
-                return true;
-            }
-
-            Log::info('Physical file not found: ' . $storagePath);
-            return false;
-
         } catch (Exception $e) {
-            Log::error('Error deleting physical file: ' . $e->getMessage());
-            return false;
+            Log::error('Error deleting physical files for upload: ' . $e->getMessage());
         }
     }
-
     /**
      * Delete by path (alternative endpoint)
      * @param string $path
