@@ -49,7 +49,14 @@ class UploadRepository extends BaseRepository
     public function clear($uuid): ?bool
     {
         $uploadModel = $this->getByUuid($uuid);
-        return $uploadModel->delete();
+
+        if ($uploadModel) {
+            $uploadModel->media()->delete();
+            return $uploadModel->delete();
+        }
+
+        // Retourner false si l'upload n'existe pas
+        return false;
     }
 
     /**
@@ -63,9 +70,13 @@ class UploadRepository extends BaseRepository
 
     public function getByUuid($uuid = ''): null|Model
     {
-        $uploadModel = Upload::query()->where('uuid', $uuid)->first();
-        return $uploadModel;
+        if (empty($uuid)) {
+            return null;
+        }
+
+        return Upload::query()->where('uuid', $uuid)->first();
     }
+
 
     /**
      * clear all uploaded cache

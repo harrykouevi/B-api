@@ -57,23 +57,35 @@ class UploadAPIController extends Controller
     /**
      * clear cache from Upload table
      */
-    public function clear(Request $request): JsonResponse // Changé UploadRequest en Request
+    /**
+     * clear cache from Upload table
+     */
+    public function clear(Request $request): JsonResponse
     {
         $input = $request->all();
         if (!$request->has('uuid')) {
             return $this->sendResponse(false, 'Media not found');
         }
+
         try {
             if (is_array($input['uuid'])) {
                 $result = $this->uploadRepository->clearWhereIn($input['uuid']);
             } else {
                 $result = $this->uploadRepository->clear($input['uuid']);
+
+                // Vérifier si la suppression a réussi
+                if ($result === false) {
+                    return $this->sendResponse(false, 'Media not found or already deleted');
+                }
             }
+
             return $this->sendResponse($result, 'Media deleted successfully');
-        } catch (Exception) {
+        } catch (Exception $e) {
+            Log::error('Error in clear method: ' . $e->getMessage());
             return $this->sendResponse(false, 'Error when delete media');
         }
     }
+
 
     /**
      * Delete media by URL
