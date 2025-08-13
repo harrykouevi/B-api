@@ -431,7 +431,7 @@ class AppSettingsTableSeeder extends Seeder
             array(
                 'id' => 155,
                 'key' => 'booking_price',
-                'value' => 200,
+                'value' => 0,
             ),
             array(
                 'id' => 156,
