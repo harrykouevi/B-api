@@ -312,6 +312,7 @@ class UserAPIController extends Controller
         if ($upload && $upload->hasMedia('app_logo')) {
             $settings['app_logo'] = $upload->getFirstMediaUrl('app_logo');
         }
+        Log::info("setting:",["setting"=>$settings]);
 
         return $this->sendResponse($settings, 'Settings retrieved successfully');
     }
