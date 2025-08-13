@@ -33,7 +33,7 @@ use App\Http\Controllers\API\UploadAPIController;
 */
 
 Route::get('/test', function (Request $request) {
-    dd(env('APP_LOCALE')) ;
+    dd(env('APP_LOCALE'),app('settings')) ;
 })->name('test');
 
 Route::prefix('salon_owner')->group(function () {
