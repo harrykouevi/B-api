@@ -278,6 +278,7 @@ class UserAPIController extends Controller
         if (!$settings) {
             return $this->sendError('Settings not found');
         }
+        Log::info("setting:",["setting"=>$settings]);
 
         return $this->sendResponse($settings, 'Settings retrieved successfully');
     }
