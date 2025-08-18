@@ -12,6 +12,7 @@ class CinetPayService
     protected string $apiKey;
     protected string $siteId;
     protected string $baseUrl;
+    protected string $transferBaseUrl;
     protected string $apiPassword;
 
     public function __construct()
@@ -20,6 +21,7 @@ class CinetPayService
         $this->siteId = config('services.cinetpay.site_id');
         $this->apiPassword = config('services.cinetpay.api_password');
         $this->baseUrl = config('services.cinetpay.base_url', 'https://api-checkout.cinetpay.com');
+        $this->transferBaseUrl = config('services.cinetpay.transfert_base_url', 'https://api-checkout.cinetpay.com');
     }
 
     /**
@@ -134,7 +136,7 @@ class CinetPayService
     public function getAuthToken()
     {
         try {
-            $response = Http::asForm()->post("{$this->baseUrl}/v1/auth/login", [
+            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/auth/login", [
                 'apikey' => $this->apiKey,
                 'password' => $this->apiPassword,
                 'lang' => 'fr'
@@ -199,7 +201,7 @@ class CinetPayService
     public function getTransferBalance(string $token): array
     {
         try {
-            $response = Http::get("{$this->baseUrl}/v1/transfer/check/balance", [
+            $response = Http::get("{$this->transferBaseUrl}/v1/transfer/check/balance", [
                 'token' => $token,
                 'lang' => 'fr'
             ]);
@@ -306,7 +308,6 @@ class CinetPayService
     /**
      * Ajouter un contact pour le transfert
      *
-     * @param string $token
      * @param string $prefix
      * @param string $phone
      * @param string $name
@@ -314,8 +315,9 @@ class CinetPayService
      * @param string $email
      * @return array
      */
-    public function addContact(string $token, string $prefix, string $phone, string $name, string $surname, string $email): array
+    public function addContact(string $prefix, string $phone, string $name, string $surname, string $email): array
     {
+        $token = $this->getAuthToken();
         try {
             $contactData = [[
                 'prefix' => $prefix,
@@ -325,7 +327,7 @@ class CinetPayService
                 'email' => $email
             ]];
 
-            $response = Http::asForm()->post("{$this->baseUrl}/v1/transfer/contact", [
+            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/contact", [
                 'token' => $token,
                 'lang' => 'fr',
                 'data' => json_encode($contactData)
@@ -404,7 +406,7 @@ class CinetPayService
             }
 
             // 3. Exécuter le transfert
-            $response = Http::asForm()->post("{$this->baseUrl}/v1/transfer/money/send/contact", [
+            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact", [
                 'token' => $token,
                 'lang' => 'fr',
                 'data' => json_encode($transferData)
@@ -476,7 +478,7 @@ class CinetPayService
     public function checkTransferStatus(string $token, string $clientTransactionId): array
     {
         try {
-            $response = Http::get("{$this->baseUrl}/v1/transfer/check/money", [
+            $response = Http::get("{$this->transferBaseUrl}/v1/transfer/check/money", [
                 'token' => $token,
                 'client_transaction_id' => $clientTransactionId,
                 'lang' => 'fr'
