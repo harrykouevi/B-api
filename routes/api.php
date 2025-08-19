@@ -15,11 +15,13 @@ use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
+use App\Http\Controllers\API\WithdrawalPhoneController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -175,6 +177,9 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/wallets/withdrawals/history', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalHistory']);
     Route::get('/wallets/withdrawals/{id}', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalDetails']);
 
-
-
+    // Withdrawal Phone Routes
+    Route::get('withdrawal-phones', [WithdrawalPhoneController::class, 'index'])->name('withdrawal-phones.index');
+    Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
+    Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');
+    Route::delete('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'destroy'])->name('withdrawal-phones.destroy');
 });

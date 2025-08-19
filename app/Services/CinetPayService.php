@@ -315,59 +315,72 @@ class CinetPayService
      * @param string $email
      * @return array
      */
-    public function addContact(string $prefix, string $phone, string $name, string $surname, string $email): array
-    {
-        $token = $this->getAuthToken();
-        try {
-            $contactData = [[
-                'prefix' => $prefix,
-                'phone' => $phone,
-                'name' => $name,
-                'surname' => $surname,
-                'email' => $email
-            ]];
 
-            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/contact", [
-                'token' => $token,
-                'lang' => 'fr',
-                'data' => json_encode($contactData)
-            ]);
+public function addContact(string $prefix, string $phone, string $name, string $surname, string $email): array
+{
+    $tokenResult = $this->getAuthToken();
+    $token = is_array($tokenResult) ? $tokenResult['token'] ?? null : $tokenResult;
 
-            if (!$response->successful()) {
-                return [
-                    'success' => false,
-                    'message' => "Erreur lors de l'ajout du contact",
-                    'response' => $response->body()
-                ];
-            }
+    Log::info("Token", [
+        'token' => $token,
+        'prefix' => $prefix,
+        'phone' => $phone,
+        'name' => $name,
+        'surname' => $surname,
+        'email' => $email,
+        'transfert_base_url' => $this->transferBaseUrl
+    ]);
 
-            $responseData = $response->json();
+    try {
+        $contactData = [
+            'prefix' => $prefix,
+            'phone' => $phone,
+            'name' => $name,
+            'surname' => $surname,
+            'email' => $email
+        ];
 
-            if (isset($responseData['code']) && $responseData['code'] !== 0) {
-                return [
-                    'success' => false,
-                    'message' => $responseData['message'] ?? 'Erreur lors de l\'ajout du contact',
-                    'response' => $responseData
-                ];
-            }
+        $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/contact", [
+            'token' => $token,
+            'lang' => 'fr',
+            'data' => json_encode($contactData)
+        ]);
 
-            return [
-                'success' => true,
-                'lot' => $responseData['data'][0]['lot'] ?? null,
-                'response' => $responseData
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Erreur lors de l\'ajout du contact CinetPay', [
-                'error' => $e->getMessage()
-            ]);
-
+        if (!$response->successful()) {
             return [
                 'success' => false,
-                'message' => 'Erreur lors de l\'ajout du contact: ' . $e->getMessage()
+                'message' => "Erreur lors de l'ajout du contact",
+                'response' => $response->body()
             ];
         }
+
+        $responseData = $response->json();
+
+        if (isset($responseData['code']) && $responseData['code'] !== 0) {
+            return [
+                'success' => false,
+                'message' => $responseData['message'] ?? 'Erreur lors de l\'ajout du contact',
+                'response' => $responseData
+            ];
+        }
+
+        return [
+            'success' => true,
+            'lot' => $responseData['data'][0]['lot'] ?? null,
+            'response' => $responseData
+        ];
+
+    } catch (\Exception $e) {
+        Log::error('Erreur lors de l\'ajout du contact CinetPay', [
+            'error' => $e->getMessage()
+        ]);
+
+        return [
+            'success' => false,
+            'message' => 'Erreur lors de l\'ajout du contact: ' . $e->getMessage()
+        ];
     }
+}
 
     /**
      * Exécuter un transfert via CinetPay
