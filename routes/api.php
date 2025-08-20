@@ -15,11 +15,14 @@ use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\UserAPIController;
+use App\Http\Controllers\API\WithdrawalPhoneController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
+use App\Http\Controllers\API\CinetpayTransferController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +64,13 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
+Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,
+    'handleTransferNotification'
+])->name('cinetpay.transfer.webhook');
+
+// Route pour le ping (GET)
+Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
+
 Route::post('register', [UserAPIController::class, 'register']);
 Route::post('v2/register', [UserAPIController::class, 'v2_register']);
 Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
@@ -165,8 +175,14 @@ Route::middleware('auth:api')->group(function () {
 
     Route::post('send-notification', [WalletAPIController::class, 'sendNotification'])->name('notifications.test');
     Route::post('recharge/', [WalletAPIController::class, 'increaseWallet'])->name('increase_wallet');
+    Route::post('retrait/', [WalletAPIController::class, 'withdrawOnWallet'])->name('withdraw_on_wallet');
+    // Historique des retraits
+    Route::get('/wallets/withdrawals/history', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalHistory']);
+    Route::get('/wallets/withdrawals/{id}', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalDetails']);
 
-
-
-
+    // Withdrawal Phone Routes
+    Route::get('withdrawal-phones', [WithdrawalPhoneController::class, 'index'])->name('withdrawal-phones.index');
+    Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
+    Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');
+    Route::delete('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'destroy'])->name('withdrawal-phones.destroy');
 });

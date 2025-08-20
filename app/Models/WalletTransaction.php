@@ -1,9 +1,7 @@
 <?php
 /*
  * File name: WalletTransaction.php
- * Last modified: 2024.04.11 at 14:51:04
- * Author: SmarterVision - https://codecanyon.net/user/smartervision
- * Copyright (c) 2024
+ * Last modified: 2025.08.2025 at 14:51:04
  */
 
 namespace App\Models;
@@ -31,6 +29,19 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 class WalletTransaction extends Model
 {
+    const STATUS_PENDING = 'pending';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_REJECTED = 'rejected';
+
+    public static function getStatuses(): array
+    {
+        return [
+            self::STATUS_PENDING => 'En attente',
+            self::STATUS_COMPLETED => 'Complété',
+            self::STATUS_REJECTED => 'Rejeté',
+        ];
+    }
+
     use Uuids;
     use HasFactory;
 
@@ -44,7 +55,8 @@ class WalletTransaction extends Model
         'description' => 'nullable|max:255',
         'action' => ["required", "regex:/^(credit|debit)$/i"],
         'wallet_id' => 'required|exists:wallets,id',
-        'payment_id' => 'required|exists:payments,id',
+        'payment_id' => 'sometimes|exists:payments,id',
+        'status' => 'sometimes|string',
     ];
     public $table = 'wallet_transactions';
     public $fillable = [
@@ -53,7 +65,8 @@ class WalletTransaction extends Model
         'action',
         'wallet_id',
         'payment_id',
-        'user_id'
+        'user_id',
+        'status'
     ];
     /**
      * The attributes that should be casted to native types.
@@ -63,7 +76,8 @@ class WalletTransaction extends Model
     protected $casts = [
         'amount' => 'double',
         'description' => 'string',
-        'action' => 'string'
+        'action' => 'string',
+        'status' => 'string'
     ];
     /**
      * New Attributes
@@ -125,5 +139,82 @@ class WalletTransaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public static function canWithdraw(Wallet $wallet, float $amount): bool
+    {
+        return $amount >= 500 && $wallet->balance >= $amount;
+    }
+
+    public static function createWithdrawal(array $data): WalletTransaction
+    {
+        $data['action'] = 'retrait';
+        $data['status'] = $data['status'] ?? self::STATUS_PENDING;
+
+        return self::create($data);
+    }
+
+    /**
+     * Mettre à jour le statut de la transaction selon le statut CinetPay
+     *
+     * @param string $treatmentStatus
+     * @param string $sendingStatus
+     * @return bool
+     */
+    /**
+     * Mettre à jour le statut de la transaction selon le statut CinetPay
+     *
+     * @param string $treatmentStatus
+     * @param string $sendingStatus
+     * @return bool
+     */
+    public function updateStatusFromCinetPay(string $treatmentStatus, string $sendingStatus): bool
+    {
+        $updateData = [];
+
+        // Mettre à jour le statut en fonction des informations reçues
+        if ($treatmentStatus === 'VAL' && $sendingStatus === 'CONFIRM') {
+            // Transfert validé et confirmé
+            $updateData['status'] = self::STATUS_COMPLETED;
+        } elseif (in_array($treatmentStatus, ['REJECT', 'CANCEL'])) {
+            // Transfert rejeté ou annulé
+            $updateData['status'] = self::STATUS_REJECTED;
+
+            // Créditer à nouveau le wallet utilisateur seulement si le statut change
+            if ($this->status !== self::STATUS_REJECTED) {
+                if ($this->wallet) {
+                    $this->wallet->increment('balance', $this->amount);
+                }
+            }
+        } elseif ($treatmentStatus === 'NEW') {
+            // Transfert en attente de confirmation
+            $updateData['status'] = self::STATUS_PENDING;
+        }
+
+        if (!empty($updateData)) {
+            return $this->update($updateData);
+        }
+
+        return false;
+    }
+
+    /**
+     * Vérifier si la transaction est confirmée
+     *
+     * @return bool
+     */
+    public function isConfirmed(): bool
+    {
+        return $this->status === self::STATUS_COMPLETED;
+    }
+
+    /**
+     * Vérifier si la transaction est rejetée
+     *
+     * @return bool
+     */
+    public function isFailed(): bool
+    {
+        return $this->status === self::STATUS_REJECTED;
     }
 }

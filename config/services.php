@@ -83,6 +83,8 @@ return [
     'site_id' => env('CINETPAY_SITE_ID'),
     'secret_key' => env('CINETPAY_SECRET_KEY'),
     'base_url' => env('CINETPAY_BASE_URL', 'https://api.cinetpay.com/v1'),
+    'transfert_base_url' => env('CINETPAY_TRANSFERT_BASE_URL', 'https://client.cinetpay.com/v1'),
+    'api_password' => env('CINETPAY_PASSWORD')
 ],
 
 ];
