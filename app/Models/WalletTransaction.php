@@ -1,9 +1,7 @@
 <?php
 /*
  * File name: WalletTransaction.php
- * Last modified: 2024.04.11 at 14:51:04
- * Author: SmarterVision - https://codecanyon.net/user/smartervision
- * Copyright (c) 2024
+ * Last modified: 2025.08.2025 at 14:51:04
  */
 
 namespace App\Models;

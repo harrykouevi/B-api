@@ -6,12 +6,15 @@ use App\Models\WalletTransaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Notifications\NewReceivedPayment;
 use App\Repositories\UserRepository;
 use App\Services\PaymentService;
 use App\Services\PaymentType;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
-
+use App\Services\CinetPayService;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\RechargePayment;
 
 class CinetpayAPIController extends Controller
 {
@@ -195,6 +198,16 @@ class CinetpayAPIController extends Controller
 
             // Mettre à jour la transaction
             $walletTransaction->update($updateData);
+            try{
+                Notification::send([$wallet->user], new NewReceivedPayment($transactionId, $wallet));
+
+            }catch(\Exception $e){
+                Log::error("Erreur lors de l'envoie de la notification", [
+                    'wallet_transaction_id' => $walletTransactionId,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
 
             // Log de la mise à jour
             Log::info('Webhook CinetPay - Transaction wallet mise à jour', [

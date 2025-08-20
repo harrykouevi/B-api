@@ -31,6 +31,7 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 
 /**
@@ -627,6 +628,7 @@ class WalletAPIController extends Controller
             ]);
 
             return response()->json([
+                'success'=> true,
                 'message' => 'Retrait initié avec succès.',
                 'transaction_id' => $transferResponse['transaction_id'],
                 'client_transaction_id' => $transferResponse['client_transaction_id'],

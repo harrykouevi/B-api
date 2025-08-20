@@ -101,25 +101,33 @@ public function store(Request $request)
     }
     
     return response()->json([
-        'phone' => $phone,
+        'success' => true,
+        'data' => $phone,
         'cinetpay_result' => $result
     ], 201);
 }
 
-    public function update(WithdrawalPhoneRequest $request, $id)
-    {
-        $phone = WithdrawalPhone::findOrFail($id);
-        $phone->phone_number = $request->phone_number;
-        $phone->save();
+public function update(Request $request, $id)
+{
+    Log::info('Début update withdrawal phone', ['id' => $id, 'request' => $request->all()]);
 
-        return response()->json($phone);
-    }
+    $phone = WithdrawalPhone::findOrFail($id);
+    Log::info('Numéro trouvé pour update', ['phone' => $phone]);
+
+    $phone->phone_number = $request->phone_number;
+    $phone->save();
+
+    Log::info('Numéro mis à jour', ['phone' => $phone]);
+
+    return response()->json($phone);
+}
 
     public function destroy($id)
     {
         $phone = WithdrawalPhone::findOrFail($id);
         $phone->delete();
+        return response()->json(["success"=>true], 204);
 
-        return response()->json(null, 204);
     }
+    
 }

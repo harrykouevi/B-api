@@ -77,8 +77,8 @@ class RechargePayment extends Notification
     {
         $message = new FcmMessage();
         $notification = [
-            'body' => trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status , 'payment_amount' => $this->payment->amount]),
-            'title' => trans('lang.notification_status_changed_payment'),
+            'body' => trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status,[],'fr') , 'payment_amount' => $this->payment->amount], 'fr'),
+            'title' => trans('lang.notification_status_changed_payment',[],'fr'),
 
         ];
         $data = [

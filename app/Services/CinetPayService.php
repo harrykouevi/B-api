@@ -321,10 +321,16 @@ public function addContact(string $prefix, string $phone, string $name, string $
     $tokenResult = $this->getAuthToken();
     $token = is_array($tokenResult) ? $tokenResult['token'] ?? null : $tokenResult;
 
+    // Nettoyage du numéro (garde uniquement les chiffres après le préfixe)
+    $rawNumber = preg_replace('/\D/', '', $phone);
+    if (strpos($rawNumber, $prefix) === 0) {
+        $rawNumber = substr($rawNumber, strlen($prefix));
+    }
+
     Log::info("Token", [
         'token' => $token,
         'prefix' => $prefix,
-        'phone' => $phone,
+        'phone' => $rawNumber,
         'name' => $name,
         'surname' => $surname,
         'email' => $email,
@@ -332,19 +338,22 @@ public function addContact(string $prefix, string $phone, string $name, string $
     ]);
 
     try {
-        $contactData = [
+        // Tableau d'objets comme demandé par la doc
+        $contactData = [[
             'prefix' => $prefix,
-            'phone' => $phone,
+            'phone' => $rawNumber,
             'name' => $name,
             'surname' => $surname,
             'email' => $email
+        ]];
+
+        $payload = [
+            'data' => json_encode($contactData)
         ];
 
-        $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/contact", [
-            'token' => $token,
-            'lang' => 'fr',
-            'data' => json_encode($contactData)
-        ]);
+        // Requête POST en x-www-form-urlencoded
+        $url = "{$this->transferBaseUrl}/v1/transfer/contact?token={$token}&lang=fr";
+        $response = Http::asForm()->post($url, $payload);
 
         if (!$response->successful()) {
             return [
@@ -381,7 +390,6 @@ public function addContact(string $prefix, string $phone, string $name, string $
         ];
     }
 }
-
     /**
      * Exécuter un transfert via CinetPay
      *
@@ -391,95 +399,104 @@ public function addContact(string $prefix, string $phone, string $name, string $
      * @param string|null $paymentMethod Méthode de paiement optionnelle
      * @return array
      */
-    public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, ?string $paymentMethod = null): array
-    {
-        try {
-            // 1. Obtenir le token d'authentification
-            $tokenResult = $this->getAuthToken();
+   public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, ?string $paymentMethod = null): array
+{
+    try {
+        // 1. Obtenir le token d'authentification
+        $tokenResult = $this->getAuthToken();
 
-            if (is_array($tokenResult) && !$tokenResult['success']) {
-                return $tokenResult;
-            }
+        if (is_array($tokenResult) && !$tokenResult['success']) {
+            return $tokenResult;
+        }
 
-            $token = $tokenResult['token'];
+        $token = is_array($tokenResult) ? $tokenResult['token'] : $tokenResult;
 
-            // 2. Préparer les données de transfert
-            // Le contact doit déjà exister dans CinetPay (géré par un collègue)
-            $transferData = [[
-                'prefix' => $countryPrefix,
-                'phone' => $phoneNumber,
-                'amount' => $withdrawal->amount,
-                'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
-                'notify_url' => route('cinetpay.transfer.webhook', [], false)
-            ]];
+        // ⚠️ Vérifier que le montant est bien un multiple de 5
+        if ($withdrawal->amount % 5 !== 0) {
+            return [
+                'success' => false,
+                'message' => "Le montant doit être un multiple de 5"
+            ];
+        }
 
-            // Ajouter la méthode de paiement si spécifiée
-            if ($paymentMethod) {
-                $transferData[0]['payment_method'] = $paymentMethod;
-            }
+        // 2. Préparer les données de transfert
+        $transferData = [[
+            'prefix' => $countryPrefix,
+            'phone' => $phoneNumber,
+            'amount' => $withdrawal->amount,
+            'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
+            'notify_url' => route('cinetpay.transfer.webhook', [], false)
+        ]];
 
-            // 3. Exécuter le transfert
-            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact", [
-                'token' => $token,
-                'lang' => 'fr',
-                'data' => json_encode($transferData)
-            ]);
+        // Ajouter la méthode de paiement si spécifiée
+        if ($paymentMethod) {
+            $transferData[0]['payment_method'] = $paymentMethod;
+        }
 
-            if (!$response->successful()) {
+        Log::info("Payload transfert", $transferData);
+
+        // 3. Exécuter le transfert
+        $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact", [
+            'token' => $token,
+            'lang' => 'fr',
+            'data' => json_encode($transferData) // 🔑 doit être JSON stringifié
+        ]);
+
+        if (!$response->successful()) {
+            return [
+                'success' => false,
+                'message' => "Erreur lors de l'initiation du transfert",
+                'response' => $response->body()
+            ];
+        }
+
+        $responseData = $response->json();
+
+        // Vérifier si la réponse contient des erreurs
+        if (isset($responseData['code']) && $responseData['code'] !== 0) {
+            if ($responseData['code'] === 723) {
                 return [
                     'success' => false,
-                    'message' => "Erreur lors de l'initiation du transfert",
-                    'response' => $response->body()
-                ];
-            }
-
-            $responseData = $response->json();
-
-            // Vérifier si la réponse contient des erreurs
-            if (isset($responseData['code']) && $responseData['code'] !== 0) {
-                // Code 723 = NOT_FOUND (contact non trouvé)
-                if ($responseData['code'] === 723) {
-                    return [
-                        'success' => false,
-                        'message' => 'Le contact n\'existe pas dans CinetPay. Veuillez contacter le service support.',
-                        'code' => 723,
-                        'response' => $responseData
-                    ];
-                }
-
-                return [
-                    'success' => false,
-                    'message' => $responseData['message'] ?? 'Erreur lors du transfert',
+                    'message' => 'Le contact n\'existe pas dans CinetPay.',
+                    'code' => 723,
                     'response' => $responseData
                 ];
             }
 
-            // Retourner les données du transfert
-            $transferResult = $responseData['data'][0] ?? [];
-
-            return [
-                'success' => true,
-                'transaction_id' => $transferResult['transaction_id'] ?? null,
-                'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
-                'treatment_status' => $transferResult['treatment_status'] ?? null,
-                'sending_status' => $transferResult['sending_status'] ?? null,
-                'transfer_valid' => $transferResult['transfer_valid'] ?? null,
-                'lot' => $transferResult['lot'] ?? null,
-                'response' => $transferResult
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Erreur lors de l\'exécution du transfert CinetPay', [
-                'error' => $e->getMessage(),
-                'withdrawal_id' => $withdrawal->id
-            ]);
-
             return [
                 'success' => false,
-                'message' => 'Erreur lors de l\'exécution du transfert: ' . $e->getMessage()
+                'message' => $responseData['message'] ?? 'Erreur lors du transfert',
+                'response' => $responseData
             ];
         }
+
+        // Retourner les données du transfert
+        $transferResult = $responseData['data'][0] ?? [];
+
+        return [
+            'success' => true,
+            'transaction_id' => $transferResult['transaction_id'] ?? null,
+            'client_transaction_id' => $transferData[0]['client_transaction_id'],
+            'treatment_status' => $transferResult['treatment_status'] ?? null,
+            'sending_status' => $transferResult['sending_status'] ?? null,
+            'transfer_valid' => $transferResult['transfer_valid'] ?? null,
+            'lot' => $transferResult['lot'] ?? null,
+            'response' => $transferResult
+        ];
+
+    } catch (\Exception $e) {
+        Log::error('Erreur lors de l\'exécution du transfert CinetPay', [
+            'error' => $e->getMessage(),
+            'withdrawal_id' => $withdrawal->id
+        ]);
+
+        return [
+            'success' => false,
+            'message' => 'Erreur lors de l\'exécution du transfert: ' . $e->getMessage()
+        ];
     }
+}
+
 
     /**
      * Vérifier le statut d'un transfert
