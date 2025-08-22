@@ -115,11 +115,49 @@ public function update(Request $request, $id)
     Log::info('Numéro trouvé pour update', ['phone' => $phone]);
 
     $phone->phone_number = $request->phone_number;
-    $phone->save();
 
-    Log::info('Numéro mis à jour', ['phone' => $phone]);
+    // Préparation des données pour addContact
+    $prefix = '228';
+    $user = User::findOrFail($phone->user_id);
+    $name = $user->name ?? 'Utilisateur';
+    $surname = $user->name ?? 'Utilisateur';
+    $email = $user->email ?? ('user' . $user->id . '@charm.com');
+    $rawNumber = preg_replace('/\D/', '', $phone->phone_number);
+    if (strpos($rawNumber, $prefix) === 0) {
+        $rawNumber = substr($rawNumber, strlen($prefix));
+    }
 
-    return response()->json($phone);
+    Log::info('Numéro nettoyé pour CinetPay', ['rawNumber' => $rawNumber]);
+    Log::info('Préparation des données pour addContact', [
+        'prefix' => $prefix,
+        'phone' => $rawNumber,
+        'name' => $name,
+        'surname' => $surname,
+        'email' => $email
+    ]);
+
+    $result = $this->cinetPayService->addContact(
+        $prefix,
+        $rawNumber,
+        $name,
+        $surname,
+        $email
+    );
+    Log::info('Résultat addContact', ['result' => $result]);
+
+    if (!$result['success']) {
+        Log::error('Erreur lors de l\'ajout du contact', ['response' => $result['response']]);
+        return response()->json(['error' => 'Erreur lors de l\'ajout du contact'], 500);
+    } else {
+        $phone->save();
+        Log::info('Numéro mis à jour', ['phone' => $phone]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $phone,
+        'cinetpay_result' = $result
+    ]);
 }
 
     public function destroy($id)
