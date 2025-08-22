@@ -156,7 +156,7 @@ public function update(Request $request, $id)
     return response()->json([
         'success' => true,
         'data' => $phone,
-        'cinetpay_result' = $result
+        'cinetpay_result' => $result
     ]);
 }
 
