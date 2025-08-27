@@ -136,10 +136,24 @@ class CinetPayService
     public function getAuthToken()
     {
         try {
+            Log::info('CinetPay login request', [
+                'url' => "{$this->transferBaseUrl}/v1/auth/login",
+                'payload' => [
+                    'apikey' => $this->apiKey,
+                    'password' => $this->apiPassword,
+                    'lang' => 'fr'
+                ]
+            ]);
             $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/auth/login?lang=fr", [
                 'apikey' => $this->apiKey,
                 'password' => $this->apiPassword
-        ]);
+                ]);
+            
+
+            Log::info('CinetPay login response', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
 
             if ($response->failed()) {
                 Log::error("Erreur lors de la récupération du token", ["response" => $response->body()]);
