@@ -81,6 +81,22 @@ class BookingStatusesTableSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ),
+            7 =>
+                array(
+                    'id' => 8,
+                    'status' => 'Cancelled',
+                    'order' => 70,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ),
+            8 =>
+                array(
+                    'id' => 9,
+                    'status' => 'Reported',
+                    'order' => 80,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ),
         ));
 
 

@@ -9,11 +9,15 @@
 namespace App\Providers;
 
 use Exception;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\ServiceProvider;
+use Stripe\Stripe;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Cashier;
-use Stripe\Stripe;
+use App\Services\BookingReportService;
+use Illuminate\Support\Facades\Schema;
+use App\Repositories\BookingRepository;
+use Illuminate\Support\ServiceProvider;
+use App\Services\BookingCancellationService;
+use App\Repositories\BookingStatusRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,7 +28,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->singleton(BookingReportService::class, function ($app) {
+            return new BookingReportService(
+                $app->make(BookingRepository::class),
+                $app->make(BookingStatusRepository::class)
+            );
+        });
 
+        $this->app->singleton(BookingCancellationService::class, function ($app) {
+            return new BookingCancellationService(
+                $app->make(\App\Repositories\BookingRepository::class),
+                $app->make(\App\Repositories\BookingStatusRepository::class)
+            );
+        });
     }
 
     /**
