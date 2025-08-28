@@ -144,10 +144,8 @@ class CinetPayService
                     'lang' => 'fr'
                 ]
             ]);
-            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/auth/login?lang=fr", [
-                'apikey' => $this->apiKey,
-                'password' => $this->apiPassword
-                ]);
+            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/auth/login?lang=fr&apiKey=$this->apikey&password=$this->apiPassword"
+                );
             
 
             Log::info('CinetPay login response', [
