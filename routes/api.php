@@ -185,4 +185,24 @@ Route::middleware('auth:api')->group(function () {
     Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
     Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');
     Route::delete('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'destroy'])->name('withdrawal-phones.destroy');
+
+    // Report Routes
+    Route::post('bookings/{id}/report', [BookingAPIController::class, 'report'])
+        ->name('bookings.report');
+    
+    Route::get('bookings/{id}/report-history', [BookingAPIController::class, 'reportHistory'])
+        ->name('bookings.report.history');
+    
+    Route::get('bookings/{id}/can-report', [BookingAPIController::class, 'canReport'])
+        ->name('bookings.can.report');
+    
+    // Cancel routes
+    Route::post('bookings/{id}/cancel', [BookingAPIController::class, 'cancel'])
+        ->name('bookings.cancel');
+    
+    Route::get('bookings/my-cancellations', [BookingAPIController::class, 'myCancellations'])
+        ->name('bookings.my.cancellations');
+    
+    Route::get('bookings/{id}/can-cancel', [BookingAPIController::class, 'canCancel'])
+        ->name('bookings.can.cancel');
 });

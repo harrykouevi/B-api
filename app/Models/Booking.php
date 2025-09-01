@@ -8,15 +8,16 @@
 
 namespace App\Models;
 
-use App\Casts\EServiceCollectionCast;
-use App\Casts\OptionCollectionCast;
-use App\Casts\TaxCollectionCast;
-use App\Events\BookingCreatingEvent;
 use Carbon\Carbon;
+use App\Casts\TaxCollectionCast;
+use App\Casts\OptionCollectionCast;
+use App\Events\BookingCreatingEvent;
+use App\Casts\EServiceCollectionCast;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * Class Booking
@@ -80,7 +81,12 @@ class Booking extends Model
         'start_at',
         'ends_at',
         'hint',
-        'cancel'
+        'cancel',
+        'original_booking_id',
+        'reported_from_id',
+        'report_reason',
+        'cancellation_reason',
+        'cancelled_by'
     ];
     /**
      * The attributes that should be casted to native types.
@@ -100,10 +106,16 @@ class Booking extends Model
         'quantity' => 'integer',
         'user_id' => 'integer',
         'employee_id' => 'integer',
+        'original_booking_id' => 'integer',
+        'reported_from_id' => 'integer',
         'booking_at' => 'datetime:Y-m-d\TH:i:s.uP',
         'start_at' => 'datetime:Y-m-d\TH:i:s.uP',
         'ends_at' => 'datetime:Y-m-d\TH:i:s.uP',
+        'cancelled_at' => 'datetime:Y-m-d\TH:i:s.uP',
         'hint' => 'string',
+        'report_reason' => 'string',
+        'cancellation_reason' => 'string',
+        'cancelled_by' => 'string',
         'cancel' => 'boolean'
     ];
     /**
@@ -258,5 +270,71 @@ class Booking extends Model
     {
         return $this->belongsTo(Payment::class, 'payment_id', 'id');
     }
+
+    /**
+     * 
+     *  REPORT SECTION STARTS HERE
+     * 
+     */
+
+     public function originalBooking(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class, 'original_booking_id', 'id');
+    }
+
+    public function reportedFrom(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class, 'reported_from_id', 'id');
+    }
+
+    public function reportedBookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'reported_from_id', 'id');
+    }
+
+    public function isReported(): bool
+    {
+        return !is_null($this->reported_from_id);
+    }
+
+    public function hasBeenReported(): bool
+    {
+        return $this->reportedBookings()->exists();
+    }
+
+    public function getCurrentBooking(): ?Booking
+    {
+        // Si ce RDV n'est pas reporté, c'est le current
+        if (!$this->hasBeenReported()) {
+            return $this;
+        }
+
+        // Sinon, chercher le dernier de la chaîne
+        $originalId = $this->original_booking_id ?: $this->id;
+        
+        return self::where('original_booking_id', $originalId)
+            ->whereNotIn('booking_status_id', [8]) // Pas Reported
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
+    public function canBeReported(): bool
+    {
+        return !$this->cancel && 
+               !in_array($this->booking_status_id, [6, 7, 9]) && // Done, Failed, Reported
+               $this->booking_at > now();
+    }
+
+    public function canBeCancelled(): bool
+    {
+        return !$this->cancel && 
+               !in_array($this->booking_status_id, [6, 7, 9]); // Done, Failed, Reported
+    }
+
+    /**
+     * 
+     *  REPORT SECTION ENDS HERE
+     * 
+     */
 
 }

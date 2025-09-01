@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('wallet_transactions', function (Blueprint $table) {
-            $table->string('status')->default('pending')->after('action');
+            $table->string('status')->default('completed')->after('action');
         });
     }
 

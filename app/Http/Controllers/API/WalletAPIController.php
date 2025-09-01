@@ -257,7 +257,7 @@ class WalletAPIController extends Controller
     {
         $maxAllowed = 100000;
 
-        $validator = \Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'user_id' => 'required|integer|exists:users,id',
             'amount' => [
                 'required',
@@ -297,7 +297,7 @@ class WalletAPIController extends Controller
             ]);
         }
 
-        $validator = \Validator::make($request->all(), $rules);
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json([

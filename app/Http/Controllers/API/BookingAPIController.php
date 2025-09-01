@@ -9,34 +9,37 @@
 namespace App\Http\Controllers\API;
 
 
-use App\Criteria\Bookings\BookingsOfUserCriteria;
-use App\Criteria\Coupons\ValidCriteria;
-use App\Events\BookingChangedEvent;
-use App\Events\BookingStatusChangedEvent;
-use App\Http\Controllers\Controller;
-use App\Models\Address;
+use Exception;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
-
+use App\Models\Address;
+use App\Models\Booking;
+use Illuminate\Http\Request;
 use App\Notifications\NewBooking;
+use Illuminate\Http\JsonResponse;
+use App\Events\BookingChangedEvent;
+
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Repositories\SalonRepository;
+use App\Repositories\CouponRepository;
+use App\Repositories\OptionRepository;
+use App\Services\BookingReportService;
+use App\Criteria\Coupons\ValidCriteria;
 use App\Repositories\AddressRepository;
 use App\Repositories\BookingRepository;
-use App\Repositories\BookingStatusRepository;
-use App\Repositories\CouponRepository;
-use App\Repositories\EServiceRepository;
-use App\Repositories\OptionRepository;
 use App\Repositories\PaymentRepository;
-use App\Repositories\SalonRepository;
-use Exception;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Repositories\EServiceRepository;
+use App\Events\BookingStatusChangedEvent;
+use App\Services\BookingCancellationService;
 use Illuminate\Support\Facades\Notification;
+use App\Repositories\BookingStatusRepository;
 use Illuminate\Validation\ValidationException;
-use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
-use Prettus\Repository\Exceptions\RepositoryException;
+use App\Criteria\Bookings\BookingsOfUserCriteria;
+use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Validator\Exceptions\ValidatorException;
+use Prettus\Repository\Exceptions\RepositoryException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
  * Class BookingController
@@ -76,6 +79,10 @@ class BookingAPIController extends Controller
      */
     private OptionRepository $optionRepository;
 
+    private BookingReportService $reportService;
+
+    private BookingCancellationService $cancellationService;
+
 
     public function __construct(BookingRepository $bookingRepo
         , BookingStatusRepository                 $bookingStatusRepo, PaymentRepository $paymentRepo, AddressRepository $addressRepository, EServiceRepository $eServiceRepository, SalonRepository $salonRepository, CouponRepository $couponRepository, OptionRepository $optionRepository)
@@ -89,6 +96,8 @@ class BookingAPIController extends Controller
         $this->salonRepository = $salonRepository;
         $this->couponRepository = $couponRepository;
         $this->optionRepository = $optionRepository;
+        $this->reportService = app(BookingReportService::class);
+        $this->cancellationService = app(BookingCancellationService::class);
     }
 
     /**
@@ -264,5 +273,206 @@ class BookingAPIController extends Controller
 
         return $this->sendResponse($booking->toArray(), __('lang.saved_successfully', ['operator' => __('lang.booking')]));
     }
+
+    /**
+     *  REPORT BOOKINGS
+     */
+
+     public function report(int $id, Request $request): JsonResponse
+    {
+        try {
+            $this->validate($request, [
+                'booking_at' => 'required|date|after:now',
+                'start_at' => 'nullable|date',
+                'ends_at' => 'nullable|date|after:start_at',
+                'reason' => 'nullable|string|max:500'
+            ]);
+
+            $newBookingData = $request->only(['booking_at', 'start_at', 'ends_at']);
+            $reason = $request->input('reason', 'Report demandé par le client');
+
+            $result = $this->reportService->reportBooking($id, $newBookingData, $reason);
+
+            return $this->sendResponse($result, 'Rendez-vous reporté avec succès');
+
+        } catch (ValidationException $e) {
+            return $this->sendError($e->errors(), 422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 400);
+        }
+    }
+
+    public function reportHistory(int $id): JsonResponse
+    {
+        try {
+            $history = $this->reportService->getReportHistory($id);
+            
+            return $this->sendResponse([
+                'history' => $history,
+                'total_reports' => count($history) - 1,
+            ], 'Historique récupéré avec succès');
+            
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 400);
+        }
+    }
+
+    public function canReport(int $id): JsonResponse
+    {
+        try {
+            $booking = $this->bookingRepository->findWithoutFail($id);
+            
+            if (empty($booking)) {
+                return $this->sendError('Rendez-vous introuvable', 404);
+            }
+
+            $canReport = $booking->canBeReported();
+            $reason = $canReport ? null : $this->getCannotReportReason($booking);
+
+            return $this->sendResponse([
+                'can_report' => $canReport,
+                'reason' => $reason,
+                'booking_status' => $booking->bookingStatus->status ?? 'Unknown'
+            ], 'Vérification effectuée');
+
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 400);
+        }
+    }
+
+    private function getCannotReportReason(Booking $booking): string
+    {
+        if ($booking->cancel) {
+            return 'Le rendez-vous est déjà annulé';
+        }
+        
+        if ($booking->booking_status_id === 6) {
+            return 'Le rendez-vous est déjà terminé';
+        }
+        
+        if ($booking->booking_status_id === 7) {
+            return 'Le rendez-vous a échoué';
+        }
+        
+        if ($booking->booking_status_id === 9) {
+            return 'Le rendez-vous a déjà été reporté';
+        }
+        
+        if ($booking->booking_at <= now()) {
+            return 'Le rendez-vous est dans le passé';
+        }
+        
+        return 'Conditions non remplies pour le report';
+    }
+
+    /**
+     *  Cancel BOOKINGS
+     */
+
+    public function cancel(int $id, Request $request): JsonResponse
+    {
+        try {
+            // VALIDATION DES DONNÉES
+            $this->validate($request, [
+                'cancellation_reason' => 'required|string|min:10|max:500',
+                'cancelled_by' => 'sometimes|string|in:customer,salon_owner,admin'
+            ]);
+
+            $reason = $request->input('cancellation_reason');
+            $cancelledBy = $request->input('cancelled_by', 'customer');
+            
+            // VÉRIFICATION DES PERMISSIONS
+            $booking = $this->bookingRepository->findWithoutFail($id);
+            if (empty($booking)) {
+                return $this->sendError('Rendez-vous introuvable', 404);
+            }
+
+            $userRoles = auth()->user()->getRoleNames()->toArray();
+            
+            if (!$this->cancellationService->canUserCancelBooking($booking, auth()->id(), $userRoles)) {
+                return $this->sendError('Vous n\'avez pas l\'autorisation d\'annuler ce rendez-vous', 403);
+            }
+
+            // EXÉCUTION DE L'ANNULATION
+            $result = $this->cancellationService->cancelBooking($id, $reason, $cancelledBy);
+
+            return $this->sendResponse($result, 'Rendez-vous annulé avec succès');
+
+        } catch (ValidationException $e) {
+            return $this->sendError($e->errors(), 422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 400);
+        }
+    }
+    /**
+     *  GET CANCELLATIONS HISTORY
+     */
+    public function myCancellations(): JsonResponse
+    {
+        try {
+            $history = $this->cancellationService->getUserCancellationHistory(auth()->id());
+            
+            return $this->sendResponse([
+                'cancellations' => $history,
+                'total_cancelled' => count($history),
+            ], 'Historique récupéré avec succès');
+            
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 400);
+        }
+    }
+
+    public function canCancel(int $id): JsonResponse
+    {
+        try {
+            $booking = $this->bookingRepository->findWithoutFail($id);
+            
+            if (empty($booking)) {
+                return $this->sendError('Rendez-vous introuvable', 404);
+            }
+
+            $canCancel = $booking->canBeCancelled();
+            $userRoles = auth()->user()->getRoleNames()->toArray();
+            $hasPermission = $this->cancellationService->canUserCancelBooking($booking, auth()->id(), $userRoles);
+            
+            $reason = null;
+            if (!$canCancel) {
+                $reason = $this->getCannotCancelReason($booking);
+            } elseif (!$hasPermission) {
+                $reason = 'Vous n\'avez pas l\'autorisation d\'annuler ce rendez-vous';
+            }
+
+            return $this->sendResponse([
+                'can_cancel' => $canCancel && $hasPermission,
+                'reason' => $reason,
+                'booking_status' => $booking->bookingStatus->status ?? 'Unknown',
+                'refund_amount' => $canCancel ? $this->calculatePotentialRefund($booking) : 0
+            ], 'Vérification effectuée');
+
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 400);
+        }
+    }
+
+    private function getCannotCancelReason(Booking $booking): string
+    {
+        if ($booking->cancel) {
+            return 'Le rendez-vous est déjà annulé';
+        }
+        
+        if ($booking->booking_status_id === 6) {
+            return 'Le rendez-vous est déjà terminé';
+        }
+        
+        if ($booking->booking_status_id === 7) {
+            return 'Le rendez-vous a déjà échoué';
+        }
+        
+        if ($booking->booking_status_id === 8) {
+            return 'Le rendez-vous a été reporté';
+        }
+        
+        return 'Conditions non remplies pour l\'annulation';
+    } 
 
 }
