@@ -113,8 +113,8 @@ Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::c
 
 Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
-    Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
-    Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
+    Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink'])->name('affiliates.generate');
+    Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion'])->name('affiliates.confirm');;
 
     Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
     Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);

@@ -1223,6 +1223,7 @@ return [
     'tax_percent' => 'Pour cent',
     'tax_fixed' => 'Fixé',
     'tax_updated_at' => 'Mis à jour à',
+    'affiliationcode'  => 'Affiliation Code',
     'address' => 'Adresse',
     'address_plural' => 'Adresses',
     'address_desc' => 'Gestion des adresses',

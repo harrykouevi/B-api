@@ -22,7 +22,7 @@ class WalletCreationTest extends TestCase
      */
     public function test_example(): void
     {
-         try{
+        try{
         $user2 = User::create([
             'name' => 'userddEdd test',
             'email' => 'user2E82@example.com',

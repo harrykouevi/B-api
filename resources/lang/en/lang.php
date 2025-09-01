@@ -1155,6 +1155,7 @@ return [
     'tax_percent' => 'Percent',
     'tax_fixed' => 'Fixed',
     'tax_updated_at' => 'Updated At',
+    'affiliationcode'  => 'Affiliation Code',
     'address' => 'Address',
     'address_plural' => 'Addresses',
     'address_desc' => 'Addresses Management',

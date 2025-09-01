@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property User user
  * @property integer id
  * @property integer click
- * @property string link
  * @property integer user_id
  */
 class Affiliate extends Model 

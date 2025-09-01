@@ -1149,6 +1149,7 @@ return [
     'tax_percent' => 'Por ciento',
     'tax_fixed' => 'Fijado',
     'tax_updated_at' => 'Actualizado en',
+    'affiliationcode'  => 'Affiliation Code',
     'address' => 'Dirección',
     'address_plural' => 'direcciones',
     'address_desc' => 'Gestión de direcciones',

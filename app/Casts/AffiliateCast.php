@@ -55,14 +55,14 @@ class AffiliateCast implements CastsAttributes
             throw new InvalidArgumentException('The given value is not an Affiliate instance.');
         }
 
-        // return ['sponsorship' => json_encode([
-        //     'id' => $value['id'],
-        //     'link' => $value['link'],
-        //     'code' => $value['code'],
-        //     'user_id' => $value['user_id'],
-        // ])];
-         // Sauvegarde sous forme de JSON
-        return $value->toArray(); // Assure-toi que Affiliate a une méthode toArray()
-    
+        // Sauvegarde sous forme de JSON
+        return ['sponsorship' => json_encode([
+            'id' => $value['id'],
+            'link' => $value['link'],
+            'code' => $value['code'],
+            'user_id' => $value['user_id'],
+        ])];
+         
+        
     }
 }

@@ -143,7 +143,7 @@ class AffiliateAPIController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($affiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
+        return $this->sendResponse($affiliate->toArray(), __('lang.saved_successfully', ['operator' => __('lang.affiliationcode')]));
 
     }
 
@@ -219,9 +219,9 @@ class AffiliateAPIController extends Controller
         try {
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
             if( is_null($affiliation) ) throw new InvalidArgumentException('referral do not exist');
-
+            
             $conversion = $this->partenerShipService->proceedPartenerShip(auth()->user(),$affiliation) ;
-
+            
             if( $conversion ){ 
                 //recuperation du user a qui appartient le code
                 $partner = $affiliation->user;
@@ -233,14 +233,18 @@ class AffiliateAPIController extends Controller
                 }
 
             }
-            return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
-        } catch (Exception $e) {
+            return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.affiliation')]));
+        } catch (\InvalidArgumentException $e) {
            
-             // Gestion de l'exception
-             Log::channel('listeners_transactions')->error('Erreur lors de l\'affiliation à l\'utilisateur #' , [
-                'exception' => $e,
-            ]);
             return $this->sendError($e->getMessage());
+
+        } catch (\Throwable $e) {
+
+            Log::error('UNEXPECTED FAIL: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Unexpected error occurred.');
         }
         
     }

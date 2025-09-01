@@ -31,6 +31,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
+use App\Services\WalletType;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -166,7 +167,7 @@ class UserAPIController extends Controller
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
                 if($partner){ 
-                    $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner, "walletType"=> WalletType::BONUS] ;
                     event(new DoPaymentEvent($paymentInfo));
                 }
 
@@ -177,7 +178,7 @@ class UserAPIController extends Controller
             }
 
             //credité le wallet du client
-            $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user , "walletType"=> WalletType::BONUS] ;
             event(new DoPaymentEvent($paymentInfo));
             
         
@@ -245,7 +246,7 @@ class UserAPIController extends Controller
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
                 if($partner){ 
-                    $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
                     event(new DoPaymentEvent($paymentInfo));
                     
                 }
@@ -257,7 +258,7 @@ class UserAPIController extends Controller
             }
 
             //credité le wallet du client
-            $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user , "walletType"=> WalletType::BONUS] ;
             event(new DoPaymentEvent($paymentInfo));
             
         

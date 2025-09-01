@@ -1149,6 +1149,7 @@ return [
     'tax_percent' => 'نسبه مئويه',
     'tax_fixed' => 'مُثَبَّت',
     'tax_updated_at' => 'تم التحديث في',
+    'affiliationcode'  => 'Affiliation Code',
     'address' => 'تبوك',
     'address_plural' => 'عناوين',
     'address_desc' => 'إدارة العناوين',
