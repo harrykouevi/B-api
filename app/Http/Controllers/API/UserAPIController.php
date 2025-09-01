@@ -166,7 +166,6 @@ class UserAPIController extends Controller
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
                 if($partner){ 
-                    // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
                     $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
                     event(new DoPaymentEvent($paymentInfo));
                 }
@@ -246,7 +245,6 @@ class UserAPIController extends Controller
                 // Attribue la récompense au partenaire
                 $partner = $affiliation->user;
                 if($partner){ 
-                    // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
                     $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
                     event(new DoPaymentEvent($paymentInfo));
                     

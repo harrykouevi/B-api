@@ -47,7 +47,7 @@ class DoPaymentEvent
 
         $this->amount = (int) $paymentInfo['amount'];
         $this->payer_wallet = $paymentInfo['payer_wallet'];
-        $this->user = $paymentInfo['user'];
+        $this->user = !is_null($paymentInfo['user'])? $paymentInfo['user'] : new User();
      
     }
 

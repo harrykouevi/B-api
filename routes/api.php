@@ -166,7 +166,7 @@ Route::middleware('auth:api')->group(function () {
         'show'
     ]);
     Route::resource('wallets', WalletAPIController::class)->except([
-        'show', 'create', 'edit'
+        'show', 'create', 'edit' , 'store'
     ]);
 
     Route::post('defaut-wallets', [WalletAPIController::class, 'storeDefault'])->name('api.storedefault');
@@ -180,7 +180,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/wallets/withdrawals/history', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalHistory']);
     Route::get('/wallets/withdrawals/{id}', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalDetails']);
 
-    // Withdrawal Phone Routes
+    // Routes to manage withdrawal phone numbers
     Route::get('withdrawal-phones', [WithdrawalPhoneController::class, 'index'])->name('withdrawal-phones.index');
     Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
     Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');

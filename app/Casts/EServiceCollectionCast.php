@@ -10,6 +10,7 @@ namespace App\Casts;
 
 use App\Models\EService;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Support\Collection;
 
 /**
  * Class EServiceCollectionCast
@@ -44,11 +45,13 @@ class EServiceCollectionCast implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes): array
     {
-//        if (!$value instanceof Collection) {
-//            throw new InvalidArgumentException('The given value is not an Collection instance.');
-//        }
+        $collection = $value instanceof Collection ? $value : collect($value);
         return [
-            'e_services' => json_encode($value->map->only(['id', 'name', 'price', 'discount_price']))
+            'e_services' => $collection->map(function ($item) {
+                return collect($item)->only(['id', 'name', 'price', 'discount_price']);
+            })
+            ->values() // facultatif, pour réindexer
+            ->toJson()
         ];
     }
 }

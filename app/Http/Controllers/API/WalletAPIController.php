@@ -21,6 +21,7 @@ use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
 use App\Services\CinetPayService;
 use App\Services\PaymentService;
+use App\Services\WalletType;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -131,16 +132,15 @@ class WalletAPIController extends Controller
     public function storeDefault(): JsonResponse
     {
         try {
-            $resp = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user());
-
+            $resp = $this->paymentService->createPayment(Auth::user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user());
+            $resp_ = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user() , WalletType::BONUS);
+            return $this->sendResponse(($resp[1]->merge($resp_[1]))->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
 
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
-
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
 
 
@@ -148,9 +148,9 @@ class WalletAPIController extends Controller
      * Add amount to wallet
      * @param $id
      * @param Request $request
-     * @return JsonResponse
+     * @return JsonResponse|void
      */
-    public function deposit($id, Request $request): JsonResponse
+    public function deposit($id, Request $request)
     {
         $this->walletRepository->pushCriteria(new EnabledCriteria());
         $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
@@ -165,21 +165,13 @@ class WalletAPIController extends Controller
             ]);
 
 
-            //avec ce code c'est une transaction de compte à compte
-            $resp = $this->paymentService->createPayment($request->get('amount'), setting('app_default_wallet_id'), auth()->user());
-            //ici c'est une transaction de l'exterieeur de l'app vers un compte
-            $resp = $this->paymentService->makeDeposit($request->get('amount'), $wallet);
-
-            $input = [];
-            $input['balance'] = $wallet->balance + $request->get('amount');
-            $wallet = $this->walletRepository->update($input, $id);
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
 
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
+        // return $this->sendResponse($resp[1]->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
     }
 
     /**

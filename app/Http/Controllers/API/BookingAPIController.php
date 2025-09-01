@@ -239,39 +239,23 @@ class BookingAPIController extends Controller
                 $input['payment_status_id'] = 3;
                 $input['booking_status_id'] = 7;
             }
+
+            // if (isset($input['cancel']) && $input['cancel'] == '1') {
+            //     $input['payment_status_id'] = 3;
+            //     $input['booking_status_id'] = 7;
+            // }
+
             $booking = $this->bookingRepository->update($input, $id);
 
             if (isset($input['payment_status_id'])) {
-                
-                event(new BookingChangedEvent($booking));
-                // //creer un paiement de remboursement plutot
-                // if($input['payment_status_id'] == 7){
-                //    //refund coiffeur
-                //     if(auth()->user()->hasRole('salon owner') ){
-                //         $payerW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
-                //         //le coiffeur rembourse l'appli
-                //         $paymentInfo = ["amount"=>10,"payer_wallet"=>$payerW, "user"=> new User()] ;
-                //         $resp = $this->paymentService->createPayment(10,$payerW);
-
-                //         //refund appli
-                //         $paymentInfo = ["amount"=>150+10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $oldBooking->user] ;
-                //         $resp = $this->paymentService->createPayment(150,setting('app_default_wallet_id'),$oldBooking->user);
-
-                //     }
-                //     if(auth()->user()->hasRole('customer') ){
-                //        //refund appli
-                //         $paymentInfo = ["amount"=>150+10,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $oldBooking->user] ;
-                //         $resp = $this->paymentService->createPayment(150,setting('app_default_wallet_id'),$oldBooking->user);
-                //     }
-                    
-                    
-                // }
-                // event(new DoPahhymentEvent($paymentInfo));
-
-                
+        
+                event(new BookingChangedEvent($booking)); 
             }
+
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {
+                
                 event(new BookingStatusChangedEvent($booking));
+
             }
 
         } catch (ValidatorException $e) {

@@ -1,6 +1,6 @@
 <?php
 /*
- * File name: Booking.php
+ * File name: Purchase.php
  * Last modified: 2024.04.18 at 17:53:44
  * Author: SmarterVision - https://codecanyon.net/user/smartervision
  * Copyright (c) 2024
@@ -8,50 +8,45 @@
 
 namespace App\Models;
 
+use App\Casts\BookingCast;
 use App\Casts\EServiceCollectionCast;
 use App\Casts\OptionCollectionCast;
 use App\Casts\TaxCollectionCast;
-use App\Events\BookingCreatingEvent;
+use App\Events\PurchaseCreatingEvent;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
+
 /**
- * Class Booking
+ * Class Purchase
  * @package App\Models
  * @version January 25, 2021, 9:22 pm UTC
  *
  * @property int id
  * @property User user
- * @property BookingStatus bookingStatus
+ * @property PurchaseStatus purchaseStatus
  * @property Payment payment
  * @property Salon salon
+ * @property Booking booking
  * @property EService[] e_services
- * @property Option[] options
  * @property integer quantity
  * @property integer user_id
- * @property integer address_id
- * @property integer booking_status_id
+ * @property integer purchase_status_id
  * @property integer payment_status_id
- * @property Address address
  * @property integer payment_id
- * @property double duration
  * @property boolean at_salon
  * @property Coupon coupon
  * @property Tax[] taxes
- * @property \DateTime booking_at
- * @property \DateTime start_at
- * @property \DateTime ends_at
+ * @property \DateTime purchase_at
  * @property string hint
  * @property boolean cancel
  */
-class Booking extends Model
+class Purchase extends Model
 {
-
-    use HasFactory;
-
+   
     /**
      * Validation rules
      *
@@ -59,27 +54,25 @@ class Booking extends Model
      */
     public static array $rules = [
         'user_id' => 'required|exists:users,id',
-        'employee_id' => 'nullable|exists:users,id',
-        'booking_status_id' => 'required|exists:booking_statuses,id',
+        'purchase_status_id' => 'required|exists:purchase_statuses,id',
         'payment_id' => 'nullable|exists:payments,id'
     ];
-    public $table = 'bookings';
+    public $table = 'purchases';
+    protected $attributes = [
+        'booking' => null,   // valeur par défaut si rien n’est défini
+       
+    ];
     public $fillable = [
         'salon',
+        'booking',
         'e_services',
-        'options',
         'quantity',
         'user_id',
-        'employee_id',
-        'booking_status_id',
-        'address',
+        'purchase_status_id',
         'payment_id',
         'coupon',
         'taxes',
-        'booking_at',
-        'start_at',
-        'ends_at',
-        'hint',
+        'purchase_at',
         'cancel'
     ];
     /**
@@ -89,20 +82,15 @@ class Booking extends Model
      */
     protected $casts = [
         'salon' => Salon::class,
+        'booking' => BookingCast::class,
         'e_services' => EServiceCollectionCast::class,
-        'options' => OptionCollectionCast::class,
-        'address' => Address::class,
         'coupon' => Coupon::class,
         'taxes' => TaxCollectionCast::class,
-        'booking_status_id' => 'integer',
+        'purchase_status_id' => 'integer',
         'payment_id' => 'integer',
-        'duration' => 'double',
         'quantity' => 'integer',
         'user_id' => 'integer',
-        'employee_id' => 'integer',
-        'booking_at' => 'datetime:Y-m-d\TH:i:s.uP',
-        'start_at' => 'datetime:Y-m-d\TH:i:s.uP',
-        'ends_at' => 'datetime:Y-m-d\TH:i:s.uP',
+        'purchase_at' => 'datetime:Y-m-d\TH:i:s.uP',
         'hint' => 'string',
         'cancel' => 'boolean'
     ];
@@ -113,8 +101,7 @@ class Booking extends Model
      */
     protected $appends = [
         'custom_fields',
-        'duration',
-        'at_salon',
+        // 'at_salon',
     ];
 
     /**
@@ -123,8 +110,8 @@ class Booking extends Model
      * @var array
      */
     protected $dispatchesEvents = [
-        'creating' => BookingCreatingEvent::class,
-        'updating' => BookingCreatingEvent::class,
+        'creating' => PurchaseCreatingEvent::class,
+        'updating' => PurchaseCreatingEvent::class,
     ];
 
     public function getCustomFieldsAttribute(): array
@@ -143,14 +130,11 @@ class Booking extends Model
 
     public function toArray(): array
     {
-        if(!is_null($this) ){
-            $array = parent::toArray();
-            $array['total'] = $this->getTotal();
-            $array['sub_total'] = $this->getSubtotal();
-            $array['taxes_value'] = $this->getTaxesValue();
-            return $array;
-        }
-        return [] ;
+        $array = parent::toArray();
+        $array['total'] = $this->getTotal();
+        $array['sub_total'] = $this->getSubtotal();
+        $array['taxes_value'] = $this->getTaxesValue();
+        return $array;
     }
 
     public function getTotal(): float
@@ -167,9 +151,9 @@ class Booking extends Model
         foreach ($this->e_services as $eService) {
             $total += $eService->getPrice() * ($this->quantity >= 1 ? $this->quantity : 1);
         }
-        foreach ($this->options as $option) {
-            $total += $option->price * ($this->quantity >= 1 ? $this->quantity : 1);
-        }
+        // foreach ($this->options as $option) {
+        //     $total += $option->price * ($this->quantity >= 1 ? $this->quantity : 1);
+        // }
         return $total;
     }
 
@@ -197,34 +181,11 @@ class Booking extends Model
         return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
     }
 
-    public function getDurationAttribute(): float
-    {
-        return $this->getDurationInHours();
-    }
 
-    public function getDurationInHours(): float
-    {
-        if ($this->start_at) {
-            if ($this->ends_at) {
-                $endAt = new Carbon($this->ends_at);
-            } else {
-                $endAt = (new Carbon())->now();
-            }
-            $startAt = new Carbon($this->start_at);
-            $hours = $endAt->diffInSeconds($startAt) / 60 / 60;
-            $hours = round($hours, 2);
-        } else {
-            $hours = 0;
-        }
-        return $hours;
-    }
-
-    public function getAtSalonAttribute(): bool
-    {
-        if($this->address && $this->salon){
-            return $this->address->id == ( is_null($this->salon->address)? $this->salon->address_id : $this->salon->address->id ) ;
-        } else return false ;  
-    }
+    // public function getAtSalonAttribute(): bool
+    // {
+    //     return $this->address->id == ( is_null($this->salon->address)? $this->salon->address_id : $this->salon->address->id ) ;
+    // }
 
     /**
      * @return BelongsTo
@@ -234,21 +195,14 @@ class Booking extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    /**
-     * @return BelongsTo
-     **/
-
-    public function employee(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'employee_id', 'id');
-    }
+  
 
     /**
      * @return BelongsTo
      **/
-    public function bookingStatus(): BelongsTo
+    public function purchaseStatus(): BelongsTo
     {
-        return $this->belongsTo(BookingStatus::class, 'booking_status_id', 'id');
+        return $this->belongsTo(PurchaseStatus::class, 'purchase_status_id', 'id');
     }
 
     /**
@@ -260,3 +214,4 @@ class Booking extends Model
     }
 
 }
+

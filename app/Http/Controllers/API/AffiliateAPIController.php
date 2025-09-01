@@ -32,6 +32,7 @@ use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
+use App\Services\WalletType;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
@@ -216,7 +217,6 @@ class AffiliateAPIController extends Controller
     public function confirmConversion(string $affiliationCode_ , Request $request)
     {
         try {
-            // if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
             if( is_null($affiliation) ) throw new InvalidArgumentException('referral do not exist');
 
@@ -228,7 +228,8 @@ class AffiliateAPIController extends Controller
                 if( $partner){ 
                     //si il est trouvé user a qui appartient le code recois son bunus
                     $amount =  auth()->user()->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
-                    $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner );
+                    $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
+
                 }
 
             }

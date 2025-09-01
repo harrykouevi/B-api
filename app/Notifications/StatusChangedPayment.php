@@ -9,6 +9,7 @@
 namespace App\Notifications;
 
 use App\Models\Booking;
+use App\Models\Purchase;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -19,18 +20,18 @@ class StatusChangedPayment extends Notification
     use Queueable;
 
     /**
-     * @var Booking
+     * @var Booking|Purchase
      */
-    private Booking $booking;
+    private Booking|Purchase $data;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct(Booking $booking)
+    public function __construct(Booking|Purchase $data)
     {
-        $this->booking = $booking;
+        $this->data = $data;
     }
 
     /**
@@ -59,18 +60,28 @@ class StatusChangedPayment extends Notification
      */
     public function toMail(mixed $notifiable): MailMessage
     {
+        if ( $this->data instanceof Purchase){
+            return (new MailMessage)
+                ->subject(trans('lang.notification_payment', ['purchase_id' => $this->data->id, 'payment_status' => $this->data->payment->paymentStatus->status],'fr') . " | " . setting('app_name', ''))
+                ->markdown("notifications::purchase", ['purchase' => $this->data])
+                ->greeting(trans('lang.notification_payment', ['purchase_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.$this->data->payment->paymentStatus->status)],'fr'))
+                // ->action(trans('lang.purchase_details'), route('purchases.show', $this->data->id))
+                ;
+        }
         return (new MailMessage)
-            ->subject(trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => $this->booking->payment->paymentStatus->status],'fr') . " | " . setting('app_name', ''))
-            ->markdown("notifications::booking", ['booking' => $this->booking])
-            ->greeting(trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => trans('lang.payment_statuses.'.$this->booking->payment->paymentStatus->status)],'fr'))
-            ->action(trans('lang.booking_details'), route('bookings.show', $this->booking->id));
+            ->subject(trans('lang.notification_payment', ['booking_id' => $this->data->id, 'payment_status' => $this->data->payment->paymentStatus->status],'fr') . " | " . setting('app_name', ''))
+            ->markdown("notifications::booking", ['booking' => $this->data])
+            ->greeting(trans('lang.notification_payment', ['booking_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.$this->data->payment->paymentStatus->status)],'fr'))
+            ->action(trans('lang.booking_details'), route('bookings.show', $this->data->id));
     }
 
     public function toFcm($notifiable): FcmMessage
     {
         $message = new FcmMessage();
         $notification = [
-            'body' => trans('lang.notification_payment', ['booking_id' => $this->booking->id, 'payment_status' => trans('lang.payment_statuses.'.strtolower($this->booking->payment->paymentStatus->status))],'fr'),
+            'body' =>  trans('lang.notification_payment',  ( $this->data instanceof Purchase)? 
+                            ['purchase_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status))] :
+                            ['booking_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status))],'fr'),
             'title' => trans('lang.notification_status_changed_payment',[],'fr'),
 
         ];
@@ -79,8 +90,10 @@ class StatusChangedPayment extends Notification
             'click_action' => "FLUTTER_NOTIFICATION_CLICK",
             'id' => 'App\\Notifications\\StatusChangedPayment',
             'status' => 'done',
-            'bookingId' => (string) $this->booking->id,
         ];
+        if($this->data instanceof Purchase) $data['purchaseId'] = (string) $this->data->id ;
+        if($this->data instanceof Booking) $data['bookingId'] = (string) $this->data->id ;
+
         $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
 
         if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
@@ -91,8 +104,8 @@ class StatusChangedPayment extends Notification
 
     private function getSalonMediaUrl(): string
     {
-        if ($this->booking->salon->hasMedia('image')) {
-            return $this->booking->salon->getFirstMediaUrl('image', 'thumb');
+        if ($this->data->salon->hasMedia('image')) {
+            return $this->data->salon->getFirstMediaUrl('image', 'thumb');
         } else {
             return asset('images/image_default.png');
         }
@@ -106,8 +119,15 @@ class StatusChangedPayment extends Notification
      */
     public function toArray(mixed $notifiable): array
     {
+      
+        if ( $this->data instanceof Purchase){
+            return [
+                'purchase_id' => $this->data['id'],
+            ];
+        }
         return [
-            'booking_id' => $this->booking['id'],
+            'booking_id' => $this->data['id'],
         ];
+        
     }
 }

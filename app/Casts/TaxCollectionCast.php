@@ -10,6 +10,8 @@ namespace App\Casts;
 
 use App\Models\Tax;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Support\Collection;
+
 
 /**
  * Class TaxCollectionCast
@@ -43,9 +45,9 @@ class TaxCollectionCast implements CastsAttributes
 //        if (!$value instanceof Collection) {
 //            throw new InvalidArgumentException('The given value is not an Collection instance.');
 //        }
-
+        $collection = $value instanceof Collection ? $value : collect($value);
         return [
-            'taxes' => json_encode($value->map->only(['id', 'name', 'value', 'type']))
+            'taxes' => json_encode($collection->map->only(['id', 'name', 'value', 'type']))
         ];
     }
 }
