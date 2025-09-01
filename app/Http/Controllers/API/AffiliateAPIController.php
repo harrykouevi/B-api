@@ -131,15 +131,12 @@ class AffiliateAPIController extends Controller
         // Crypter le mot de passe avant de l'assigner au lien
         $encryptedReferralCode = Hash::make($referralCode);
         // Génération du lien d'affiliation
-        $input['link']= 'affilate-link?ref=' . $encryptedReferralCode;
+        // $input['link']= 'affilate-link?ref=' . $encryptedReferralCode;
         $input['code']=  $code;
  
         try {
             $affiliate = $this->affiliateRepository->create($input);
-            // $payment = $this->paymentRepository->create($input['payment']);
-            // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-            //Notification::send($booking->salon->users, new NewReceivedPayment($payment));
-
+            
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
