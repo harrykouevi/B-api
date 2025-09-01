@@ -134,11 +134,21 @@ class WalletAPIController extends Controller
         try {
             $resp = $this->paymentService->createPayment(Auth::user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user());
             $resp_ = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user() , WalletType::BONUS);
-            return $this->sendResponse(($resp[1]->merge($resp_[1]))->toArray(), __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
+            $wallets = collect([
+                $resp[1],
+                $resp_[1],
+            ]);
+            return $this->sendResponse($wallets, __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
 
         } catch (ValidationException $e) {
+             Log::info($e->getMessage());
+
             return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
+             Log::error($e->getMessage() ,  [
+                 'trace' => $e->getTraceAsString()
+            ]);
+
             return $this->sendError($e->getMessage());
         }
     }

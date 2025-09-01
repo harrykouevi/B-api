@@ -70,35 +70,37 @@ class PaymentService
         $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
         
         if($user->id != null){ 
-            $wallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $user->id)
-                                                                    ->findByField('name',  $wallettype)->first() 
+            $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
+                                                                    'user_id' => $user->id,
+                                                                    'name'    => $wallettype->value,
+                                                                ])->first() 
                                 : $this->walletRepository->findByField('user_id',  $user->id)->first() ;
         }else{
             $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
         }
 
         if($wallet == Null){
-            $wallet = ($wallettype == null )? $this->createWallet($user, 0) : $this->createWallet($user, 0, $wallettype);
+            $wallet = ($wallettype == null )? $this->createWallet($user, 0) : $this->createWallet($user, 0, $wallettype->value);
         }
 
         $user = $wallet->user ;
         $currency = json_decode($wallet->currency, true);
+        $payment = Null ;
         if ($currency['code'] == setting('default_currency_code')) {
-         
+           
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
                     // Log::info(['PaymentServicee-createPayment',$wallet->user]);
-
+                    return [$payment , $wallet] ;
                     Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
             }
            
-            return [$payment , $wallet] ;
         }
-        return Null ;
+        return [$payment , $wallet] ; ;
     }
 
      /**
