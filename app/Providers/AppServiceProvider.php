@@ -16,6 +16,7 @@ use App\Services\BookingReportService;
 use Illuminate\Support\Facades\Schema;
 use App\Repositories\BookingRepository;
 use Illuminate\Support\ServiceProvider;
+use App\Services\BookingReminderService;
 use App\Services\BookingCancellationService;
 use App\Repositories\BookingStatusRepository;
 
@@ -40,6 +41,10 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(\App\Repositories\BookingRepository::class),
                 $app->make(\App\Repositories\BookingStatusRepository::class)
             );
+        });
+
+        $this->app->singleton(BookingReminderService::class, function ($app) {
+            return new BookingReminderService();
         });
     }
 
