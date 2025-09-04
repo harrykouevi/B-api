@@ -20,6 +20,14 @@ use Illuminate\Support\Facades\Log;
 class TaxCollectionCast implements CastsAttributes
 {
 
+    function isAssoc(array $arr): bool
+    {
+        if ($arr === []) {
+            return false; // un tableau vide n'est pas considéré associatif
+        }
+
+        return array_keys($arr) !== range(0, count($arr) - 1);
+    }
     /**
      * @inheritDoc
      */
@@ -32,7 +40,7 @@ class TaxCollectionCast implements CastsAttributes
         if (!empty($value) ) {
 
             $decodedValue = is_string($value) ? json_decode($value, true) : $value;
-            $taxesData =  ( array_keys($decodedValue) !== range(0, count($decodedValue) - 1) ) ? [$decodedValue] : $decodedValue;
+            $taxesData =  $this->isAssoc($decodedValue) ? [$decodedValue] : $decodedValue;
 
             return collect($taxesData)->map(function ($item) {
                 $tax = new Tax($item);
@@ -53,7 +61,7 @@ class TaxCollectionCast implements CastsAttributes
     {
       
         $decodedValue = is_string($value) ? json_decode($value, true) : $value;
-        if( array_keys($decodedValue) !== range(0, count($decodedValue) - 1) ){ 
+        if( $this->isAssoc($decodedValue) ){ 
             $decodedValue['name'] = 'commission' ;
             $value =   [$decodedValue]  ;
         }else {
