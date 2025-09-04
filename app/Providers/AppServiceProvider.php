@@ -12,13 +12,18 @@ use Exception;
 use Stripe\Stripe;
 use Illuminate\Support\Str;
 use Laravel\Cashier\Cashier;
+use App\Services\PaymentService;
+use App\Repositories\WalletRepository;
 use App\Services\BookingReportService;
 use Illuminate\Support\Facades\Schema;
 use App\Repositories\BookingRepository;
+use App\Repositories\PaymentRepository;
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\CurrencyRepository;
 use App\Services\BookingReminderService;
 use App\Services\BookingCancellationService;
 use App\Repositories\BookingStatusRepository;
+use App\Repositories\WalletTransactionRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -39,12 +44,23 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(BookingCancellationService::class, function ($app) {
             return new BookingCancellationService(
                 $app->make(\App\Repositories\BookingRepository::class),
-                $app->make(\App\Repositories\BookingStatusRepository::class)
+                $app->make(\App\Repositories\BookingStatusRepository::class),
+                $app->make(PaymentService::class)
             );
         });
 
         $this->app->singleton(BookingReminderService::class, function ($app) {
             return new BookingReminderService();
+        });
+
+        $this->app->singleton(PaymentService::class, function ($app) {
+            return new PaymentService(
+                $app->make(BookingRepository::class),
+                $app->make(WalletRepository::class),
+                $app->make(CurrencyRepository::class),
+                $app->make(WalletTransactionRepository::class),
+                $app->make(PaymentRepository::class)
+            );
         });
     }
 

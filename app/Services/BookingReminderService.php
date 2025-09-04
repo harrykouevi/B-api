@@ -169,6 +169,7 @@ class BookingReminderService
             })
             ->get();
 
+        /** @var \App\Models\Booking $booking */
         foreach ($upcomingBookings as $booking) {
             try {
                 $this->scheduleAllReminders($booking);

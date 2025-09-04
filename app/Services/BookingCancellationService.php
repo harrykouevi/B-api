@@ -21,13 +21,16 @@ class BookingCancellationService
 {
     private BookingRepository $bookingRepository;
     private BookingStatusRepository $bookingStatusRepository;
+    private PaymentService $paymentService;
 
     public function __construct(
         BookingRepository $bookingRepository,
-        BookingStatusRepository $bookingStatusRepository
+        BookingStatusRepository $bookingStatusRepository,
+        PaymentService $paymentService
     ) {
         $this->bookingRepository = $bookingRepository;
         $this->bookingStatusRepository = $bookingStatusRepository;
+        $this->paymentService = $paymentService;
     }
 
     /**
@@ -43,7 +46,7 @@ class BookingCancellationService
             $booking = $this->validateBookingForCancellation($bookingId);
             
             // ÉTAPE 2 : Calculer le remboursement (TODO)
-            $refundAmount = $this->calculateRefund($booking);
+            $refundAmount = $this->calculateRefund($booking, $cancelledBy);
             
             // ÉTAPE 3 : Obtenir le statut "Failed" (ID 7)
             $failedStatus = $this->getFailedStatus();
@@ -53,7 +56,7 @@ class BookingCancellationService
             
             // ÉTAPE 5 : Traiter les remboursements (TODO)
             if ($refundAmount > 0) {
-                $this->processRefund($booking, $refundAmount);
+                $this->processRefund($booking, $refundAmount, $cancelledBy);
             }
             
             // ÉTAPE 6 : Déclencher les événements pour notifications
@@ -105,39 +108,74 @@ class BookingCancellationService
         ], $booking->id);
     }
 
-    private function calculateRefund(Booking $booking): float
+    private function calculateRefund(Booking $booking, string $cancelledBy): float
     {
-        // TODO: Implémenter la logique de remboursement
-        
-        $hoursUntilBooking = now()->diffInHours($booking->booking_at, false);
+         $hoursUntilBooking = now()->diffInHours($booking->booking_at, false);
         
         if ($hoursUntilBooking < 0) {
-            // verifie si l'heure du rdv est deja depasse
+            // Vérifie si l'heure du rdv est déjà dépassée
             return 0.0;
         }
         
         $totalAmount = $booking->getTotal();
 
-
-        // Calcul du pourcentage de remboursement en fonction du délai au cas ou daonc peut-etre modifer 
-        if ($hoursUntilBooking >= 24) {
-            return $totalAmount; // 100%
-        } elseif ($hoursUntilBooking >= 12) {
-            return $totalAmount * 0.8; // 80%
-        } elseif ($hoursUntilBooking >= 2) {
-            return $totalAmount * 0.5; // 50%
-        } else {
-            return 0.0; // 0%
+        // Logique de remboursement selon qui annule
+        switch ($cancelledBy) {
+            case 'customer':
+                // Remboursement partiel selon le délai
+                if ($hoursUntilBooking >= 24) {
+                    return $totalAmount; // 100%
+                } elseif ($hoursUntilBooking >= 12) {
+                    return $totalAmount * 0.8; // 80%
+                } elseif ($hoursUntilBooking >= 2) {
+                    return $totalAmount * 0.5; // 50%
+                } else {
+                    return 0.0; // 0%
+                }
+                
+            case 'salon_owner':
+                // Remboursement total mais débit du compte du salon
+                return $totalAmount;
+                
+            case 'admin':
+                // Remboursement total
+                return $totalAmount;
+                
+            default:
+                return 0.0;
         }
     }
 
     /**
      * REMBOURSEMENT : Traite le remboursement (TODO)
      */
-    private function processRefund(Booking $booking, float $amount): void
+    private function processRefund(Booking $booking, float $amount, string $cancelledBy): void
     {
-        // TODO: Implémenter la logique de remboursement
-
+        switch ($cancelledBy) {
+            case 'customer':
+                // Remboursement du client par la plateforme
+                $this->paymentService->createPayment($amount, setting('app_default_wallet_id'), $booking->user);
+                break;
+                
+            case 'salon_owner':
+                // Remboursement total : débit du compte du salon et crédit du client
+                // 1. Débit du compte du salon
+                $salonOwner = $booking->salon->users()->first(); // Correction : utilisation de la méthode users() au lieu de la propriété users
+                if ($salonOwner) {
+                    $salonWallet = $this->paymentService->walletRepository->findByField('user_id', $salonOwner->id)->first();
+                    if ($salonWallet) {
+                        $this->paymentService->createPayment($amount, $salonWallet->id, \App\Models\User::find(setting('app_admin_user_id')));
+                    }
+                }
+                // 2. Crédit du client par la plateforme
+                $this->paymentService->createPayment($amount, setting('app_default_wallet_id'), $booking->user);
+                break;
+                
+            case 'admin':
+                // Remboursement par la plateforme
+                $this->paymentService->createPayment($amount, setting('app_default_wallet_id'), $booking->user);
+                break;
+        }
     }
 
     public function getUserCancellationHistory(int $userId): array
@@ -169,8 +207,9 @@ class BookingCancellationService
 
         // Le propriétaire du salon peut annuler les rendez-vous de son salon
         if (in_array('salon owner', $userRoles)) {
-            // TODO: Vérifier que l'utilisateur est bien propriétaire de ce salon
-            return true;
+
+            return $booking->salon && 
+               collect($booking->salon->users)->contains('id', $userId);
         }
 
         // L'admin peut tout annuler

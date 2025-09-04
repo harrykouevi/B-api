@@ -8,23 +8,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Criteria\Addresses\AddressesOfUserCriteria;
-use App\Criteria\Bookings\BookingsOfUserCriteria;
-use App\DataTables\BookingDataTable;
+use Illuminate\View\View;
+use Laracasts\Flash\Flash;
 use App\Events\BookingChangedEvent;
-use App\Events\BookingStatusChangedEvent;
-use App\Http\Requests\UpdateBookingRequest;
+use App\DataTables\BookingDataTable;
+use Illuminate\Http\RedirectResponse;
 use App\Repositories\AddressRepository;
 use App\Repositories\BookingRepository;
-use App\Repositories\BookingStatusRepository;
-use App\Repositories\CustomFieldRepository;
 use App\Repositories\PaymentRepository;
+use App\Events\BookingStatusChangedEvent;
+use App\Http\Requests\UpdateBookingRequest;
+use App\Repositories\CustomFieldRepository;
+use App\Repositories\BookingStatusRepository;
 use App\Repositories\PaymentStatusRepository;
-use Flash;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
-use Prettus\Repository\Exceptions\RepositoryException;
+use App\Criteria\Bookings\BookingsOfUserCriteria;
+use App\Criteria\Addresses\AddressesOfUserCriteria;
 use Prettus\Validator\Exceptions\ValidatorException;
+use Prettus\Repository\Exceptions\RepositoryException;
 
 class BookingController extends Controller
 {

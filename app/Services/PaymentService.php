@@ -27,7 +27,7 @@ use App\Repositories\PaymentMethodRepository;
 class PaymentService
 {
     private $bookingRepository;
-    private $walletRepository;
+    public $walletRepository;
     private $currencyRepository;
     private $walletTransactionRepository;
     private $paymentRepository;

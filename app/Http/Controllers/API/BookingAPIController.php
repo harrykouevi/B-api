@@ -10,14 +10,12 @@ namespace App\Http\Controllers\API;
 
 
 use Exception;
-use App\Models\User;
 use App\Models\Address;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use App\Notifications\NewBooking;
 use Illuminate\Http\JsonResponse;
 use App\Events\BookingChangedEvent;
-
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Repositories\SalonRepository;
@@ -39,7 +37,6 @@ use App\Criteria\Bookings\BookingsOfUserCriteria;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Prettus\Repository\Exceptions\RepositoryException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
  * Class BookingController
@@ -84,8 +81,11 @@ class BookingAPIController extends Controller
     private BookingCancellationService $cancellationService;
 
 
-    public function __construct(BookingRepository $bookingRepo
-        , BookingStatusRepository                 $bookingStatusRepo, PaymentRepository $paymentRepo, AddressRepository $addressRepository, EServiceRepository $eServiceRepository, SalonRepository $salonRepository, CouponRepository $couponRepository, OptionRepository $optionRepository)
+
+    public function __construct(BookingRepository $bookingRepo, BookingStatusRepository $bookingStatusRepo,
+    PaymentRepository $paymentRepo, AddressRepository $addressRepository, EServiceRepository $eServiceRepository,
+    SalonRepository $salonRepository, CouponRepository $couponRepository, OptionRepository $optionRepository,
+    )
     {
         parent::__construct();
         $this->bookingRepository = $bookingRepo;
