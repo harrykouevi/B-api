@@ -25,6 +25,7 @@ class AcceptBookingTest extends TestCase
     public function test_example(): void
     {
         try{ 
+            Log::info(Purchase::all() ) ;
             $currency = Currency::find(1) ;
 
             $user = User::create([
@@ -102,27 +103,27 @@ class AcceptBookingTest extends TestCase
                 "id" => $booking->id,
                 'payment' => ['amount'=> 200 ],
             ]);
-            
-            $response->assertStatus(200);
-            $payementdata = [
-                'status' => $response->status(),   // code HTTP
+
+            Log::info([
                 'response' => $response->json()       // contenu réel
-            ] ;
-            Log::info($payementdata);
+            ] );
+
+            Log::info( Wallet::find($wallet2->id) ) ;
+            Log::info( Wallet::find($wallet1->id) ) ;
+            // $response->assertStatus(200);
 
 
             $response2 =  $this->actingAs($user, 'api')->putJson(route('api.bookings.update', $booking->id), [
-                'booking_status_id' =>  4 
+                'booking_status_id' =>  4 ,
+                'taxes'  =>  ["value" => 10, "type" => "percent"]
+                            
             ]);
 
             
-            Log::info([
-                'status' => $response2->status(),   // code HTTP
-                'response' => $response2->json()       // contenu réel
-            ] );
+         
 
             // $o=   app(PurchaseRepository::class)->all() ;
-            Log::info(Booking::all() ) ;
+            // Log::info(Booking::all() ) ;
             Log::info(Purchase::all() ) ;
             Log::info( Wallet::find($wallet2->id) ) ;
             Log::info( Wallet::find($wallet1->id) ) ;

@@ -21,8 +21,6 @@ return new class extends Migration
             $table->timestamp('cancelled_at')->nullable()->after('cancelled_by');
             $table->index('original_booking_id');
             $table->index('reported_from_id');
-
-
             $table->foreign('original_booking_id')->references('id')->on('bookings')->onDelete('set null');
             $table->foreign('reported_from_id')->references('id')->on('bookings')->onDelete('set null');
         });
@@ -37,7 +35,6 @@ return new class extends Migration
             
             $table->dropForeign(['original_booking_id']);
             $table->dropForeign(['reported_from_id']);
-            
             $table->dropIndex(['original_booking_id']);
             $table->dropIndex(['reported_from_id']);
             

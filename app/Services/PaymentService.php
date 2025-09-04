@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use App\Models\Payment;
+use App\Models\Tax;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
@@ -62,9 +63,10 @@ class PaymentService
     * @param Int|String|Wallet $payer_wallet The wallet identifier or wallet of the payer initiating the payment.
     * @param User  $user The user receiving the payment.
     * @param WalletType|Null  $wallettype
+    * @param Tax|Tax[]|null $tax paramètre pour la commission
     * @return Array|Null
     */
-    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() , WalletType $wallettype = null) : array | Null
+    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() , WalletType $wallettype = Null , $tax = Null ) : array | Null
     {
         
         $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
@@ -90,7 +92,7 @@ class PaymentService
            
             if($amount != 0) { 
                 try{
-                    $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
+                    $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet] , $tax) ;
                     // Log::info(['PaymentServicee-createPayment',$wallet->user]);
                     return [$payment , $wallet] ;
                     Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
@@ -139,7 +141,6 @@ class PaymentService
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-                    Log::error(['PaymentServicee-createPayment',$wallet->user]);
 
                     Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
@@ -217,35 +218,66 @@ class PaymentService
      * make Payment .
      * @param Array $input
      * @param Array $wallets
+     * @param Tax|Tax[]|null $tax paramètre pour la commission
      * 
      * @return Payment | Null
      */
-    private function toWalletFromWallet(Array $input , array $wallets):Payment | Null
+    private function toWalletFromWallet(Array $input , array $wallets, $tax = null):Payment | Null
     {
         
         $wallet =  $wallets[0] ;
         $payer_wallet =  $wallets[1] ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
-            if($input['payment']['amount'] != 0){
+            if($input['payment']['amount'] > 0){
 
                 $payment = $this->paymentRepository->create($input['payment']);
 
-                $transaction['amount'] = $input['payment']['amount'];
-                $transaction['payment_id'] = $payment->id;
+                $amount = $input['payment']['amount'];
                 
-                for ($i=0; $i <= 1  ; $i++) { 
+                // Calcul de la commission si elle existe
+                $commission = 0 ;
+                if ($tax !== null) {
+                    $commission = self::getCommission($amount , $tax) ;
+                }        
+                
+                for ($i=0; $i <= 2  ; $i++) { 
+                    $transaction = [];
+                    $transaction['payment_id'] = $payment->id;
                     if($i == 0){
+
                         $transaction['user_id'] = $wallet->user_id;
                         $transaction['wallet_id'] = $wallet->id;
                         $transaction['description'] = 'compte credité';
                         $transaction['action'] =  'credit';
+                        $transaction['amount'] = $amount ;
+                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                            //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
+                            //de l'argent provenant du client 
+                            $transaction['amount'] = $amount - $commission;
+                        }
                     }
                     if($i == 1){
                         $transaction['user_id'] = $payer_wallet->user_id;
                         $transaction['wallet_id'] = $payer_wallet->id;
                         $transaction['description'] = 'compte débité';
                         $transaction['action'] =  'debit';
+                        $transaction['amount'] = $amount ;
+                    }
+                    if($i == 2){
+                        
+                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                            //il a t'il une commission prix chez le coiffeur parce qu'il recoit
+                            //de l'argent provenant du client 
+                            $transaction['amount'] = $commission ;
+                            $w= $this->walletRepository->find(setting('app_default_wallet_id'));
+                            $transaction['user_id'] = $w->user_id;
+                            $transaction['wallet_id'] = $w->id;
+                            $transaction['description'] = 'compte crédité';
+                            $transaction['action'] =  'credit';
+                        }else{
+                            break ;
+                        }
                     }
 
                     $this->walletTransactionRepository->create($transaction);
@@ -394,6 +426,44 @@ class PaymentService
            return  $this->walletRepository->create($input);
         }
         return Null;
+    }
+
+
+    /**
+     * Calcul la commission sur une transaction.
+     *
+     * @param float $amount Le montant de la transaction
+     * @param Tax|Tax[]|null $tax paramètre pour la commission La taxe ou commission 
+     * @return float Le montant de la commission
+     */
+    public static function getCommission(float $amount, $tax): float
+    {
+        $commission = 0;
+
+        if ($tax !== null) {
+            if (is_array($tax)) {
+                foreach($tax as $tax_){
+                    if($tax_['name'] == 'commission'){
+                        if ($tax_['type'] === 'percent') {
+                            $commission = ($amount * $tax_['value'] / 100);
+                        } else {
+                            $commission = $tax_['value'];
+                        }
+                    }
+                }
+            } else {
+                if($tax['name'] == 'commission'){
+                    if ($tax['type'] === 'percent') {
+                        $commission = ($amount * $tax['value'] / 100);
+                    } else {
+                        $commission = $tax['value'];
+                    }
+                }
+            }
+        }
+
+        // S’assurer que la commission ne dépasse pas le montant
+        return min($commission, $amount);
     }
 }
 

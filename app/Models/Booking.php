@@ -42,6 +42,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property boolean at_salon
  * @property Coupon coupon
  * @property Tax[] taxes
+ * @property Tax[] purchase_taxes
  * @property \DateTime booking_at
  * @property \DateTime start_at
  * @property \DateTime ends_at
@@ -77,6 +78,7 @@ class Booking extends Model
         'payment_id',
         'coupon',
         'taxes',
+        'purchase_taxes',
         'booking_at',
         'start_at',
         'ends_at',
@@ -100,6 +102,7 @@ class Booking extends Model
         'address' => Address::class,
         'coupon' => Coupon::class,
         'taxes' => TaxCollectionCast::class,
+        'purchase_taxes' => TaxCollectionCast::class,
         'booking_status_id' => 'integer',
         'payment_id' => 'integer',
         'duration' => 'double',
@@ -189,11 +192,13 @@ class Booking extends Model
     {
         $total = $this->getSubtotal();
         $taxValue = 0;
-        foreach ($this->taxes as $tax) {
-            if ($tax->type == 'percent') {
-                $taxValue += ($total * $tax->value / 100);
-            } else {
-                $taxValue += $tax->value;
+        if(!empty($this->taxes)){
+            foreach ($this->taxes as $tax) {
+                if ($tax->type == 'percent') {
+                    $taxValue += ($total * $tax->value / 100);
+                } else {
+                    $taxValue += $tax->value;
+                }
             }
         }
         return $taxValue;

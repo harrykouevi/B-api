@@ -24,19 +24,36 @@ class EServiceCollectionCast implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes): array
     {
+        // if (!empty($value)) {
+        //     $decodedValue = json_decode($value, true);
+        //     return array_map(function ($value) {
+        //         $eService = EService::find($value['id']);
+        //         if (!empty($eService)) {
+        //             return $eService;
+        //         }
+        //         $eService = new EService($value);
+        //         $eService->fillable[] = 'id';
+        //         $eService->id = $value['id'];
+        //         return $eService;
+        //     }, $decodedValue);
+        // }
+        // return [];
+
+
+     
         if (!empty($value)) {
-            $decodedValue = json_decode($value, true);
+            // Si la valeur est une chaîne, on la décode
+            $decodedValue = is_string($value) ? json_decode($value, true) : $value;
+            // dd($decodedValue);
             return array_map(function ($value) {
-                $eService = EService::find($value['id']);
-                if (!empty($eService)) {
-                    return $eService;
-                }
                 $eService = new EService($value);
                 $eService->fillable[] = 'id';
                 $eService->id = $value['id'];
                 return $eService;
             }, $decodedValue);
+
         }
+        
         return [];
     }
 

@@ -8,6 +8,7 @@ use App\Criteria\Purchases\PurchasesOfUserCriteria;
 use App\Events\DoPaymentEvent;
 use App\Models\User;
 use App\Models\Booking;
+use App\Models\Tax;
 use App\Repositories\BookingRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\WalletRepository;
@@ -19,7 +20,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use App\Notifications\StatusChangedPayment;
-
+use App\Repositories\TaxRepository;
 
 class UpdateBookingPaymentListener
 {
@@ -38,6 +39,12 @@ class UpdateBookingPaymentListener
      */
     private WalletRepository $walletRepository;
 
+
+    /**
+     * @var TaxRepository
+     */
+    private TaxRepository $taxRepository;
+
      /**
      * @var SalonRepository
      */
@@ -53,10 +60,11 @@ class UpdateBookingPaymentListener
      *
      * @param BookingRepository $bookingRepository
      */
-    public function __construct(PaymentService $paymentService , BookingRepository $bookingRepository ,PurchaseRepository $purchaseRepository , WalletRepository $walletRepository , SalonRepository $salonRepository)
+    public function __construct(PaymentService $paymentService , BookingRepository $bookingRepository ,PurchaseRepository $purchaseRepository , WalletRepository $walletRepository , TaxRepository $taxRepository  , SalonRepository $salonRepository)
     {
         $this->bookingRepository = $bookingRepository ;
         $this->walletRepository = $walletRepository ;
+        $this->taxRepository = $taxRepository ;
         $this->salonRepository = $salonRepository;
         $this->paymentService = $paymentService ;
         $this->purchaseRepository = $purchaseRepository ;
@@ -117,7 +125,7 @@ class UpdateBookingPaymentListener
                     $salonW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($salonW == Null) throw new \Exception('user dont have a wallet yet');
                     //le coiffeur verse une commision à l'appli
-                    array_push($payments ,  ["amount"=>  1000,"payer_wallet"=>$salonW, "user"=> null] );
+                    array_push($payments ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
                     // array_push($payments ,  ["amount"=> setting('postpone_charge', 1000),"payer_wallet"=>$salonW, "user"=> null] );
                 }
 
@@ -126,7 +134,7 @@ class UpdateBookingPaymentListener
                     $clientW =  $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($clientW == Null) throw new \Exception('user dont have a wallet yet');
                     //le client verse une commision à l'appli
-                    array_push($payments ,  ["amount"=> setting('postpone_charge', 1000 ) ,"payer_wallet"=>$clientW, "user"=> null] );
+                    array_push($payments ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null] );
                 }
             }
             
@@ -136,18 +144,21 @@ class UpdateBookingPaymentListener
                 //le montant du service (montant de l'achat)
                 $purchaseamount = $booking->getSubtotal(); 
 
-                if(auth()->user()->hasRole('salon owner') ){
+                //et si le booking n'est pas lié à un report
+                if(auth()->user()->hasRole('salon owner') && is_null($booking->reported_from_id) ){
 
                     // si acceptation de la reservation est faite par le coiffeur 
                     $clientW = $this->walletRepository->findByField('user_id' , $booking->user_id)->first() ;        
                     if($clientW  == Null) throw new \Exception('client  dont have a wallet yet');
 
+                    // dd($booking->purchase_taxes) ;
                     $purchase = $this->purchaseRepository->Create([
                         'salon' => $booking->salon ,
                         'booking' => $booking,
                         'e_services' => $booking->e_services ,
                         'quantity' => $booking->quantity,
                         'user_id' => $booking->user_id ,
+                        'taxes'=>  $booking->purchase_taxes ,
                         'purchase_status_id' => 1 ,
                         'purchase_at'  => now()  
                     ]);
@@ -157,7 +168,7 @@ class UpdateBookingPaymentListener
                     if($purchase){
                         if ( $currency['code'] == setting('default_currency_code')) {
                             //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
-                            $payment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user());
+                            $payment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes);
                             $payment = $payment[0];
                             if($payment){
                                 $purchase = $this->purchaseRepository->update(['payment_id' => $payment->id , 'purchase_status_id' => 2  ], $purchase->id);

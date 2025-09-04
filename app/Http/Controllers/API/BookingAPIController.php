@@ -36,6 +36,7 @@ use App\Repositories\BookingStatusRepository;
 use Illuminate\Validation\ValidationException;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Criteria\Bookings\BookingsOfUserCriteria;
+use App\Models\Tax;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Prettus\Repository\Exceptions\RepositoryException;
@@ -238,22 +239,34 @@ class BookingAPIController extends Controller
      */
     public function update(int $id, Request $request): JsonResponse
     {
+        $input = $request->all();
+        if (in_array($input['booking_status_id'], [7, 8, 9])) {
+            return $this->sendError(__('Cette route  ne peut pas gerer cette demande de modification. Utiliser la route'));
+        }
+
         $oldBooking = $this->bookingRepository->findWithoutFail($id);
         if (empty($oldBooking)) {
             return $this->sendError('Booking not found');
         }
-        $input = $request->all();
+        
         try {
             if (isset($input['cancel']) && $input['cancel'] == '1') {
                 $input['payment_status_id'] = 3;
                 $input['booking_status_id'] = 7;
             }
 
-            // if (isset($input['cancel']) && $input['cancel'] == '1') {
-            //     $input['payment_status_id'] = 3;
-            //     $input['booking_status_id'] = 7;
-            // }
+            
 
+            // si il y a commission
+            if(array_key_exists('taxes', $input))
+            {
+                //autres données recu du mobile
+                // montant_a_reverser
+                // commission_calculee
+                $input["purchase_taxes"] = $input['taxes'] ;
+                unset($input['taxes']);  
+            }
+            
             $booking = $this->bookingRepository->update($input, $id);
 
             if (isset($input['payment_status_id'])) {

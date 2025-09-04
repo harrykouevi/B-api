@@ -11,7 +11,7 @@ namespace App\Casts;
 use App\Models\Tax;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Support\Collection;
-
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class TaxCollectionCast
@@ -25,16 +25,25 @@ class TaxCollectionCast implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes): array
     {
-        if (!empty($value)) {
-            $decodedValue = json_decode($value, true);
-            return array_map(function ($value) {
-                $tax = new Tax($value);
+        if (empty($value) || $value === '[]' || $value === '') {
+            return [];
+        }
+        
+        if (!empty($value) ) {
+
+            $decodedValue = is_string($value) ? json_decode($value, true) : $value;
+            $taxesData =  ( array_keys($decodedValue) !== range(0, count($decodedValue) - 1) ) ? [$decodedValue] : $decodedValue;
+
+            return collect($taxesData)->map(function ($item) {
+                $tax = new Tax($item);
                 $tax->fillable[] = 'id';
-                $tax->id = $value['id'];
+                $tax->id = $item['id'] ?? Null;
                 return $tax;
-            }, $decodedValue);
+            })->all();
+            
         }
         return [];
+                   
     }
 
     /**
@@ -42,12 +51,25 @@ class TaxCollectionCast implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes): array
     {
-//        if (!$value instanceof Collection) {
-//            throw new InvalidArgumentException('The given value is not an Collection instance.');
-//        }
+      
+        $decodedValue = is_string($value) ? json_decode($value, true) : $value;
+        if( array_keys($decodedValue) !== range(0, count($decodedValue) - 1) ){ 
+            $decodedValue['name'] = 'commission' ;
+            $value =   [$decodedValue]  ;
+        }else {
+            $value =  $decodedValue ;
+        };
+
         $collection = $value instanceof Collection ? $value : collect($value);
         return [
-            'taxes' => json_encode($collection->map->only(['id', 'name', 'value', 'type']))
+            $key => $collection->map(function ($item) {
+
+                $array = $item instanceof Tax ? $item->toArray() : (array) $item;
+           
+                return collect($array)->only(['id', 'name', 'value', 'type']);
+            })
+            ->values() // facultatif, pour réindexer
+            ->toJson()
         ];
     }
 }

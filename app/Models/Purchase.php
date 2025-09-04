@@ -161,11 +161,13 @@ class Purchase extends Model
     {
         $total = $this->getSubtotal();
         $taxValue = 0;
-        foreach ($this->taxes as $tax) {
-            if ($tax->type == 'percent') {
-                $taxValue += ($total * $tax->value / 100);
-            } else {
-                $taxValue += $tax->value;
+        if(!empty($this->taxes)){
+            foreach ($this->taxes as $tax) {
+                if ($tax->type == 'percent') {
+                    $taxValue += ($total * $tax->value / 100);
+                } else {
+                    $taxValue += $tax->value;
+                }
             }
         }
         return $taxValue;

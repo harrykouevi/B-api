@@ -186,6 +186,7 @@ class PaymentAPIController extends Controller
                 //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
                 if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
                     //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
+               
                 $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
                 $payment = $payment[0];
                 if($payment){
@@ -205,6 +206,9 @@ class PaymentAPIController extends Controller
         } catch (ValidatorException|ModelNotFoundException) {
             return $this->sendError(__('lang.not_found', ['operator' => __('lang.payment')]));
         } catch (Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
             return $this->sendError($e->getMessage());
         }
         
