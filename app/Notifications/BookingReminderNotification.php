@@ -269,7 +269,7 @@ class BookingReminderNotification extends Notification
      */
     private function getFcmTitle(): string
     {
-        return "📅 Rappel de rendez-vous" ;
+        return "Charm : Rappel de rendez-vous" ;
         return match($this->reminderType) {
             'confirmation' => "✅ Réservation confirmée",
             '24h' => "⏰ Rendez-vous demain",
