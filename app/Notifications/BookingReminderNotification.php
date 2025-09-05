@@ -76,18 +76,8 @@ class BookingReminderNotification extends Notification
         return $mailMessage;
     }
 
-    /**
-     * Get the FCM representation of the notification.
-     */
-    public function toFcm($notifiable): FcmMessage
-    {
-        $message = new FcmMessage();
-        $notification = [
-            'title' => $this->getFcmTitle(),
-            'body' => $this->getFcmBody(),
-        ];
-
-        $data = [
+    public function getData(): Array{
+        return [
             'id' => 'App\\Notifications\\BookingReminderNotification',
             'icon' => $this->getSalonMediaUrl(),
             'click_action' => "FLUTTER_NOTIFICATION_CLICK",
@@ -111,6 +101,20 @@ class BookingReminderNotification extends Notification
             'salon_phone' => (string) $this->booking->salon->phone_number ?? '',
             'client_name' => (string) $this->recipient === 'salon' ? $this->booking->user->name : '',
         ];
+    }
+
+    /**
+     * Get the FCM representation of the notification.
+     */
+    public function toFcm($notifiable): FcmMessage
+    {
+        $message = new FcmMessage();
+        $notification = [
+            'title' => $this->getFcmTitle(),
+            'body' => $this->getFcmBody(),
+        ];
+
+        $data = $this->getData();
 
         $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
 
@@ -278,19 +282,17 @@ class BookingReminderNotification extends Notification
     /**
      * Get FCM body enrichi
      */
+
+
     private function getFcmBody(): string
     {
-        $salonName = $this->booking->salon->name ?? 'votre salon';
-        $serviceNames = $this->getServiceNames();
-        $bookingTime = Carbon::parse($this->booking->booking_at)->format('H:i');
-        $timeInfo = $this->getTimeUntilAppointment();
-        $price = number_format($this->booking->getTotal(), 2) . '€';
-        
-        if ($this->recipient === 'salon') {
-            return "👤 {$this->booking->user->name} • {$serviceNames} • {$bookingTime} • {$price} • {$timeInfo['message']}";
+        $data = $this->getData()();
+
+        if ($data['recipient'] === 'salon') {
+            return "{$data['client_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}h";
         }
-        
-        return "💇 {$serviceNames} chez {$salonName} à {$bookingTime} • {$price} • {$timeInfo['message']}";
+
+        return "{$data['salon_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}h";
     }
 
     /**
