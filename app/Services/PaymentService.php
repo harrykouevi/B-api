@@ -24,6 +24,9 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
 use App\Repositories\PaymentMethodRepository;
+use App\Types\PaymentType;
+use App\Types\WalletType;
+
 
 class PaymentService
 {
@@ -467,12 +470,3 @@ class PaymentService
     }
 }
 
-enum PaymentType: string {
-    case CREDIT = 'credit';
-    case DEBIT = 'debit';
-}
-
-enum WalletType: string {
-    case PRINCIPAL = 'Igris';
-    case BONUS = 'Bonus';
-}
