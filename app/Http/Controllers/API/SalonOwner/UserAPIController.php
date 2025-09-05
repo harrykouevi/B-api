@@ -30,7 +30,8 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
-use App\Services\WalletType;
+// use App\Types\WalletType;
+use App\Types\WalletType;
 use Illuminate\Support\Facades\Log;
 
 class UserAPIController extends Controller

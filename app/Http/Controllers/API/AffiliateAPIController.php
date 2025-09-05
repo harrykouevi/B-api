@@ -32,7 +32,7 @@ use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
-use App\Services\WalletType;
+use App\Types\WalletType;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 

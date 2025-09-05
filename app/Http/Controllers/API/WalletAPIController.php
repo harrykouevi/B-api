@@ -21,7 +21,7 @@ use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
 use App\Services\CinetPayService;
 use App\Services\PaymentService;
-use App\Services\WalletType;
+use App\Types\WalletType;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

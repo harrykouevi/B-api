@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use App\Models\User;
 use App\Repositories\WalletRepository;
-use App\Services\PaymentType;
+use App\Types\PaymentType;
 use App\Services\PaymentService;
 use Database\Seeders\AdminUserSeeder;
 use Database\Seeders\AppSettingsTableSeeder;

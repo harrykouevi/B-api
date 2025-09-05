@@ -5,7 +5,7 @@ namespace App\Events;
 use App\Exceptions\InvalidPaymentInfoException;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Services\WalletType;
+use App\Types\WalletType;
 use Exception;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
