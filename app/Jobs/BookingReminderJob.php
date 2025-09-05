@@ -77,7 +77,9 @@ class BookingReminderJob implements ShouldQueue
             }
 
         } catch (\Exception $e) {
-            Log::error("Erreur lors de l'envoi du rappel {$this->reminderType} pour la réservation {$this->booking->id}: " . $e->getMessage());
+            Log::error("Erreur lors de l'envoi du rappel {$this->reminderType} pour la réservation {$this->booking->id}: " . $e->getMessage(), [
+                 'trace' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
     }
@@ -87,6 +89,8 @@ class BookingReminderJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("Échec définitif du rappel {$this->reminderType} pour la réservation {$this->booking->id}: " . $exception->getMessage());
+        Log::error("Échec définitif du rappel {$this->reminderType} pour la réservation {$this->booking->id}: " . $exception->getMessage(), [
+                 'trace' => $exception->getTraceAsString()
+            ]);
     }
 }
