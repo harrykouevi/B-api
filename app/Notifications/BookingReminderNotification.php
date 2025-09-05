@@ -94,7 +94,7 @@ class BookingReminderNotification extends Notification
             'services_count' => (string) count($this->booking->e_services ?? []),
             'total_price' => (string) number_format($this->booking->getTotal(), 2),
             'location_type' => (string) $this->booking->at_salon ? 'salon' : 'home',
-            'time_until_hours' => (string) $this->getTimeUntilAppointment()['total_hours'],
+            'time_until_hours' => (string) $this->getTimeUntilAppointment()['message'],
             
             // Pour navigation directe
             'deep_link' => (string) $this->getDeepLink('booking', $this->booking->id),
@@ -289,10 +289,10 @@ class BookingReminderNotification extends Notification
         $data = $this->getData();
 
         if ($data['recipient'] === 'salon') {
-            return "{$data['client_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}h";
+            return "{$data['client_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}";
         }
 
-        return "{$data['salon_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}h";
+        return "{$data['salon_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}";
     }
 
     /**
