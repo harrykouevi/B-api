@@ -26,6 +26,7 @@ use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
 use App\Notifications\NewDebitPayment ;
 use App\Notifications\StatusChangedPayment;
+use App\Types\WalletType;
 use PhpParser\Node\Expr\Cast\Double;
 
 class PartenerShipService
