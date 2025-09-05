@@ -286,7 +286,7 @@ class BookingReminderNotification extends Notification
 
     private function getFcmBody(): string
     {
-        $data = $this->getData()();
+        $data = $this->getData();
 
         if ($data['recipient'] === 'salon') {
             return "{$data['client_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}h";
