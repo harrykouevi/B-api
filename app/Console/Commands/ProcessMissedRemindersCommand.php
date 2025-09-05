@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\BookingReminderService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class ProcessMissedRemindersCommand extends Command
 {
@@ -20,16 +21,19 @@ class ProcessMissedRemindersCommand extends Command
 
     public function handle(): int
     {
-        $this->info('🔄 Début du traitement des rappels manqués...');
+        Log::info('🔄 Début du traitement des rappels manqués...');
 
         try {
             $processedCount = $this->reminderService->processMissedReminders();
             
-            $this->info("✅ Traitement terminé avec succès. {$processedCount} réservations traitées.");
+            Log::info("✅ Traitement terminé avec succès. {$processedCount} réservations traitées.");
             return self::SUCCESS;
             
         } catch (\Exception $e) {
-            $this->error("❌ Erreur lors du traitement: " . $e->getMessage());
+            // $this->error("❌ Erreur lors du traitement: " . $e->getMessage());
+            Log::error('Erreur lors du traitement des rappels manqués', [
+                'exception' => $e,
+            ]);
             return self::FAILURE;
         }
     }

@@ -161,6 +161,7 @@ class BookingReminderService
         $processedCount = 0;
         
         // Récupérer les réservations futures sans annulation
+        /** @var \Illuminate\Database\Eloquent\Collection<\App\Models\Booking> $upcomingBookings */
         $upcomingBookings = Booking::with(['user', 'salon', 'bookingStatus'])
             ->where('booking_at', '>', Carbon::now())
             ->where('cancel', false)
