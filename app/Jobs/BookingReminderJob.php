@@ -42,7 +42,7 @@ class BookingReminderJob implements ShouldQueue
         try {
             // Vérifier si la réservation existe toujours et n'est pas annulée
             $currentBooking = Booking::with([
-                'user', 'salon', 'salon.users', 'salon.address', 
+                'user', 
                 'bookingStatus', 'payment', 'employee', 'address'
             ])->find($this->booking->id);
             
