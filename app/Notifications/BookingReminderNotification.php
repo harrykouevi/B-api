@@ -269,6 +269,7 @@ class BookingReminderNotification extends Notification
      */
     private function getFcmTitle(): string
     {
+        return "📅 Rappel de rendez-vous" ;
         return match($this->reminderType) {
             'confirmation' => "✅ Réservation confirmée",
             '24h' => "⏰ Rendez-vous demain",
@@ -384,7 +385,7 @@ class BookingReminderNotification extends Notification
             $options[] = [
                 'id' => $option->id ?? null,
                 'name' => $option->name ?? 'Option inconnue',
-                'price' => isset($option->price) ? number_format($option->price, 2) . ' €' : null,
+                'price' => isset($option->price) ? number_format($option->price, 2) . ' FCFA' : null,
                 'description' => $option->description ?? null,
             ];
         }
