@@ -290,10 +290,10 @@ class BookingReminderNotification extends Notification
         $data = $this->getData();
 
         if ($data['recipient'] === 'salon') {
-            return "{$data['client_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}";
+            return "{$data['client_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • {$data['time_until_hours']}";
         }
 
-        return "{$data['salon_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • dans {$data['time_until_hours']}";
+        return "{$data['salon_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • {$data['time_until_hours']}";
     }
 
     /**
@@ -428,11 +428,11 @@ class BookingReminderNotification extends Notification
     private function getTimeMessage($diff): string
     {
         if ($diff->days > 0) {
-            return "Dans {$diff->days} jour" . ($diff->days > 1 ? 's' : '') . " et {$diff->h}h{$diff->i}";
+            return "dans {$diff->days} jour" . ($diff->days > 1 ? 's' : '') . " et {$diff->h}h{$diff->i}";
         } elseif ($diff->h > 0) {
-            return "Dans {$diff->h}h{$diff->i}";
+            return "dans {$diff->h}h{$diff->i}";
         } else {
-            return "Dans {$diff->i} minute" . ($diff->i > 1 ? 's' : '');
+            return "dans {$diff->i} minute" . ($diff->i > 1 ? 's' : '');
         }
     }
 
