@@ -61,14 +61,16 @@ class TaxCollectionCast implements CastsAttributes
     {
       
         $decodedValue = is_string($value) ? json_decode($value, true) : $value;
-        if( $this->isAssoc($decodedValue) ){ 
-            $decodedValue['name'] = 'commission' ;
-            $value =   [$decodedValue]  ;
-        }else {
-            $value =  $decodedValue ;
-        };
+        if ($decodedValue instanceof \Illuminate\Support\Collection) {
+            $collection = $decodedValue;
+        } elseif ($this->isAssoc($decodedValue)) {
+            $decodedValue['name'] = 'commission';
+            $collection = collect([$decodedValue]);
+        } else {
+            $collection = collect($decodedValue);
+        }
 
-        $collection = $value instanceof Collection ? $value : collect($value);
+        // $collection = $value instanceof Collection ? $value : collect($value);
         return [
             $key => $collection->map(function ($item) {
 
