@@ -93,23 +93,23 @@ class BookingReminderNotification extends Notification
             'click_action' => "FLUTTER_NOTIFICATION_CLICK",
             'status' => 'reminder',
             'bookingId' => (string) $this->booking->id,
-            'reminderType' => $this->reminderType,
-            'recipient' => $this->recipient,
+            'reminderType' => (string) $this->reminderType,
+            'recipient' => (string) $this->recipient,
             
             // Données enrichies pour l'app mobile
             'booking_date' => Carbon::parse($this->booking->booking_at)->format('Y-m-d'),
             'booking_time' => Carbon::parse($this->booking->booking_at)->format('H:i'),
-            'salon_name' => $this->booking->salon->name ?? '',
+            'salon_name' => (string) $this->booking->salon->name ?? '',
             'salon_id' => (string) ($this->booking->salon->id ?? ''),
-            'services_count' => count($this->booking->e_services ?? []),
+            'services_count' => (string) count($this->booking->e_services ?? []),
             'total_price' => (string) number_format($this->booking->getTotal(), 2),
-            'location_type' => $this->booking->at_salon ? 'salon' : 'home',
+            'location_type' => (string) $this->booking->at_salon ? 'salon' : 'home',
             'time_until_hours' => (string) $this->getTimeUntilAppointment()['total_hours'],
             
             // Pour navigation directe
-            'deep_link' => $this->getDeepLink('booking', $this->booking->id),
-            'salon_phone' => $this->booking->salon->phone_number ?? '',
-            'client_name' => $this->recipient === 'salon' ? $this->booking->user->name : '',
+            'deep_link' => (string) $this->getDeepLink('booking', $this->booking->id),
+            'salon_phone' => (string) $this->booking->salon->phone_number ?? '',
+            'client_name' => (string) $this->recipient === 'salon' ? $this->booking->user->name : '',
         ];
 
         $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
