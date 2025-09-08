@@ -147,10 +147,16 @@ class BookingReportService
         $originalId = $booking->original_booking_id ?: $bookingId;
         
         // Récupérer TOUS les rendez-vous de cette chaîne
+        // Ne retourner que les bookings qui font partie d'une chaîne de reports
         $chainBookings = $this->bookingRepository->scopeQuery(function($query) use ($originalId) {
             return $query->where(function($q) use ($originalId) {
+                // Soit c'est l'original
                 $q->where('id', $originalId)
-                  ->orWhere('original_booking_id', $originalId);
+                  // Soit c'est un report (a un original_booking_id différent de son id)
+                  ->orWhere(function($subQ) use ($originalId) {
+                      $subQ->where('original_booking_id', $originalId)
+                           ->whereColumn('id', '!=', 'original_booking_id');
+                  });
             })->orderBy('created_at');
         })->all();
         

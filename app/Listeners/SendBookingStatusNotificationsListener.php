@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use App\Services\BookingReminderService;
 use App\Notifications\StatusChangedBooking;
 use Illuminate\Support\Facades\Notification;
+use App\Notifications\OwnerStatusChangedBooking;
 
 /**
  * Class SendBookingStatusNotificationsListener
@@ -57,7 +58,7 @@ class SendBookingStatusNotificationsListener
                     
                     // Envoyer la notification aux destinataires filtrés
                     if ($recipients->count() > 0) {
-                        Notification::send($recipients, new StatusChangedBooking($event->booking));
+                        Notification::send($recipients, new OwnerStatusChangedBooking($event->booking));
                     }
                 }
             } else if ($event->booking->bookingStatus->order !== 1) {
@@ -65,7 +66,7 @@ class SendBookingStatusNotificationsListener
                     if ($event->booking->bookingStatus->order < 20) {
                         Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
                     } else if ($event->booking->bookingStatus->order >= 20 && $event->booking->bookingStatus->order < 40) {
-                        Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+                        Notification::send($event->booking->salon->users, new OwnerStatusChangedBooking($event->booking));
                     } else {
                         Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
                     }
@@ -73,7 +74,7 @@ class SendBookingStatusNotificationsListener
                     if ($event->booking->bookingStatus->order < 40) {
                         Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
                     } else {
-                        Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+                        Notification::send($event->booking->salon->users, new OwnerStatusChangedBooking($event->booking));
                     }
                 }
             }
