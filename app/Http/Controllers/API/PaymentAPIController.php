@@ -244,7 +244,7 @@ class PaymentAPIController extends Controller
             $waitingAmountToDebit = $this->bookingRepository->findWhereIn('booking_status_id',[1])->sum(function ($booking) {
                                         return $booking->getSubtotal();
                                     });
-
+            Log::info(['PaymentAPIController-wallet 1']);
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
                 //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
                 if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
@@ -252,10 +252,11 @@ class PaymentAPIController extends Controller
                
                 $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
                 $payment = $payment[0];
+                Log::info(['PaymentAPIController-wallet 2']);
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                     try{ 
-                        // Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
+                        Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
 
                         Notification::send($booking->salon->users, new StatusChangedPayment($booking));
                     } catch (Exception $e) {
