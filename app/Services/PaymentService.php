@@ -250,6 +250,7 @@ class PaymentService
                     if($i == 0){
 
                         $transaction['user_id'] = $wallet->user_id;
+                        $transaction['status'] = "completed" ;
                         $transaction['wallet_id'] = $wallet->id;
                         $transaction['description'] = 'compte credité';
                         $transaction['action'] =  'credit';
@@ -262,6 +263,7 @@ class PaymentService
                     }
                     if($i == 1){
                         $transaction['user_id'] = $payer_wallet->user_id;
+                        $transaction['status'] = "completed" ;
                         $transaction['wallet_id'] = $payer_wallet->id;
                         $transaction['description'] = 'compte débité';
                         $transaction['action'] =  'debit';
@@ -275,6 +277,7 @@ class PaymentService
                             $transaction['amount'] = $commission ;
                             $w= $this->walletRepository->find(setting('app_default_wallet_id'));
                             $transaction['user_id'] = $w->user_id;
+                            $transaction['status'] = "completed" ;
                             $transaction['wallet_id'] = $w->id;
                             $transaction['description'] = 'compte crédité';
                             $transaction['action'] =  'credit';
@@ -291,6 +294,72 @@ class PaymentService
         return Null ;
     }
 
+
+    /**
+     * make Payment .
+     * @param Array $input
+     * @param Wallet $wallet The wallet identifier or wallet of salon .
+     * @param Tax|Tax[]|null $tax paramètre pour la commission
+     * 
+     * @return Payment | Null
+     */
+    public function intentPayment(Array $input , $wallet, $tax = null):Payment | Null
+    {
+        //si l'intension de payement est pour le coiffeur
+        $amount = $input['payment']['amount'] ;
+
+        $currency = json_decode($wallet->currency, true);
+        if ($wallet->user->hasRole('salon owner')  && $currency['code'] == setting('default_currency_code')) {
+                    
+
+            if($amount > 0){
+                $payment = $this->paymentRepository->create($input['payment']);
+                // Calcul de la commission si elle existe
+                $commission = 0 ;
+                if (!is_null($tax)) {
+                    $commission = self::getCommission($amount , $tax) ;
+                   
+                }        
+                
+                for ($i=0; $i <= 1  ; $i++) { 
+                    $transaction = [];
+                    $transaction['payment_id'] = $payment->id;
+                    if($i == 0){
+                        //il a t'il une commission a prendre chez le coiffeur
+                        if(  $commission > 0 ){
+
+                            $transaction['user_id'] = $wallet->user_id;
+                            $transaction['status'] = "completed" ;
+                            $transaction['wallet_id'] = $wallet->id;
+                            $transaction['description'] = 'compte débité';
+                            $transaction['action'] =  'debit';
+                            $transaction['amount'] = $commission;
+                        }
+                    }
+                    if($i == 1){
+                        
+                        if(  $commission > 0  ){
+                            //il a t'il une commission prix chez le coiffeur parce qu'il recoit
+                            //de l'argent provenant du client 
+                            $transaction['amount'] = $commission ;
+                            $w= $this->walletRepository->find(setting('app_default_wallet_id'));
+                            $transaction['user_id'] = $w->user_id;
+                            $transaction['status'] = "completed" ;
+                            $transaction['wallet_id'] = $w->id;
+                            $transaction['description'] = 'compte crédité';
+                            $transaction['action'] =  'credit';
+                        }else{
+                            break ;
+                        }
+                    }
+
+                    $this->walletTransactionRepository->create($transaction);
+                }
+                return $payment ;
+            }
+        }
+        return Null ;
+    }
 
     /**
      * Traite une transaction de paiement externe avec enregistrement des mouvements sur les portefeuilles.
@@ -335,6 +404,7 @@ class PaymentService
                     if($i == 0){
                         $transaction['payment_id'] = $payment->id;
                         $transaction['user_id'] = $wallet->user_id;
+                        $transaction['status'] = "completed" ;
                         $transaction['amount'] = $input['payment']['amount'] - (($type == PaymentType::CREDIT)? setting('debit_fees',0)  : setting('debit_fees',0)) ;
                         $transaction['wallet_id'] = $wallet->id;
                         $transaction['description'] = ($type == PaymentType::CREDIT)? 'compte credité' : 'compte débité';
@@ -343,6 +413,7 @@ class PaymentService
                     if($i == 1  && ( ($type == PaymentType::CREDIT && setting('debit_fees',0) > 0) || ($type == PaymentType::DEBIT && setting('debit_fees',0) > 0) )){
                         $transaction['payment_id'] = $payment->id;
                         $transaction['user_id'] = $ptf_wallet->user_id;
+                        $transaction['status'] = "completed" ;
                         $transaction['amount'] = ($type == PaymentType::CREDIT)? setting('debit_fees',0) : setting('debit_fees',0) ;
                         $transaction['wallet_id'] = $ptf_wallet->id;
                         $transaction['description'] = 'compte credité with transaction fee for external paiement #'.$payment->id;

@@ -108,11 +108,7 @@ class AcceptBookingTest extends TestCase
                 'response' => $response->json()       // contenu réel
             ] );
 
-            Log::info( Wallet::find($wallet2->id) ) ;
-            Log::info( Wallet::find($wallet1->id) ) ;
-            // $response->assertStatus(200);
-
-
+           
             $response2 =  $this->actingAs($user, 'api')->putJson(route('api.bookings.update', $booking->id), [
                 'booking_status_id' =>  4 ,
                 'taxes'  =>  ["value" => 10, "type" => "percent"]

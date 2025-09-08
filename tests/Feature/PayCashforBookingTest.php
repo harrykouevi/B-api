@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Booking;
 use App\Models\Currency;
+use App\Models\Purchase;
 use App\Models\User;
 use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class PayforBookingTest extends TestCase
+class PayCashforBookingTest extends TestCase
 {
     use DatabaseTransactions;
     /** @test */
@@ -54,12 +55,23 @@ class PayforBookingTest extends TestCase
 
             $currency = Currency::find(1) ;
             
-            $wallet = Wallet::create([
+            $wallet1 = Wallet::create([
                    
                     'name'  => 'Igris',
-                    'balance' => 5000,
+                    'balance' => 1000,
                     'currency' =>  $currency,
                     'user_id' => $user->id,
+                    'enabled' => 1 ,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+            ]);
+
+            $wallet2 = Wallet::create([
+                   
+                    'name'  => 'Bonus',
+                    'balance' => 500,
+                    'currency' =>  $currency,
+                    'user_id' => $user2->id,
                     'enabled' => 1 ,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -124,16 +136,28 @@ class PayforBookingTest extends TestCase
             ]);
 
 
-            $response =  $this->actingAs($user, 'api')->postJson(route('api.payments.wallets', $wallet->id), [
+            $response =  $this->actingAs($user2, 'api')->postJson(route('api.payments.cash'), [
                     "id" => $booking2->id,
                     'payment' => ['amount'=> 200 ],
                 ]);
 
-            // $responseData = $response->json();
-            // Log::info([
-            //     'status' => $response->status(),   // code HTTP
-            //     'response' => $responseData        // contenu réel
-            // ]);
+            $responseData = $response->json();
+            
+
+                $response2 =  $this->actingAs($user, 'api')->putJson(route('api.bookings.update', $booking2->id), [
+                'booking_status_id' =>  4 ,
+                'taxes'  =>  ["value" => 10, "type" => "percent"]
+                            
+            ]);
+
+            Log::info([
+                'status' => $response2->json()        // contenu réel
+            ]);
+
+
+            Log::info(Purchase::all() ) ;
+            Log::info( Wallet::find($wallet2->id) ) ;
+            Log::info( Wallet::find($wallet1->id) ) ;
 
             $response->assertStatus(200);
            

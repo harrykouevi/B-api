@@ -22,7 +22,7 @@ class PaymentMethodsTableSeeder extends Seeder
     {
 
 
-        DB::table('payment_methods')->truncate();
+        // DB::table('payment_methods')->truncate();
 
         DB::table('payment_methods')->insert(array(
             // array(
@@ -101,17 +101,17 @@ class PaymentMethodsTableSeeder extends Seeder
             //     'created_at' => now(),
             //     'updated_at' => now(),
             // ),
-            array(
-                'id' => 11,
-                'name' => 'Wallet',
-                'description' => 'Click to pay with Wallet',
-                'route' => '/Wallet',
-                'order' => 8,
-                'default' => 0,
-                'enabled' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ),
+            // array(
+            //     'id' => 11,
+            //     'name' => 'Wallet',
+            //     'description' => 'Click to pay with Wallet',
+            //     'route' => '/Wallet',
+            //     'order' => 8,
+            //     'default' => 0,
+            //     'enabled' => 1,
+            //     'created_at' => now(),
+            //     'updated_at' => now(),
+            // ),
             // array(
             //     'id' => 12,
             //     'name' => 'PayMongo',
@@ -123,13 +123,24 @@ class PaymentMethodsTableSeeder extends Seeder
             //     'created_at' => now(),
             //     'updated_at' => now(),
             // ),
+            // array(
+            //     'id' => 12,
+            //     'name' => 'MobilePay',
+            //     'description' => 'Click to pay with MobilePay',
+            //     'route' => '/MobilePay',
+            //     'order' => 12,
+            //     'default' => 0,
+            //     'enabled' => 1,
+            //     'created_at' => now(),
+            //     'updated_at' => now(),
+            // ),
             array(
-                'id' => 12,
-                'name' => 'MobilePay',
-                'description' => 'Click to pay with MobilePay',
-                'route' => '/MobilePay',
-                'order' => 12,
-                'default' => 0,
+                'id' => 14,
+                'name' => 'Cash',
+                'description' => 'Click to pay cash when finish',
+                'route' => '/Cash',
+                'order' => 3,
+                'default' => 1,
                 'enabled' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
