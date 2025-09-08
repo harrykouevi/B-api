@@ -134,7 +134,7 @@ class PayforBookingTest extends TestCase
             //     'status' => $response->status(),   // code HTTP
             //     'response' => $responseData        // contenu réel
             // ]);
-
+                 Log::info( Wallet::find($wallet->id) ) ;
             $response->assertStatus(200);
            
         } catch (\Throwable $e) {

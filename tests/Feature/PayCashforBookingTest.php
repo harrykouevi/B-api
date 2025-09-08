@@ -155,7 +155,7 @@ class PayCashforBookingTest extends TestCase
             ]);
 
 
-            Log::info(Purchase::all() ) ;
+        //     Log::info(Purchase::all() ) ;
             Log::info( Wallet::find($wallet2->id) ) ;
             Log::info( Wallet::find($wallet1->id) ) ;
 
