@@ -240,7 +240,7 @@ class BookingAPIController extends Controller
     public function update(int $id, Request $request): JsonResponse
     {
         $input = $request->all();
-        if (in_array($input['booking_status_id'], [7, 8, 9])) {
+        if (in_array($input['booking_status_id'], [ 8, 9])) {
             return $this->sendError(__('Cette route  ne peut pas gerer cette demande de modification. Utiliser la route'));
         }
 
@@ -266,9 +266,8 @@ class BookingAPIController extends Controller
                 $input["purchase_taxes"] = $input['taxes'] ;
                 unset($input['taxes']);  
             }
-            
             $booking = $this->bookingRepository->update($input, $id);
-
+            
             if (isset($input['payment_status_id'])) {
         
                 event(new BookingChangedEvent($booking)); 

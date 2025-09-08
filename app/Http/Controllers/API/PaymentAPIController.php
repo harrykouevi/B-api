@@ -116,7 +116,7 @@ class PaymentAPIController extends Controller
             // $input['payment']['user_id'] = $booking->user_id;
             // $payment = $this->paymentRepository->create($input['payment']);
             // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-            $transactionAmount= 100 ;
+            $transactionAmount= $input['payment']['amount'] ;
             try{
                 // $wallet = $this->walletRepository->find($walletId);
                 $this->walletRepository->pushCriteria(new EnabledCriteria());
@@ -143,11 +143,12 @@ class PaymentAPIController extends Controller
 
                 if ($wallet && $currency['code'] == setting('default_currency_code')) {
                    
-                    $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
+                    $payment = $this->paymentService->createPayment($transactionAmount,$wallet);
                     $payment = $payment[0];
                     if($payment){
-                        $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+                        
                         try{ 
+                            $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                             $purchase = $this->purchaseRepository->Create([
                                 'salon' => $booking->salon ,
                                 'booking' => $booking,

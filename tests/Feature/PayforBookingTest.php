@@ -35,7 +35,7 @@ class PayforBookingTest extends TestCase
                     'updated_at' => now(),
             ]);
 
-            $user->assignRole(3);
+            $user->assignRole(2);
 
             $user2 = User::create([
                     'name' => 'userddEdd test',

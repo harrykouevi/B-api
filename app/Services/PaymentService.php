@@ -306,19 +306,19 @@ class PaymentService
     public function intentPayment(Array $input , $wallet, $tax = null):Payment | Null
     {
         //si l'intension de payement est pour le coiffeur
-        
+        $amount = $input['payment']['amount'] ;
+
         $currency = json_decode($wallet->currency, true);
         if ($wallet->user->hasRole('salon owner')  && $currency['code'] == setting('default_currency_code')) {
+                    
 
-            if($input['payment']['amount'] > 0){
-
+            if($amount > 0){
                 $payment = $this->paymentRepository->create($input['payment']);
-                $amount = $input['payment']['amount'];
-                
                 // Calcul de la commission si elle existe
                 $commission = 0 ;
-                if ($tax !== null) {
+                if (!is_null($tax)) {
                     $commission = self::getCommission($amount , $tax) ;
+                   
                 }        
                 
                 for ($i=0; $i <= 1  ; $i++) { 
