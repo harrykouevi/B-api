@@ -60,7 +60,7 @@ class SendBookingStatusNotificationsListener
                         Notification::send($recipients, new StatusChangedBooking($event->booking));
                     }
                 }
-            } else {
+            } else if ($event->booking->bookingStatus->order !== 1) {
                 if ($event->booking->at_salon) {
                     if ($event->booking->bookingStatus->order < 20) {
                         Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
