@@ -316,14 +316,14 @@ class Booking extends Model
     public function canBeReported(): bool
     {
         return !$this->cancel && 
-               !in_array($this->booking_status_id, [6, 7, 9]) && // Done, Failed, Reported
+               !in_array($this->booking_status_id, [6, 7]) && // Done, Failed
                $this->booking_at > now();
     }
 
     public function canBeCancelled(): bool
     {
         return !$this->cancel && 
-               !in_array($this->booking_status_id, [6, 7, 9]); // Done, Failed, Reported
+               !in_array($this->booking_status_id, [6, 7]); // Done, Failed
     }
 
     /**

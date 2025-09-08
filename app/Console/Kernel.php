@@ -37,6 +37,11 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping()
                  ->runInBackground()
                  ->appendOutputTo(storage_path('logs/reminders.log'));
+
+        // Nettoyage des jobs échoués quotidiennement (optionnel)
+        $schedule->command('queue:flush')
+                 ->daily()
+                 ->withoutOverlapping();
     }
 
     /**

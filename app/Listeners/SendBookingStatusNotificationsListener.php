@@ -39,19 +39,42 @@ class SendBookingStatusNotificationsListener
 
             Log::error(['handle',$event->booking->user]);
 
-            if ($event->booking->at_salon) {
-                if ($event->booking->bookingStatus->order < 20) {
-                    Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-                } else if ($event->booking->bookingStatus->order >= 20 && $event->booking->bookingStatus->order < 40) {
-                    Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
-                } else {
-                    Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+            // Vérifier si le statut est "Reported" (statut 9 avec order = 80)
+            if ($event->booking->bookingStatus->order == 80) {
+                // Envoyer la notification au client
+                Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                
+                // Envoyer la notification aux propriétaires et employés du salon uniquement
+                if ($event->booking->salon) {
+                    // Charger les utilisateurs du salon s'ils ne sont pas déjà chargés
+                    $salonUsers = $event->booking->salon->users ?? $event->booking->salon->users()->get();
+                    
+                    // Filtrer les utilisateurs : propriétaires ('salon owner') et employés (autres rôles)
+                    $recipients = $salonUsers->filter(function ($user) {
+                        // Vérifier si l'utilisateur a le rôle 'salon owner' ou tout autre rôle (employés)
+                        return $user->hasRole('salon owner') || $user->roles->count() > 0;
+                    });
+                    
+                    // Envoyer la notification aux destinataires filtrés
+                    if ($recipients->count() > 0) {
+                        Notification::send($recipients, new StatusChangedBooking($event->booking));
+                    }
                 }
             } else {
-                if ($event->booking->bookingStatus->order < 40) {
-                    Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                if ($event->booking->at_salon) {
+                    if ($event->booking->bookingStatus->order < 20) {
+                        Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                    } else if ($event->booking->bookingStatus->order >= 20 && $event->booking->bookingStatus->order < 40) {
+                        Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+                    } else {
+                        Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                    }
                 } else {
-                    Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+                    if ($event->booking->bookingStatus->order < 40) {
+                        Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
+                    } else {
+                        Notification::send($event->booking->salon->users, new StatusChangedBooking($event->booking));
+                    }
                 }
             }
 
