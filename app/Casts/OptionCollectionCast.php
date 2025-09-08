@@ -10,6 +10,7 @@ namespace App\Casts;
 
 use App\Models\Option;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Support\Collection;
 
 /**
  * Class OptionCollectionCast
@@ -23,20 +24,21 @@ class OptionCollectionCast implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes): array
     {
-        if (!empty($value)) {
-            $decodedValue = json_decode($value, true);
-            return array_map(function ($value) {
-                $option = Option::find($value['id']);
-                if (!empty($option)) {
-                    return $option;
-                }
-                $option = new Option($value);
-                $option->fillable[] = 'id';
-                $option->id = $value['id'];
+        if(empty($value))  return [];
+      
+        $decodedValue = json_decode($value, true);
+        return array_map(function ($value) {
+            $option = Option::find($value['id']);
+            if (!empty($option)) {
                 return $option;
-            }, $decodedValue);
-        }
-        return [];
+            }
+            $option = new Option($value);
+            $option->fillable[] = 'id';
+            $option->id = $value['id'];
+            return $option;
+        }, $decodedValue);
+        
+        
     }
 
     /**
@@ -44,11 +46,9 @@ class OptionCollectionCast implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes): array
     {
-//        if (!$value instanceof Collection) {
-//            throw new InvalidArgumentException('The given value is not an Collection instance.');
-//        }
+        $collection = $value instanceof Collection ? $value : collect($value);
         return [
-            'options' => json_encode($value->map->only(['id', 'name', 'price']))
+            'options' => json_encode($collection->map->only(['id', 'name', 'price']))
         ];
     }
 }

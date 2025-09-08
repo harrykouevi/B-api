@@ -76,6 +76,33 @@ class BookingReminderNotification extends Notification
         return $mailMessage;
     }
 
+    public function getData(): Array{
+        return [
+            'id' => 'App\\Notifications\\BookingReminderNotification',
+            'icon' => $this->getSalonMediaUrl(),
+            'click_action' => "FLUTTER_NOTIFICATION_CLICK",
+            'status' => 'reminder',
+            'bookingId' => (string) $this->booking->id,
+            'reminderType' => (string) $this->reminderType,
+            'recipient' => (string) $this->recipient,
+            
+            // Données enrichies pour l'app mobile
+            'booking_date' => Carbon::parse($this->booking->booking_at)->format('Y-m-d'),
+            'booking_time' => Carbon::parse($this->booking->booking_at)->format('H:i'),
+            'salon_name' => (string) $this->booking->salon->name ?? '',
+            'salon_id' => (string) ($this->booking->salon->id ?? ''),
+            'services_count' => (string) count($this->booking->e_services ?? []),
+            'total_price' => (string) number_format($this->booking->getTotal(), 2),
+            'location_type' => (string) $this->booking->at_salon ? 'salon' : 'home',
+            'time_until_hours' => (string) $this->getTimeUntilAppointment()['message'],
+            
+            // Pour navigation directe
+            'deep_link' => (string) $this->getDeepLink('booking', $this->booking->id),
+            'salon_phone' => (string) $this->booking->salon->phone_number ?? '',
+            'client_name' => (string) $this->recipient === 'salon' ? $this->booking->user->name : '',
+        ];
+    }
+
     /**
      * Get the FCM representation of the notification.
      */
@@ -87,30 +114,7 @@ class BookingReminderNotification extends Notification
             'body' => $this->getFcmBody(),
         ];
 
-        $data = [
-            'id' => 'App\\Notifications\\BookingReminderNotification',
-            'icon' => $this->getSalonMediaUrl(),
-            'click_action' => "FLUTTER_NOTIFICATION_CLICK",
-            'status' => 'reminder',
-            'bookingId' => (string) $this->booking->id,
-            'reminderType' => $this->reminderType,
-            'recipient' => $this->recipient,
-            
-            // Données enrichies pour l'app mobile
-            'booking_date' => Carbon::parse($this->booking->booking_at)->format('Y-m-d'),
-            'booking_time' => Carbon::parse($this->booking->booking_at)->format('H:i'),
-            'salon_name' => $this->booking->salon->name ?? '',
-            'salon_id' => (string) ($this->booking->salon->id ?? ''),
-            'services_count' => count($this->booking->e_services ?? []),
-            'total_price' => (string) number_format($this->booking->getTotal(), 2),
-            'location_type' => $this->booking->at_salon ? 'salon' : 'home',
-            'time_until_hours' => (string) $this->getTimeUntilAppointment()['total_hours'],
-            
-            // Pour navigation directe
-            'deep_link' => $this->getDeepLink('booking', $this->booking->id),
-            'salon_phone' => $this->booking->salon->phone_number ?? '',
-            'client_name' => $this->recipient === 'salon' ? $this->booking->user->name : '',
-        ];
+        $data = $this->getData();
 
         $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
 
@@ -265,6 +269,7 @@ class BookingReminderNotification extends Notification
      */
     private function getFcmTitle(): string
     {
+        return "Charm : Rappel de rendez-vous" ;
         return match($this->reminderType) {
             'confirmation' => "✅ Réservation confirmée",
             '24h' => "⏰ Rendez-vous demain",
@@ -278,19 +283,17 @@ class BookingReminderNotification extends Notification
     /**
      * Get FCM body enrichi
      */
+
+
     private function getFcmBody(): string
     {
-        $salonName = $this->booking->salon->name ?? 'votre salon';
-        $serviceNames = $this->getServiceNames();
-        $bookingTime = Carbon::parse($this->booking->booking_at)->format('H:i');
-        $timeInfo = $this->getTimeUntilAppointment();
-        $price = number_format($this->booking->getTotal(), 2) . '€';
-        
-        if ($this->recipient === 'salon') {
-            return "👤 {$this->booking->user->name} • {$serviceNames} • {$bookingTime} • {$price} • {$timeInfo['message']}";
+        $data = $this->getData();
+
+        if ($data['recipient'] === 'salon') {
+            return "{$data['client_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • {$data['time_until_hours']}";
         }
-        
-        return "💇 {$serviceNames} chez {$salonName} à {$bookingTime} • {$price} • {$timeInfo['message']}";
+
+        return "{$data['salon_name']} • {$data['services_count']} service(s) • {$data['booking_time']} • {$data['total_price']} Fcfa • {$data['time_until_hours']}";
     }
 
     /**
@@ -382,7 +385,7 @@ class BookingReminderNotification extends Notification
             $options[] = [
                 'id' => $option->id ?? null,
                 'name' => $option->name ?? 'Option inconnue',
-                'price' => isset($option->price) ? number_format($option->price, 2) . ' €' : null,
+                'price' => isset($option->price) ? number_format($option->price, 2) . ' FCFA' : null,
                 'description' => $option->description ?? null,
             ];
         }
@@ -425,11 +428,11 @@ class BookingReminderNotification extends Notification
     private function getTimeMessage($diff): string
     {
         if ($diff->days > 0) {
-            return "Dans {$diff->days} jour" . ($diff->days > 1 ? 's' : '') . " et {$diff->h}h{$diff->i}";
+            return "dans {$diff->days} jour" . ($diff->days > 1 ? 's' : '') . " et {$diff->h}h{$diff->i}";
         } elseif ($diff->h > 0) {
-            return "Dans {$diff->h}h{$diff->i}";
+            return "dans {$diff->h}h{$diff->i}";
         } else {
-            return "Dans {$diff->i} minute" . ($diff->i > 1 ? 's' : '');
+            return "dans {$diff->i} minute" . ($diff->i > 1 ? 's' : '');
         }
     }
 

@@ -10,6 +10,8 @@ namespace App\Casts;
 
 use App\Models\Tax;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class TaxCollectionCast
@@ -18,21 +20,38 @@ use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 class TaxCollectionCast implements CastsAttributes
 {
 
+    function isAssoc(array $arr): bool
+    {
+        if ($arr === []) {
+            return false; // un tableau vide n'est pas considéré associatif
+        }
+
+        return array_keys($arr) !== range(0, count($arr) - 1);
+    }
     /**
      * @inheritDoc
      */
     public function get($model, string $key, $value, array $attributes): array
     {
-        if (!empty($value)) {
-            $decodedValue = json_decode($value, true);
-            return array_map(function ($value) {
-                $tax = new Tax($value);
+        if (empty($value) || $value === '[]' || $value === '') {
+            return [];
+        }
+        
+        if (!empty($value) ) {
+
+            $decodedValue = is_string($value) ? json_decode($value, true) : $value;
+            $taxesData =  $this->isAssoc($decodedValue) ? [$decodedValue] : $decodedValue;
+
+            return collect($taxesData)->map(function ($item) {
+                $tax = new Tax($item);
                 $tax->fillable[] = 'id';
-                $tax->id = $value['id'];
+                $tax->id = $item['id'] ?? Null;
                 return $tax;
-            }, $decodedValue);
+            })->all();
+            
         }
         return [];
+                   
     }
 
     /**
@@ -40,12 +59,27 @@ class TaxCollectionCast implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes): array
     {
-//        if (!$value instanceof Collection) {
-//            throw new InvalidArgumentException('The given value is not an Collection instance.');
-//        }
+      
+        $decodedValue = is_string($value) ? json_decode($value, true) : $value;
+        if ($decodedValue instanceof \Illuminate\Support\Collection) {
+            $collection = $decodedValue;
+        } elseif ($this->isAssoc($decodedValue)) {
+            $decodedValue['name'] = 'commission';
+            $collection = collect([$decodedValue]);
+        } else {
+            $collection = collect($decodedValue);
+        }
 
+        // $collection = $value instanceof Collection ? $value : collect($value);
         return [
-            'taxes' => json_encode($value->map->only(['id', 'name', 'value', 'type']))
+            $key => $collection->map(function ($item) {
+
+                $array = $item instanceof Tax ? $item->toArray() : (array) $item;
+           
+                return collect($array)->only(['id', 'name', 'value', 'type']);
+            })
+            ->values() // facultatif, pour réindexer
+            ->toJson()
         ];
     }
 }

@@ -8,7 +8,7 @@
 
 namespace App\Http\Controllers\API;
 
-
+use App\Criteria\Bookings\BookingsOfUserCriteria;
 use App\Events\BookingChangedEvent;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -169,18 +169,30 @@ class PaymentAPIController extends Controller
         $input = $request->all();
         $transaction = [];
         try {
-            $booking = $this->bookingRepository->find($input['id']);
             $wallet = $this->walletRepository->find($walletId);
             $currency = json_decode($wallet->currency, true);
+            
+            
+            $booking = $this->bookingRepository->find($input['id']);
+            $servicesAmountIntentToDebit = $booking->getSubtotal();
+           
+
+            $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
+            $waitingAmountToDebit = $this->bookingRepository->findWhereIn('booking_status_id',[1])->sum(function ($booking) {
+                                        return $booking->getSubtotal();
+                                    });
 
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
-                
+                //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
+                if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
+                    //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
+               
                 $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
                 $payment = $payment[0];
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                     try{ 
-                        Log::error(['PaymentAPIController-wallet',$booking->salon->users]);
+                        // Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
 
                         Notification::send($booking->salon->users, new StatusChangedPayment($booking));
                     } catch (Exception $e) {
@@ -194,6 +206,9 @@ class PaymentAPIController extends Controller
         } catch (ValidatorException|ModelNotFoundException) {
             return $this->sendError(__('lang.not_found', ['operator' => __('lang.payment')]));
         } catch (Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
             return $this->sendError($e->getMessage());
         }
         

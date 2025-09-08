@@ -43,11 +43,11 @@ class AddressCast implements CastsAttributes
 //        }
 
         return ['address' => json_encode([
-            'id' => $value['id'],
-            'description' => $value['description'],
-            'address' => $value['address'],
-            'latitude' => $value['latitude'],
-            'longitude' => $value['longitude'],
+            'id' => $value['id'] ?? null,
+            'description' => $value['description'] ?? null,
+            'address' => $value['address'] ?? null,
+            'latitude' => $value['latitude'] ?? null,
+            'longitude' => $value['longitude'] ?? null,
         ])];
     }
 }

@@ -21,14 +21,22 @@ class SalonCast implements CastsAttributes
     /**
      * @inheritDoc
      */
-    public function get($model, string $key, $value, array $attributes): Salon
+    public function get($model, string $key, $value, array $attributes): ?Salon
     {
+        if (empty($value)) {
+            return null; // Gérer les cas où le JSON est vide ou null
+        }
+
         $decodedValue = json_decode($value, true);
         $salon = Salon::find($decodedValue['id']);
         // salon exist in database
         if (!empty($salon)) {
             return $salon;
         }
+
+       
+
+        $data = json_decode($value, true);
         // if not exist the clone will loaded
         // create new salon based on values stored on database
         $salon = new Salon($decodedValue);

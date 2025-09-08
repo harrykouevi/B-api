@@ -32,6 +32,7 @@ use phpDocumentor\Reflection\PseudoTypes\FloatValue;
 
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
+use App\Types\WalletType;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
@@ -142,7 +143,7 @@ class AffiliateAPIController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($affiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
+        return $this->sendResponse($affiliate->toArray(), __('lang.saved_successfully', ['operator' => __('lang.affiliationcode')]));
 
     }
 
@@ -216,30 +217,34 @@ class AffiliateAPIController extends Controller
     public function confirmConversion(string $affiliationCode_ , Request $request)
     {
         try {
-            // if (auth()->user()->sponsorship_at )  return $this->sendError("already get sponsored",404);
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
             if( is_null($affiliation) ) throw new InvalidArgumentException('referral do not exist');
-
+            
             $conversion = $this->partenerShipService->proceedPartenerShip(auth()->user(),$affiliation) ;
-
+            
             if( $conversion ){ 
                 //recuperation du user a qui appartient le code
                 $partner = $affiliation->user;
                 if( $partner){ 
                     //si il est trouvé user a qui appartient le code recois son bunus
                     $amount =  auth()->user()->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
-                    $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner );
+                    $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
+
                 }
 
             }
-            return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.partener_ship')]));
-        } catch (Exception $e) {
+            return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.affiliation')]));
+        } catch (\InvalidArgumentException $e) {
            
-             // Gestion de l'exception
-             Log::channel('listeners_transactions')->error('Erreur lors de l\'affiliation à l\'utilisateur #' , [
-                'exception' => $e,
-            ]);
             return $this->sendError($e->getMessage());
+
+        } catch (\Throwable $e) {
+
+            Log::error('UNEXPECTED FAIL: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->sendError('Unexpected error occurred.');
         }
         
     }

@@ -40,10 +40,13 @@ class InvalidPaymentInfoException extends Exception
             return 'Payer wallet must be an integer, string or Wallet instance.';
         }
 
-        if (!($paymentInfo['user'] instanceof User)) {
-            return 'User must be a valid User object.';
+        if (!is_null($paymentInfo['user'])) {
+            if (!($paymentInfo['user'] instanceof User)) {
+                return 'User must be a valid User object.';
+            }
         }
 
+       
         // Aucune erreur
         return null;
     }

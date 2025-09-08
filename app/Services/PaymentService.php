@@ -19,10 +19,14 @@ use Illuminate\Support\Facades\Auth;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use App\Models\Payment;
+use App\Models\Tax;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Notifications\NewReceivedPayment;
 use App\Repositories\PaymentMethodRepository;
+use App\Types\PaymentType;
+use App\Types\WalletType;
+
 
 class PaymentService
 {
@@ -61,30 +65,85 @@ class PaymentService
     * @param float $amount The amount of the payment.
     * @param Int|String|Wallet $payer_wallet The wallet identifier or wallet of the payer initiating the payment.
     * @param User  $user The user receiving the payment.
+    * @param WalletType|Null  $wallettype
+    * @param Tax|Tax[]|null $tax paramètre pour la commission
     * @return Array|Null
     */
-    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() ) : array | Null
+    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() , WalletType $wallettype = Null , $tax = Null ) : array | Null
     {
         
         $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
-
-        $wallet = ($user->id != null) ? $this->walletRepository->findByField('user_id',  $user->id)->first() : $this->walletRepository->find(setting('app_default_wallet_id'));
-        if($wallet == Null){
-            $wallet = $this->createWallet($user , 0) ;
-
+        
+        if($user->id != null){ 
+            $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
+                                                                    'user_id' => $user->id,
+                                                                    'name'    => $wallettype->value,
+                                                                ])->first() 
+                                : $this->walletRepository->findByField('user_id',  $user->id)->first() ;
+        }else{
+            $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
         }
+
+        if($wallet == Null){
+            $wallet = ($wallettype == null )? $this->createWallet($user, 0) : $this->createWallet($user, 0, $wallettype->value);
+        }
+
+        $user = $wallet->user ;
+        $currency = json_decode($wallet->currency, true);
+        $payment = Null ;
+        if ($currency['code'] == setting('default_currency_code')) {
+           
+            if($amount != 0) { 
+                try{
+                    $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet] , $tax) ;
+                    // Log::info(['PaymentServicee-createPayment',$wallet->user]);
+                    return [$payment , $wallet] ;
+                    Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
+                } catch (Exception $e) {
+                    Log::error($e->getMessage());
+                }
+            }
+           
+        }
+        return [$payment , $wallet] ; ;
+    }
+
+     /**
+    * make Payment .
+    * This method processes a payment transaction where a payer initiates the payment
+    * to a specified receiver. It requires the receiver's user object and the payer's
+    * wallet, which can be either an integer identifier or a Wallet object.
+    *
+    * @param float $amount The amount of the payment.
+    * @param Int|String|Wallet $payer_wallet The wallet identifier or wallet of the payer initiating the payment.
+    * @param User  $user The user receiving the payment.
+    * @param string $wallettype Paramètre optionnel pour le type de portefeuille
+    * @return Array|Null
+    */
+    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() ,  string $wallettype = null ) : array | Null
+    {
+        
+        $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
+        if($user->id != null){ 
+            $wallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $user->id)
+                                                                    ->findByField('name',  $wallettype)->first() 
+                                : $this->walletRepository->findByField('user_id',  $user->id)->first() ;
+        }else{
+            $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
+        }
+
+        if($wallet == Null){
+            $wallet = $this->createWallet($user , 0 , $wallettype) ;
+        }
+
+
         $user = $wallet->user ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
          
-            
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-          
-                    // $f= new User($user->toArray()) ;
-                    // $f->id = $user->toArray()['id'] ;
-                    Log::error(['PaymentServicee-createPayment',$wallet->user]);
 
                     Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
@@ -104,18 +163,21 @@ class PaymentService
      * Le payeur peut être la plateforme (en cas de retrait) ou l'utilisateur lui-même (en cas de crédit).
      *
      * @param float       $amount Montant du paiement.
-     * @param User        $user   Utilisateur impliqué dans le paiement.
+     * @param User|Wallet       $data   Utilisateur ou wallet impliqué dans le paiement.
      * @param PaymentType $type   Type de paiement : 'credit' (l'utilisateur est le payeur) ou 'debit' (la plateforme est le payeur).
      *
      * @return array|null Détails de la transaction ou null en cas d’échec.
      */
-    public function createPaymentLinkWithExternal(float $amount, User $user, PaymentType $type): ?array
+    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type , string $wallettype = null): ?array
     {
         try {
-            $wallet = $this->walletRepository->findByField('user_id', $user->id)->first();
 
+            if ($data instanceof Wallet )  $wallet = $data ;
+            if ($data instanceof User )  $user = $data ;
+           
             if (!$wallet) {
-                $wallet = $this->createWallet($user, 0);
+                
+                $wallet = ($wallettype == null )? $this->createWallet($user, 0) : $this->createWallet($user, 0, $wallettype);
                 if (!$wallet) {
                     throw new Exception('Failed to create wallet');
                 }
@@ -159,35 +221,66 @@ class PaymentService
      * make Payment .
      * @param Array $input
      * @param Array $wallets
+     * @param Tax|Tax[]|null $tax paramètre pour la commission
      * 
      * @return Payment | Null
      */
-    private function toWalletFromWallet(Array $input , array $wallets):Payment | Null
+    private function toWalletFromWallet(Array $input , array $wallets, $tax = null):Payment | Null
     {
         
         $wallet =  $wallets[0] ;
         $payer_wallet =  $wallets[1] ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
-            if($input['payment']['amount'] != 0){
+            if($input['payment']['amount'] > 0){
 
                 $payment = $this->paymentRepository->create($input['payment']);
 
-                $transaction['amount'] = $input['payment']['amount'];
-                $transaction['payment_id'] = $payment->id;
+                $amount = $input['payment']['amount'];
                 
-                for ($i=0; $i <= 1  ; $i++) { 
+                // Calcul de la commission si elle existe
+                $commission = 0 ;
+                if ($tax !== null) {
+                    $commission = self::getCommission($amount , $tax) ;
+                }        
+                
+                for ($i=0; $i <= 2  ; $i++) { 
+                    $transaction = [];
+                    $transaction['payment_id'] = $payment->id;
                     if($i == 0){
+
                         $transaction['user_id'] = $wallet->user_id;
                         $transaction['wallet_id'] = $wallet->id;
                         $transaction['description'] = 'compte credité';
                         $transaction['action'] =  'credit';
+                        $transaction['amount'] = $amount ;
+                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                            //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
+                            //de l'argent provenant du client 
+                            $transaction['amount'] = $amount - $commission;
+                        }
                     }
                     if($i == 1){
                         $transaction['user_id'] = $payer_wallet->user_id;
                         $transaction['wallet_id'] = $payer_wallet->id;
                         $transaction['description'] = 'compte débité';
                         $transaction['action'] =  'debit';
+                        $transaction['amount'] = $amount ;
+                    }
+                    if($i == 2){
+                        
+                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                            //il a t'il une commission prix chez le coiffeur parce qu'il recoit
+                            //de l'argent provenant du client 
+                            $transaction['amount'] = $commission ;
+                            $w= $this->walletRepository->find(setting('app_default_wallet_id'));
+                            $transaction['user_id'] = $w->user_id;
+                            $transaction['wallet_id'] = $w->id;
+                            $transaction['description'] = 'compte crédité';
+                            $transaction['action'] =  'credit';
+                        }else{
+                            break ;
+                        }
                     }
 
                     $this->walletTransactionRepository->create($transaction);
@@ -318,16 +411,17 @@ class PaymentService
      *
      * @param User  $user   L'utilisateur pour lequel le portefeuille est créé.
      * @param float $amount Le solde initial du portefeuille.
+     * @param string $name Nom du wallet.
      *
      * @return Wallet|null  Le portefeuille créé, ou null si la devise n'est pas définie.
      */
-    private function createWallet(User $user,float $amount ):Wallet|Null
+    private function createWallet(User $user,float $amount , $name = null ):Wallet|Null
     {
         Log::info(['function createWallet,  show xurrency',$this->currency->id ?? Null]) ;
         if (!is_null($this->currency)) {
            
             $input = [];
-            $input['name'] = setting('default_wallet_name')?? "-";
+            $input['name'] = is_null($name) ? setting('default_wallet_name') : $name;
             $input['currency'] = $this->currency;
             $input['user_id'] = $user->id;
             $input['balance'] = $amount;
@@ -336,9 +430,43 @@ class PaymentService
         }
         return Null;
     }
+
+
+    /**
+     * Calcul la commission sur une transaction.
+     *
+     * @param float $amount Le montant de la transaction
+     * @param Tax|Tax[]|null $tax paramètre pour la commission La taxe ou commission 
+     * @return float Le montant de la commission
+     */
+    public static function getCommission(float $amount, $tax): float
+    {
+        $commission = 0;
+
+        if ($tax !== null) {
+            if (is_array($tax)) {
+                foreach($tax as $tax_){
+                    if($tax_['name'] == 'commission'){
+                        if ($tax_['type'] === 'percent') {
+                            $commission = ($amount * $tax_['value'] / 100);
+                        } else {
+                            $commission = $tax_['value'];
+                        }
+                    }
+                }
+            } else {
+                if($tax['name'] == 'commission'){
+                    if ($tax['type'] === 'percent') {
+                        $commission = ($amount * $tax['value'] / 100);
+                    } else {
+                        $commission = $tax['value'];
+                    }
+                }
+            }
+        }
+
+        // S’assurer que la commission ne dépasse pas le montant
+        return min($commission, $amount);
+    }
 }
 
-enum PaymentType: string {
-    case CREDIT = 'credit';
-    case DEBIT = 'debit';
-}

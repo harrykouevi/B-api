@@ -9,7 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Notifications\NewReceivedPayment;
 use App\Repositories\UserRepository;
 use App\Services\PaymentService;
-use App\Services\PaymentType;
+use App\Types\PaymentType;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use App\Services\CinetPayService;

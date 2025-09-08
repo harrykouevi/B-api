@@ -32,7 +32,7 @@ class CreatingPaymentListener
             if($event->amount > 0 ){
                 Log::channel('listeners_transactions')->debug('Ceci est un message $this->paymentService->createPayment( montant='. $event->amount.' , user= '.$event->user->id);
 
-                $this->paymentService->createPayment($event->amount,$event->payer_wallet,$event->user  );
+                $this->paymentService->createPayment($event->amount,$event->payer_wallet,$event->user , $event->walletType );
             }
         } catch (\Exception $e) {
             // Gestion de l'exception

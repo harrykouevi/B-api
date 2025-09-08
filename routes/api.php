@@ -113,8 +113,8 @@ Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::c
 
 Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
-    Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink']);
-    Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
+    Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink'])->name('affiliates.generate');
+    Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion'])->name('affiliates.confirm');;
 
     Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
     Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);
@@ -166,11 +166,11 @@ Route::middleware('auth:api')->group(function () {
         'show'
     ]);
     Route::resource('wallets', WalletAPIController::class)->except([
-        'show', 'create', 'edit'
+        'show', 'create', 'edit' , 'store'
     ]);
 
-    Route::post('defaut-wallets', [WalletAPIController::class, 'storeDefault'])->name('api.storedefault');
-    Route::post('wallets/deposit', [WalletAPIController::class, 'deposit'])->name('api.wallet.deposit');
+    Route::post('defaut-wallets', [WalletAPIController::class, 'storeDefault'])->name('wallet.storedefault');
+    Route::post('wallets/deposit', [WalletAPIController::class, 'deposit'])->name('wallet.deposit');
     Route::get('wallet_transactions', 'API\WalletTransactionAPIController@index')->name('wallet_transactions.index');
 
     Route::post('send-notification', [WalletAPIController::class, 'sendNotification'])->name('notifications.test');
@@ -180,7 +180,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/wallets/withdrawals/history', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalHistory']);
     Route::get('/wallets/withdrawals/{id}', [App\Http\Controllers\API\WalletAPIController::class, 'getWithdrawalDetails']);
 
-    // Withdrawal Phone Routes
+    // Routes to manage withdrawal phone numbers
     Route::get('withdrawal-phones', [WithdrawalPhoneController::class, 'index'])->name('withdrawal-phones.index');
     Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
     Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');

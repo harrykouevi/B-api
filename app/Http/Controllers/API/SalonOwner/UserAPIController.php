@@ -30,6 +30,8 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Services\PaymentService;
 use App\Services\PartenerShipService;
+// use App\Types\WalletType;
+use App\Types\WalletType;
 use Illuminate\Support\Facades\Log;
 
 class UserAPIController extends Controller
@@ -155,7 +157,7 @@ class UserAPIController extends Controller
                 $partner = $affiliation->user;
                 if($partner){ 
                     // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
-                    $paymentInfo = ["amount"=> setting('owner_partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    $paymentInfo = ["amount"=> setting('owner_partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
                     event(new DoPaymentEvent($paymentInfo));
                 }
 
@@ -166,7 +168,7 @@ class UserAPIController extends Controller
             }
         
             //credité le wallet du coiffeur
-            $paymentInfo = ["amount"=>setting('owner_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            $paymentInfo = ["amount"=>setting('owner_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user , "walletType"=> WalletType::BONUS] ;
             event(new DoPaymentEvent($paymentInfo));
             
             
@@ -223,7 +225,7 @@ class UserAPIController extends Controller
                 $partner = $affiliation->user;
                 if($partner){ 
                     // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
-                    $paymentInfo = ["amount"=> setting('owner_partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner] ;
+                    $paymentInfo = ["amount"=> setting('owner_partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
                     event(new DoPaymentEvent($paymentInfo));
                 }
 
@@ -234,7 +236,7 @@ class UserAPIController extends Controller
             }
         
             //credité le wallet du coiffeur
-            $paymentInfo = ["amount"=>setting('owner_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user] ;
+            $paymentInfo = ["amount"=>setting('owner_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user , "walletType"=> WalletType::BONUS] ;
             event(new DoPaymentEvent($paymentInfo));
             
             

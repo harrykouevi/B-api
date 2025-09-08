@@ -36,6 +36,7 @@ class BookingRepository extends BaseRepository
         'payment_id',
         'coupon',
         'taxes',
+        'purchase_taxes',
         'booking_at',
         'start_at',
         'ends_at',
@@ -49,4 +50,6 @@ class BookingRepository extends BaseRepository
     {
         return Booking::class;
     }
+
+   
 }

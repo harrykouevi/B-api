@@ -21,7 +21,7 @@ class CinetPayService
         $this->siteId = config('services.cinetpay.site_id');
         $this->apiPassword = config('services.cinetpay.api_password');
         $this->baseUrl = config('services.cinetpay.base_url', 'https://api-checkout.cinetpay.com');
-        $this->transferBaseUrl = config('services.cinetpay.transfert_base_url', 'https://api-checkout.cinetpay.com');
+        $this->transferBaseUrl = config('services.cinetpay.transfert_base_url');
     }
 
     /**
@@ -136,10 +136,21 @@ class CinetPayService
     public function getAuthToken()
     {
         try {
-            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/auth/login", [
-                'apikey' => $this->apiKey,
-                'password' => $this->apiPassword,
-                'lang' => 'fr'
+            Log::info('CinetPay login request', [
+                'url' => "{$this->transferBaseUrl}/v1/auth/login",
+                'payload' => [
+                    'apikey' => $this->apiKey,
+                    'password' => $this->apiPassword,
+                    'lang' => 'fr'
+                ]
+            ]);
+            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/auth/login?lang=fr&apiKey=$this->apikey&password=$this->apiPassword"
+                );
+            
+
+            Log::info('CinetPay login response', [
+                'status' => $response->status(),
+                'body' => $response->body()
             ]);
 
             if ($response->failed()) {

@@ -5,6 +5,7 @@ namespace App\Events;
 use App\Exceptions\InvalidPaymentInfoException;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Types\WalletType;
 use Exception;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
@@ -22,6 +23,7 @@ class DoPaymentEvent
     public int $amount;
     public Int|String|Wallet $payer_wallet;
     public User $user;
+    public WalletType|Null $walletType;
     /**
      * Create a new event instance.
      */
@@ -47,7 +49,8 @@ class DoPaymentEvent
 
         $this->amount = (int) $paymentInfo['amount'];
         $this->payer_wallet = $paymentInfo['payer_wallet'];
-        $this->user = $paymentInfo['user'];
+        $this->user = !is_null($paymentInfo['user'])? $paymentInfo['user'] : new User();
+        $this->walletType = array_key_exists('walletType',$paymentInfo)? $paymentInfo['walletType'] : Null;
      
     }
 

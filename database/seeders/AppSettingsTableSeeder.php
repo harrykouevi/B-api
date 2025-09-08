@@ -453,6 +453,17 @@ class AppSettingsTableSeeder extends Seeder
                 'id' => 159,
                 'key' => 'owner_referral_rewards',
                 'value' => 0,
+            )
+            ,
+            array(
+                'id' => 160,
+                'key' => 'purchase_taxe',
+                'value' => 10,
+            ),
+            array(
+                'id' => 161,
+                'key' => 'postpone_charge',
+                'value' => 10,
             ),
            
         ));
