@@ -29,6 +29,11 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
+use App\Criteria\Wallets\EnabledCriteria;
+use App\Criteria\Wallets\WalletsOfUserCriteria;
+use App\Models\Purchase;
+use App\Repositories\PurchaseRepository;
+use App\Types\WalletType;
 
 /**
  * Class PaymentController
@@ -42,6 +47,11 @@ class PaymentAPIController extends Controller
      * @var BookingRepository
      */
     private BookingRepository $bookingRepository;
+
+      /**
+     * @var PurchaseRepository
+     */
+    private PurchaseRepository $purchaseRepository;
 
     /**
      * @var WalletTransactionRepository
@@ -57,11 +67,12 @@ class PaymentAPIController extends Controller
      */
     private PaymentService $paymentService;
 
-    public function __construct(PaymentService $paymentService ,PaymentRepository $paymentRepo, BookingRepository $bookingRepo, WalletTransactionRepository $walletTransactionRepository, WalletRepository $walletRepository)
+    public function __construct(PaymentService $paymentService ,PaymentRepository $paymentRepo, BookingRepository $bookingRepo,PurchaseRepository $purchaseRepository , WalletTransactionRepository $walletTransactionRepository, WalletRepository $walletRepository)
     {
         parent::__construct();
         $this->paymentRepository = $paymentRepo;
         $this->bookingRepository = $bookingRepo;
+        $this->purchaseRepository = $purchaseRepository;
         $this->walletTransactionRepository = $walletTransactionRepository;
         $this->walletRepository = $walletRepository;
         $this->paymentService =  $paymentService ;
@@ -98,15 +109,66 @@ class PaymentAPIController extends Controller
     {
         $input = $request->all();
         try {
-            $booking = $this->bookingRepository->find($input['id']);
-            $input['payment']['amount'] = $booking->getTotal();
-            $input['payment']['description'] = __('lang.payment_booking_id') . $input['id'];
-            $input['payment']['payment_status_id'] = 1;
-            $input['payment']['user_id'] = $booking->user_id;
-            $payment = $this->paymentRepository->create($input['payment']);
-            $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+            // $booking = $this->bookingRepository->find($input['id']);
+            // $input['payment']['amount'] = $booking->getTotal();
+            // $input['payment']['description'] = __('lang.payment_booking_id') . $input['id'];
+            // $input['payment']['payment_status_id'] = 1;
+            // $input['payment']['user_id'] = $booking->user_id;
+            // $payment = $this->paymentRepository->create($input['payment']);
+            // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+            $transactionAmount= 100 ;
             try{
-                Log::error(['PaymentAPIController',$booking->salon->users]);
+                // $wallet = $this->walletRepository->find($walletId);
+                $this->walletRepository->pushCriteria(new EnabledCriteria());
+                $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
+                $wallet = $this->walletRepository->all()->first(function ($wallet) use ($transactionAmount) {
+                    // Si wallet "bonus" avec fonds suffisants
+                    if ($wallet->name === WalletType::BONUS->value && $wallet->balance >= $transactionAmount) {
+                        return true;
+                    }
+
+                    // Si wallet "igris" avec beaucoup plus de fonds
+                    if ($wallet->name === WalletType::PRINCIPAL->value && $wallet->balance >= $transactionAmount) {
+                        return true;
+                    }
+
+                    return false;
+                });
+
+                if(is_null($wallet) ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
+
+                $currency = json_decode($wallet->currency, true);
+                $booking = $this->bookingRepository->find($input['id']);
+                
+
+                if ($wallet && $currency['code'] == setting('default_currency_code')) {
+                   
+                    $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
+                    $payment = $payment[0];
+                    if($payment){
+                        $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+                        try{ 
+                            $purchase = $this->purchaseRepository->Create([
+                                'salon' => $booking->salon ,
+                                'booking' => $booking,
+                                'e_services' => $booking->e_services ,
+                                'quantity' => $booking->quantity,
+                                'user_id' => $booking->user_id ,
+                                'taxes'=>  $booking->purchase_taxes ,
+                                'purchase_status_id' => 1 ,
+                                'hint' => 'cash' ,
+                                'purchase_at'  => now()  
+                            ]);
+
+                            Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                        } catch (Exception $e) {
+                            Log::error($e->getMessage());
+                        }
+                    }
+
+                } else {
+                    return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
+                }
 
                 Notification::send($booking->salon->users, new StatusChangedPayment($booking));
 

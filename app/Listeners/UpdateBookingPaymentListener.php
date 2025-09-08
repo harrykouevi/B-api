@@ -147,21 +147,33 @@ class UpdateBookingPaymentListener
                 //et si le booking n'est pas lié à un report
                 if(auth()->user()->hasRole('salon owner') && is_null($booking->reported_from_id) ){
 
-                    // si acceptation de la reservation est faite par le coiffeur 
+                    // si acceptation de la reservation est faite par le coiffeur
+                    
                     $clientW = $this->walletRepository->findByField('user_id' , $booking->user_id)->first() ;        
                     if($clientW  == Null) throw new \Exception('client  dont have a wallet yet');
+                    
+                    //dans le cas de paiement par cash je creer un purchase à pending
+                    //je verifie sil y en a pour savoir si cest un paiement cash
+                    $purchase = $this->purchaseRepository ->scopeQuery(function ($query) use ($booking) {
+                            return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])->where("purchase_status_id", 1);
+                        })->first();
+                    
+                    if(!is_null($purchase) ){
+                        //si ce n'est pas null c'est pas un paiement cash
+                        
+                        $purchase = $this->purchaseRepository->Create([
+                            'salon' => $booking->salon ,
+                            'booking' => $booking,
+                            'e_services' => $booking->e_services ,
+                            'quantity' => $booking->quantity,
+                            'user_id' => $booking->user_id ,
+                            'taxes'=>  $booking->purchase_taxes ,
+                            'purchase_status_id' => 1 ,
+                            'purchase_at'  => now()  
+                        ]);
+                    }
 
-                    // dd($booking->purchase_taxes) ;
-                    $purchase = $this->purchaseRepository->Create([
-                        'salon' => $booking->salon ,
-                        'booking' => $booking,
-                        'e_services' => $booking->e_services ,
-                        'quantity' => $booking->quantity,
-                        'user_id' => $booking->user_id ,
-                        'taxes'=>  $booking->purchase_taxes ,
-                        'purchase_status_id' => 1 ,
-                        'purchase_at'  => now()  
-                    ]);
+                   
 
                     $currency = json_decode($clientW->currency, true);
                     //si il y a eu achat de service
@@ -171,15 +183,21 @@ class UpdateBookingPaymentListener
                             $payment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes);
                             $payment = $payment[0];
                             if($payment){
-                                $purchase = $this->purchaseRepository->update(['payment_id' => $payment->id , 'purchase_status_id' => 2  ], $purchase->id);
+                                
                                 try{ 
-                                    // Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
-                                    Notification::send($booking->salon->users, new StatusChangedPayment($purchase));
+                                    if($booking->payment->paymentMethod->name == 'Wallet'){
+                                        $purchase = $this->purchaseRepository->update(['payment_id' => $payment->id , 'purchase_status_id' => 2  ], $purchase->id);
+                                        // Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
+                                        Notification::send($booking->salon->users, new StatusChangedPayment($purchase));
+                                    }
+                                    
                                 } catch (Exception $e) {
                                     Log::error($e->getMessage());
                                 }
                             }
+                        }else if( $booking->payment == Null){
 
+                           
                         } else {
                             Log::Error(['DebitCustomerForService','no default_currency_code in setting']);
                         }
