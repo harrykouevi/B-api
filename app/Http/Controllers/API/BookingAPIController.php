@@ -304,7 +304,7 @@ class BookingAPIController extends Controller
             $reason = $request->input('reason', 'Report demandé par le client');
 
             $result = $this->reportService->reportBooking($id, $newBookingData, $reason);
-
+            
             return $this->sendResponse($result, 'Rendez-vous reporté avec succès');
 
         } catch (ValidationException $e) {

@@ -110,8 +110,9 @@ class ChargeCommissionAtPostponeBookingTest extends TestCase
                 'booking_status_id' =>  4 
             ]);
 
-            $response2 =  $this->actingAs($user2, 'api')->putJson(route('api.bookings.update', $booking->id), [
-                'booking_status_id' =>  8 
+            $response2 =  $this->actingAs($user, 'api')->postJson(route('api.bookings.report', $booking->id), [
+                // 'booking_status_id' =>  8 ,
+                'booking_at' => now()->addHours(10)->toDateTimeString(),
             ]);
 
             
