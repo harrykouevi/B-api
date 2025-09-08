@@ -239,12 +239,12 @@ class PaymentAPIController extends Controller
             $booking = $this->bookingRepository->find($input['id']);
             $servicesAmountIntentToDebit = $booking->getSubtotal();
            
+            Log::info([$wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $wallet->balance]);
 
             $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
             $waitingAmountToDebit = $this->bookingRepository->findWhereIn('booking_status_id',[1])->sum(function ($booking) {
                                         return $booking->getSubtotal();
                                     });
-            Log::info([$wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $waitingAmountToDebit , $wallet->balance]);
             
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
 
