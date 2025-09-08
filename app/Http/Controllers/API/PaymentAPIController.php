@@ -246,13 +246,14 @@ class PaymentAPIController extends Controller
                                     });
            
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
+                Log::info([$input['payment']['amount'] , $servicesAmountIntentToDebit , $waitingAmountToDebit , $wallet->balance]);
+
                 //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
                 if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
                     //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
                 Log::info(['PaymentAPIController-wallet 1']);
                 $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
                 $payment = $payment[0];
-                Log::info(['PaymentAPIController-wallet 2']);
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                     try{ 
