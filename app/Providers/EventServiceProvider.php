@@ -11,6 +11,8 @@ namespace App\Providers;
 use App\Events\BookingChangedEvent;
 use App\Events\BookingStatusChangedEvent;
 use App\Events\DoPaymentEvent;
+use App\Events\NotifyBookingPaymentEvent;
+use App\Events\PaymentUpdatedEvent;
 use App\Events\SendEmailOtpEvent;
 use App\Events\WalletTransactionCreatedEvent;
 use App\Listeners\CreatedWalletTransactionListener;
@@ -20,6 +22,7 @@ use App\Listeners\UpdateBookingPaymentListener;
 use App\Listeners\SendBookingStatusNotificationsListener;
 use App\Listeners\SendEmailOtpEventListener;
 use App\Listeners\UpdateBookingEarningTable;
+use App\Listeners\UpdatePaymentListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -59,6 +62,10 @@ class EventServiceProvider extends ServiceProvider
        
         SendEmailOtpEvent::class => [
             SendEmailOtpEventListener::class,
+        ],
+
+        NotifyBookingPaymentEvent::class => [
+            UpdateBookingPaymentListener::class,
         ],
 
     ];

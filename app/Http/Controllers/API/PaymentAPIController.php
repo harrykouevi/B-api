@@ -31,6 +31,8 @@ use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use App\Criteria\Wallets\EnabledCriteria;
 use App\Criteria\Wallets\WalletsOfUserCriteria;
+use App\Events\NotifyBookingPaymentEvent;
+use App\Events\PaymentUpdatedEvent;
 use App\Models\Purchase;
 use App\Repositories\PurchaseRepository;
 use App\Types\WalletType;
@@ -205,8 +207,9 @@ class PaymentAPIController extends Controller
             $payment = $this->paymentRepository->with(['paymentMethod', 'paymentStatus'])->find($id);
             try{
                 Log::error(['PaymentAPIController-update',$payment->booking->user]);
-
-                Notification::send([$payment->booking->user], new StatusChangedPayment($payment->booking));
+                //appelons un evenement
+                // Notification::send([$payment->booking->user], new StatusChangedPayment($payment->booking));
+                event(new NotifyBookingPaymentEvent($payment->booking));
 
             } catch (Exception $e) {
                 Log::error($e->getMessage());

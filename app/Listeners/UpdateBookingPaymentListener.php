@@ -80,7 +80,7 @@ class UpdateBookingPaymentListener
         try {
             /** @var Booking $booking */
             $booking = $event->booking;
-            $payments =[];
+            $payment_intents =[];
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->payment_status_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
                 //le montant de la reservation
@@ -101,7 +101,7 @@ class UpdateBookingPaymentListener
                     if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
                     //le coiffeur rembourse au client le montant du service
                     //si il y a eu achat de service
-                    if($purchase) array_push($payments ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
+                    if($purchase) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
                 }
                 
                 if(auth()->user()->hasRole('customer') ){ 
@@ -110,7 +110,7 @@ class UpdateBookingPaymentListener
                     if($salonW == Null) throw new \Exception('user dont have a wallet yet');
                     //le coiffeur rembourse au client le montant du service
                     //si il y a eu achat de service
-                    if($purchase) array_push($payments ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
+                    if($purchase) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
                 }
                 if($purchase) {
                     $purchase = $this->purchaseRepository->update([ 'purchase_status_id' => 3 ,
@@ -126,8 +126,8 @@ class UpdateBookingPaymentListener
                     $salonW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($salonW == Null) throw new \Exception('user dont have a wallet yet');
                     //le coiffeur verse une commision à l'appli
-                    array_push($payments ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
-                    // array_push($payments ,  ["amount"=> setting('postpone_charge', 1000),"payer_wallet"=>$salonW, "user"=> null] );
+                    array_push($payment_intents ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
+                    // array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 1000),"payer_wallet"=>$salonW, "user"=> null] );
                 }
 
                 if(auth()->user()->hasRole('customer') ){ 
@@ -135,7 +135,7 @@ class UpdateBookingPaymentListener
                     $clientW =  $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($clientW == Null) throw new \Exception('user dont have a wallet yet');
                     //le client verse une commision à l'appli
-                    array_push($payments ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null] );
+                    array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null] );
                 }
             }
             
@@ -194,7 +194,11 @@ class UpdateBookingPaymentListener
                                     if($booking->payment->paymentMethod->name == 'Wallet'){
                                         $purchase = $this->purchaseRepository->update(['payment_id' => $payment->id , 'purchase_status_id' => 2  ], $purchase->id);
                                         // Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
-                                        Notification::send($booking->salon->users, new StatusChangedPayment($purchase));
+
+                                        // Notification::send($booking->salon->users, new StatusChangedPayment($purchase));
+                                        // Notification::send(collect($booking->user), new StatusChangedPayment($purchase));
+                                        //mentionner au coiffeur et au client qu'une reservation a été faite
+                                            //or i est deja mentionner BookingAPIController store q
                                     }
                                     
                                 } catch (Exception $e) {
@@ -224,9 +228,9 @@ class UpdateBookingPaymentListener
                 }
             }
 
-            if(!empty($payments)){
-                Log::error('payment:' , $payments);
-                foreach ($payments as $value) {
+            if(!empty($payment_intents)){
+                Log::error('payment:' , $payment_intents);
+                foreach ($payment_intents as $value) {
                     event(new DoPaymentEvent($value));
                 }
             }
@@ -240,3 +244,6 @@ class UpdateBookingPaymentListener
         }
     }
 }
+            
+
+       

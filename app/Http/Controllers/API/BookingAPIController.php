@@ -216,7 +216,7 @@ class BookingAPIController extends Controller
 
             // Envoi de la notification avec les données essentielles
             Notification::send(
-                $salon->users->pluck('id')->toArray(),
+                $salon->users,
                 new NewBooking($booking->setRelations([]))
             );
         } catch (Exception $e) {
