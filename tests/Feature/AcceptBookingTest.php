@@ -55,7 +55,7 @@ class AcceptBookingTest extends TestCase
             ]);
 
             $user2 = User::create([
-                    'name' => 'userddEdd test',
+                    'name' => 'test',
                     'email' => 'user2E82@example.com',
                     'phone_number' => '+00228900409988',
                     'phone_verified_at' => now(),

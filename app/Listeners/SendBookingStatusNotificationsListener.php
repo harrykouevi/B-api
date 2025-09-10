@@ -44,7 +44,8 @@ class SendBookingStatusNotificationsListener
             if ($event->booking->bookingStatus->order == 80) {
                 // Envoyer la notification au client
                 Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-                
+                Log::info(['rrrrrrrrrr' ,$event->booking]) ;
+                Log::info(['rrrrrrrrrr' ,$event->booking->salon->users()->get()]) ;
                 // Envoyer la notification aux propriétaires et employés du salon uniquement
                 if ($event->booking->salon) {
                     // Charger les utilisateurs du salon s'ils ne sont pas déjà chargés

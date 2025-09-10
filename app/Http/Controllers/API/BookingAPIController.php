@@ -258,13 +258,13 @@ class BookingAPIController extends Controller
             
 
             // si il y a commission
-            if(array_key_exists('taxes', $input))
+            if(array_key_exists('taxe', $input))
             {
                 //autres données recu du mobile
                 // montant_a_reverser
                 // commission_calculee
-                $input["purchase_taxes"] = $input['taxes'] ;
-                unset($input['taxes']);  
+                $input["purchase_taxes"] = $input['taxe'] ;
+                unset($input['taxe']);  
             }
             $booking = $this->bookingRepository->update($input, $id);
             

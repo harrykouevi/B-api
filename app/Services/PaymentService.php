@@ -255,6 +255,7 @@ class PaymentService
                         $transaction['description'] = 'compte credité';
                         $transaction['action'] =  'credit';
                         $transaction['amount'] = $amount ;
+                        
                         if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
                             //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
                             //de l'argent provenant du client 
