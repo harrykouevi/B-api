@@ -158,6 +158,7 @@ class BookingController extends Controller
                 $input['payment_status_id'] = 3; // failed
                 $input['booking_status_id'] = 7; // failed
             }
+            
             $booking = $this->bookingRepository->update($input, $id);
             if (isset($input['payment_status_id'])) {
                 $this->paymentRepository->update(

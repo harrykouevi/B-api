@@ -18,6 +18,7 @@ use App\Events\WalletTransactionCreatedEvent;
 use App\Listeners\CreatedWalletTransactionListener;
 use App\Listeners\CreatingPaymentListener;
 use App\Listeners\DebitCustomerForService;
+use App\Listeners\NotifyForBookingPaymentListener;
 use App\Listeners\UpdateBookingPaymentListener;
 use App\Listeners\SendBookingStatusNotificationsListener;
 use App\Listeners\SendEmailOtpEventListener;
@@ -65,7 +66,7 @@ class EventServiceProvider extends ServiceProvider
         ],
 
         NotifyBookingPaymentEvent::class => [
-            UpdateBookingPaymentListener::class,
+            NotifyForBookingPaymentListener::class,
         ],
 
     ];
