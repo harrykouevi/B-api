@@ -234,7 +234,7 @@ class PaygateService
                         'tx_reference' => $txReference
                     ]);
 
-                    $this->paymentService->createPaymentLinkWithExternal($amount, $userId,PaymentType::CREDIT);
+                    $this->paymentService->createPaymentLinkWithExternal($amount, $user,PaymentType::CREDIT);
                 }
             } else {
                 Log::warning("Paiement non réussi", [
