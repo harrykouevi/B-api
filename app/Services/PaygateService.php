@@ -106,7 +106,7 @@ class PaygateService
                     'status' => $responseData['status'],
                 ];
             }
-            $redirect_url = "$this->baseUrl/v1/page?token=$this->apiKey&amount=2&description=test&identifier=$identifier}";
+            $redirect_url = "$this->baseUrl/v1/page?token=$this->apiKey&amount=1&description=test&identifier=$identifier}";
 
             return [
                 'success' => true,
