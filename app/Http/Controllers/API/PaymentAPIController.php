@@ -32,6 +32,7 @@ use Prettus\Validator\Exceptions\ValidatorException;
 use App\Criteria\Wallets\EnabledCriteria;
 use App\Criteria\Wallets\WalletsOfUserCriteria;
 use App\Events\BookingStatusChangedEvent;
+use App\Events\NotifyBookingEvent;
 use App\Events\NotifyPaymentEvent;
 use App\Events\PaymentUpdatedEvent;
 use App\Models\Purchase;
@@ -163,8 +164,8 @@ class PaymentAPIController extends Controller
                                 'hint' => 'cash' ,
                                 'purchase_at'  => now()  
                             ]);
-
-                            Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                            event(new BookingStatusChangedEvent($booking));
+                            // Notification::send($booking->salon->users, new StatusChangedPayment($booking));
                         } catch (Exception $e) {
                             Log::error($e->getMessage());
                         }

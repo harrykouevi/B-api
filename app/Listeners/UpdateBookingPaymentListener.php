@@ -227,7 +227,7 @@ class UpdateBookingPaymentListener
                             if($salonW == Null) throw new \Exception('salon user dont have a wallet yet');
                 
                            
-                            $payment = $this->paymentService->intentPayment( $input,$salonW,$purchase->taxes);
+                            $payment = $this->paymentService->intentCashPayment( $input,$salonW,$purchase->taxes);
                             //$payment = $this->paymentService->update(['payment_status_id' => 2 ], $payment->id);
                             
                            

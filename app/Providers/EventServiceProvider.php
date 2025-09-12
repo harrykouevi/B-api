@@ -11,6 +11,7 @@ namespace App\Providers;
 use App\Events\BookingPaymentUpdatedEvent;
 use App\Events\BookingStatusChangedEvent;
 use App\Events\DoPaymentEvent;
+use App\Events\NotifyBookingEvent;
 use App\Events\NotifyPaymentEvent;
 use App\Events\PaymentUpdatedEvent;
 use App\Events\SendEmailOtpEvent;
@@ -71,6 +72,10 @@ class EventServiceProvider extends ServiceProvider
 
         NotifyPaymentEvent::class => [
             SendPaymentNotificationListener::class
+        ],
+
+        NotifyBookingEvent::class => [
+            SendBookingStatusNotificationsListener::class
         ],
 
     ];

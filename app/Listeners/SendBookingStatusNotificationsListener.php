@@ -62,9 +62,9 @@ class SendBookingStatusNotificationsListener
              * SECTION 2 : Planification & replanification des rappels
              * ───────────────────────────────────────────────
              */
-            // Planifier les rappels uniquement si booking payé et recu
-            // Statut 1 = "Received" (nouvelle réservation)
-            if ($booking->bookingStatus->order === 1) {
+            // Planifier les rappels uniquement si booking payé et accepté
+            // Statut 10 = "Accepted" 
+            if ($booking->bookingStatus->order === 10) {
                 $this->reminderService->scheduleAllReminders($booking);
             }
 
@@ -96,6 +96,8 @@ class SendBookingStatusNotificationsListener
 
         } else{
             if ($booking->at_salon) {
+                Log::info("Notification pour booking au salon  : r#{$booking->id}");
+
                 if ($booking->bookingStatus->order < 20) {
                     // Accepté → notifier le client
                     $this->notifyClient($booking);
@@ -109,6 +111,8 @@ class SendBookingStatusNotificationsListener
                     $this->notifyClient($booking);
                 }
             } else {
+                Log::info("Notification pour booking à domicile  : r#{$booking->id}");
+
                 if ($booking->bookingStatus->order < 40) {
                     // Avant l’arrivée → notifier le client
                     $this->notifyClient($booking);
