@@ -99,7 +99,8 @@ class UpdateBookingPaymentListener
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->payment_status_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
                 //le montant de la reservation
-                //$theamount = $booking->payment->amount ;
+                $purchaseamount = 0  ;
+                $purchasepayment = Null ;
 
                 //si il y a eu achat le montant de l'achat'
                 $this->purchaseRepository->pushCriteria(new PurchasesOfUserCriteria(auth()->id()));
@@ -108,24 +109,33 @@ class UpdateBookingPaymentListener
                 $purchase = $this->purchaseRepository->get()->first(function ($purchase)  use ($booking) {
                                 return $purchase->booking && $purchase->booking->id == $booking->id;
                         }) ;
-                if($purchase) $purchaseamount = $purchase->payment->amount ;
-                        
+                if($purchase) {
+                    $purchaseamount = $purchase->payment->amount ;
+                    $purchasepayment = $purchase->payment ;
+                }
+
                 if(auth()->user()->hasRole('salon owner') ){
                     // c'est le coiffeur qui annule
                     $salonW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
                     //le coiffeur rembourse au client le montant du service
                     //si il y a eu achat de service
-                    if($purchase) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
+                    //
+                    if($purchaseamount > 0 ) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
                 }
                 
                 if(auth()->user()->hasRole('customer') ){ 
-                    // c'est le client qui annule
-                    $salonW = $this->walletRepository->findByField('user_id' ,$this->salonRepository->findByField('id', $booking->salon->id)->first()->id )->first() ;        
-                    if($salonW == Null) throw new \Exception('user dont have a wallet yet');
-                    //le coiffeur rembourse au client le montant du service
-                    //si il y a eu achat de service
-                    if($purchase) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
+                    // c'est le client qui annule  
+                    $salonUsers = $booking->salon->users ?? $booking->salon->users()->get();
+                    if(!$salonUsers->isEmpty()){ ;
+                        $salonW = $this->walletRepository->findByField('user_id' ,$salonUsers->first()->id )->first() ;        
+                        if($salonW == Null) throw new \Exception('user dont have a wallet yet');
+                        //le coiffeur rembourse au client le montant du service
+                        //si il y a eu achat de service
+                        if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
+                    }else{
+                        if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user] );
+                    }
                 }
                 if($purchase) {
                     $purchase = $this->purchaseRepository->update([ 'purchase_status_id' => 3 ,

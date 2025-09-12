@@ -46,7 +46,7 @@ class BookingCancellationService
             $booking = $this->validateBookingForCancellation($bookingId);
             
             // ÉTAPE 2 : Calculer le remboursement (TODO)
-            $refundAmount = $this->calculateRefund($booking, $cancelledBy);
+            // $refundAmount = $this->calculateRefund($booking, $cancelledBy);
             
             // ÉTAPE 3 : Obtenir le statut "Failed" (ID 7)
             $failedStatus = $this->getFailedStatus();
@@ -55,16 +55,16 @@ class BookingCancellationService
             $this->markBookingAsCancelled($booking, $failedStatus, $reason, $cancelledBy);
             
             // ÉTAPE 5 : Traiter les remboursements (TODO)
-            if ($refundAmount > 0) {
-                $this->processRefund($booking, $refundAmount, $cancelledBy);
-            }
+            // if ($refundAmount > 0) {
+            //     $this->processRefund($booking, $refundAmount, $cancelledBy);
+            // }
             
             // ÉTAPE 6 : Déclencher les événements pour notifications
             event(new BookingStatusChangedEvent($booking->fresh()));
             
             return [
                 'booking' => $booking->fresh(),
-                'refund_amount' => $refundAmount,
+                // 'refund_amount' => $refundAmount,
                 'message' => 'Rendez-vous annulé avec succès'
             ];
         });
