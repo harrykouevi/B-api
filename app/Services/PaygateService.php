@@ -227,14 +227,14 @@ class PaygateService
             if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
                 $user = $this->userRepository->find($userId);
-                if ($amount > 0) {
+                if ($amount > 0 && $user) {
                     Log::info("Paiement réussi, création du lien de paiement", [
                         'amount' => $amount,
                         'user_id' => $userId,
                         'tx_reference' => $txReference
                     ]);
 
-                    $this->paymentService->createPaymentLinkWithExternal($amount, $user,PaymentType::CREDIT);
+                    $this->paymentService->createPaymentLinkWithExternal($amount, $user, \App\Types\PaymentType::CREDIT);
                 }
             } else {
                 Log::warning("Paiement non réussi", [
