@@ -54,9 +54,10 @@ class WalletAPIController extends Controller
     private PaymentService $paymentService;
 
     private CinetPayService $cinetPayService;
+    private PaygateService $paygateService;
     private PaymentMethodRepository $paymentMethodRepository;
 
-    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository,PaymentMethodRepository $paymentMethodRepository)
+    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService,PaygateService $paygateService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository,PaymentMethodRepository $paymentMethodRepository)
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
@@ -64,6 +65,7 @@ class WalletAPIController extends Controller
         $this->paymentService = $paymentService;
         $this->cinetPayService = $cinetPayService;
         $this->paymentMethodRepository = $paymentMethodRepository;
+        $this->paygateService = $paygateService;
 
     }
 
@@ -439,10 +441,10 @@ class WalletAPIController extends Controller
                 ]);
 
                 // Initialiser le service Paygate
-                $paygateService = new PaygateService();
+
 
                     log::info("Début d'envoi via Paygate");
-                    $response = $paygateService->initPayment(
+                    $response = $this->paygateService->initPayment(
                         $amount,
                         $transactionId,
                         $notifyUrl = url("/api/paygate/callback/{$userId}")

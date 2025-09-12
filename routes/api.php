@@ -7,6 +7,7 @@
  */
 
 use App\Http\Controllers\API\AddressAPIController;
+use App\Services\PaygateService;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
@@ -66,7 +67,11 @@ Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
 Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,
     'handleTransferNotification'
+
 ])->name('cinetpay.transfer.webhook');
+
+Route::post('/api/paygate/callback/{$userId}', [PaygateService::class,
+    'handleReturnUrl']);
 
 // Route pour le ping (GET)
 Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');

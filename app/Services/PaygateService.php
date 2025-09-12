@@ -104,10 +104,14 @@ class PaygateService
                     'status' => $responseData['status'],
                 ];
             }
+            $redirect_url = "$this->baseUrl/v1/page?token=$this->apiKey&amount=2&description=test&identifier=$identifier}";
 
             return [
                 'success' => true,
-                'data' => $responseData,
+                'data' => [
+                    'payment_url' => $redirect_url,
+                    'data' => $responseData,
+                ],
             ];
 
         } catch (InvalidArgumentException $e) {
