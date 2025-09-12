@@ -127,7 +127,7 @@ class UpdateBookingPaymentListener
                 if(auth()->user()->hasRole('customer') ){ 
                     // c'est le client qui annule  
                     $salonUsers = $booking->salon?->users ?? collect();
-                    Log::info(['les utilisateurs du salon ',$salonUsers] );
+                    Log::info(['les utilisateurs du salon ',$salonUsers->toArray()] );
                     if(!$salonUsers->isEmpty()){ ;
                         $salonW = $this->walletRepository->findByField('user_id' ,$salonUsers->first()->id )->first() ;        
                         if($salonW == Null) throw new \Exception('user dont have a wallet yet');
