@@ -33,7 +33,7 @@ class WalletTransactionsOfUserCriteria implements CriteriaInterface
     /**
      * WalletsOfUserCriteria constructor.
      */
-    public function __construct($userId , ?int $paymentId )
+    public function __construct($userId , int $paymentId = Null)
     {
         $this->userId = $userId;
         $this->paymentId = $paymentId;
