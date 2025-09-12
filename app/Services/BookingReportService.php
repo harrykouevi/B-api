@@ -117,7 +117,7 @@ class BookingReportService
             'hint' => $originalBooking->hint,
             
             // === NOUVEAU CYCLE DE VIE ===
-            'booking_status_id' => 1, // Received - recommence à zéro
+            'booking_status_id' => 4, // Accepted - recommence à zéro
             'cancel' => false,
             
             // === LIENS DE TRAÇABILITÉ ===

@@ -8,6 +8,7 @@
 
 namespace App\Services;
 
+use App\Events\NotifyPaymentEvent;
 use App\Notifications\RechargePayment;
 use App\Repositories\BookingRepository;
 use App\Repositories\WalletRepository;
@@ -96,9 +97,10 @@ class PaymentService
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet] , $tax) ;
-                    // Log::info(['PaymentServicee-createPayment',$wallet->user]);
+                    Log::info(['Padsdfffee-createPayment']);
+                    event(new NotifyPaymentEvent($payment ,$payer_wallet ,$user ));
+
                     return [$payment , $wallet] ;
-                    Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
@@ -144,8 +146,10 @@ class PaymentService
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-
-                    Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
+                    Log::info(['00000001']);
+                    
+                    event(new NotifyPaymentEvent( $payment , $payer_wallet,$user  ));
+                
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }

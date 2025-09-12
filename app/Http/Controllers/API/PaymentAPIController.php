@@ -9,7 +9,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Criteria\Bookings\BookingsOfUserCriteria;
-use App\Events\BookingChangedEvent;
+use App\Events\BookingPaymentUpdatedEvent;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -31,7 +31,8 @@ use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use App\Criteria\Wallets\EnabledCriteria;
 use App\Criteria\Wallets\WalletsOfUserCriteria;
-use App\Events\NotifyBookingPaymentEvent;
+use App\Events\BookingStatusChangedEvent;
+use App\Events\NotifyPaymentEvent;
 use App\Events\PaymentUpdatedEvent;
 use App\Models\Purchase;
 use App\Repositories\PurchaseRepository;
@@ -205,17 +206,15 @@ class PaymentAPIController extends Controller
         try {
             $this->paymentRepository->update($input, $id);
             $payment = $this->paymentRepository->with(['paymentMethod', 'paymentStatus'])->find($id);
+            event(new BookingPaymentUpdatedEvent($payment->booking));
+            
             try{
                 Log::error(['PaymentAPIController-update',$payment->booking->user]);
-                //appelons un evenement
-                // Notification::send([$payment->booking->user], new StatusChangedPayment($payment->booking));
-                event(new NotifyBookingPaymentEvent($payment->booking));
-
+               
             } catch (Exception $e) {
                 Log::error($e->getMessage());
             }
             
-            event(new BookingChangedEvent($payment->booking));
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
         }
@@ -247,7 +246,7 @@ class PaymentAPIController extends Controller
             $waitingAmountToDebit = $this->bookingRepository->findByField('booking_status_id', 1)->sum(function ($booking) {
                                         return $booking->getSubtotal();
                                     });
-            Log::info([$wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $wallet->balance]);
+            Log::info(["verification du terrain", $wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $wallet->balance]);
             
             
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
@@ -255,23 +254,30 @@ class PaymentAPIController extends Controller
                 //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
                 // if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
                     //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
-                Log::info(['PaymentAPIController-wallet 1']);
+                
                 $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
                 $payment = $payment[0];
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+                    event(new BookingStatusChangedEvent($booking));
+                    
                     try{ 
                         Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
-
-                        Notification::send($booking->salon->users, new StatusChangedPayment($booking));
                     } catch (Exception $e) {
                         Log::error($e->getMessage());
                     }
+                }else{
+                    throw new Exception('failed booking payment');
+
                 }
+                
 
             } else {
                 return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
             }
+
+            return $this->sendResponse($payment->toArray(), 'Payement par portefeuil succès');
+
         } catch (ValidatorException|ModelNotFoundException) {
             return $this->sendError(__('lang.not_found', ['operator' => __('lang.payment')]));
         } catch (Exception $e) {
@@ -281,7 +287,6 @@ class PaymentAPIController extends Controller
             return $this->sendError($e->getMessage());
         }
         
-        return $this->sendResponse(!is_null($payment)? $payment->toArray() : $payment, __('lang.saved_successfully', ['operator' => __('lang.payment')]));
     }
 
     public function byMonth(): JsonResponse

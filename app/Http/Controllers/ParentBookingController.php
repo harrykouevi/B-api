@@ -8,7 +8,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\BookingChangedEvent;
+use App\Events\BookingPaymentUpdatedEvent;
 use App\Models\Booking;
 use App\Notifications\NewBooking;
 use App\Repositories\BookingRepository;
@@ -57,7 +57,7 @@ abstract class ParentBookingController extends Controller
             $payment = $this->createPayment();
             if ($payment != null) {
                 $this->bookingRepository->update(['payment_id' => $payment->id], $this->booking->id);
-                event(new BookingChangedEvent($this->booking));
+                event(new BookingPaymentUpdatedEvent($this->booking));
                 $this->sendNotificationToProviders();
             }
         } catch (ValidatorException $e) {
@@ -88,9 +88,11 @@ abstract class ParentBookingController extends Controller
     protected function sendNotificationToProviders(): void
     {
         try {
-                Log::error(['sendNotificationToProviders',$this->booking->salon->users]);
+            Log::error(['sendNotificationToProviders',$this->booking->salon->users]);
 
             Notification::send($this->booking->salon->users, new NewBooking($this->booking));
+
+            event(new BookingPaymentUpdatedEvent($this->booking));
 
         } catch (Exception $e) {
             Log::error($e->getMessage());

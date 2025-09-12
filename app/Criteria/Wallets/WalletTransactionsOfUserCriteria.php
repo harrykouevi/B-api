@@ -26,11 +26,17 @@ class WalletTransactionsOfUserCriteria implements CriteriaInterface
     private ?int $userId;
 
     /**
+     * @var ?int
+     */
+    private ?int $paymentId;
+
+    /**
      * WalletsOfUserCriteria constructor.
      */
-    public function __construct($userId)
+    public function __construct($userId ,$paymentId )
     {
         $this->userId = $userId;
+        $this->paymentId = $paymentId;
     }
 
     /**
@@ -48,6 +54,14 @@ class WalletTransactionsOfUserCriteria implements CriteriaInterface
                 ->where('wallets.user_id', $this->userId)
                 ->where('wallets.enabled', 1)
                 ->select('wallet_transactions.*');
+
+        } else if (auth()->user()->hasRole('customer') || auth()->user()->hasRole('salon owner')) {
+            
+            $model = $model->where('wallet_transactions.user_id', $this->userId) ;
+            if(!is_null($this->paymentId)) $model->where('wallet_transactions.user_id', $this->userId) ;
+
+            return $model->select('wallet_transactions.*');
+            
         } else {
             return $model;
         }

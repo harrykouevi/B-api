@@ -8,10 +8,10 @@
 
 namespace App\Providers;
 
-use App\Events\BookingChangedEvent;
+use App\Events\BookingPaymentUpdatedEvent;
 use App\Events\BookingStatusChangedEvent;
 use App\Events\DoPaymentEvent;
-use App\Events\NotifyBookingPaymentEvent;
+use App\Events\NotifyPaymentEvent;
 use App\Events\PaymentUpdatedEvent;
 use App\Events\SendEmailOtpEvent;
 use App\Events\WalletTransactionCreatedEvent;
@@ -22,6 +22,7 @@ use App\Listeners\NotifyForBookingPaymentListener;
 use App\Listeners\UpdateBookingPaymentListener;
 use App\Listeners\SendBookingStatusNotificationsListener;
 use App\Listeners\SendEmailOtpEventListener;
+use App\Listeners\SendPaymentNotificationListener;
 use App\Listeners\UpdateBookingEarningTable;
 use App\Listeners\UpdatePaymentListener;
 use Illuminate\Auth\Events\Registered;
@@ -52,21 +53,24 @@ class EventServiceProvider extends ServiceProvider
         DoPaymentEvent::class => [
             CreatingPaymentListener::class,
         ],
-        BookingChangedEvent::class => [
-            UpdateBookingPaymentListener::class,
-            // UpdateBookingEarningTable::class,
-        ],
-        BookingStatusChangedEvent::class => [
+
+        BookingPaymentUpdatedEvent::class => [
             UpdateBookingPaymentListener::class,
             SendBookingStatusNotificationsListener::class,
+            // UpdateBookingEarningTable::class,
+        ],
+        
+        BookingStatusChangedEvent::class => [
+            UpdateBookingPaymentListener::class, //met a jour les information  de paymemnt lié au changement de status chez le booking
+            SendBookingStatusNotificationsListener::class, //envoi à qui de droit une notification au changement de status du le booking
         ],
        
         SendEmailOtpEvent::class => [
             SendEmailOtpEventListener::class,
         ],
 
-        NotifyBookingPaymentEvent::class => [
-            NotifyForBookingPaymentListener::class,
+        NotifyPaymentEvent::class => [
+            SendPaymentNotificationListener::class
         ],
 
     ];

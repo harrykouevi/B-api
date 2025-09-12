@@ -10,34 +10,35 @@ namespace App\Notifications;
 
 use App\Models\Payment;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewReceivedPayment extends Notification
+class NewDebitPayment extends Notification
 {
     use Queueable;
 
     /**
      * @var Wallet
      */
-    private Wallet $wallet;
+    // private Wallet $wallet;
 
      /**
-     * @var Payment
+     * @var WalletTransaction
      */
-    private Payment $payment;
+    private WalletTransaction $transaction;
 
     /**
      * Create a new notification instance.
      *
      * @return void
      */
-    public function __construct(Payment $payment,Wallet $wallet)
+    public function __construct(WalletTransaction $transaction)
     {
-        $this->wallet = $wallet;
-        $this->payment = $payment;
+        // $this->transaction->wallet = $wallet;
+        $this->transaction = $transaction;
     }
 
     /**
@@ -67,17 +68,17 @@ class NewReceivedPayment extends Notification
     public function toMail(mixed $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status]) . " | " . setting('app_name', ''))
-            ->markdown("notifications::wallet", ['wallet' => $this->wallet])
-            ->greeting(trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status]))
-            ->action(trans('lang.wallet_details'), route('wallets.show', $this->wallet->id));
+            ->subject(trans('lang.notification_payment', ['payment_id' => $this->transaction->payment_id, 'payment_status' => $this->transaction->payment->paymentStatus->status]) . " | " . setting('app_name', ''))
+            // ->markdown("notifications::wallet", ['wallet' => $this->transaction->wallet])
+            ->greeting(trans('lang.notification_payment', ['payment_id' => $this->transaction->payment_id, 'payment_status' => $this->transaction->payment->paymentStatus->status]))
+            ->action(trans('lang.wallet_details'), route('wallets.show', $this->transaction->wallet->id));
     }
 
     public function toFcm($notifiable): FcmMessage
     {
         $message = new FcmMessage();
         $notification = [
-            'body' => trans('lang.notification_payment', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status],'fr'),
+            'body' => trans('lang.notification_payment', ['payment_id' => $this->transaction->payment_id, 'payment_status' => $this->transaction->payment->paymentStatus->status],'fr'),
             'title' => trans('lang.notification_status_changed_payment',[],'fr'),
 
         ];
@@ -86,7 +87,7 @@ class NewReceivedPayment extends Notification
             'click_action' => "FLUTTER_NOTIFICATION_CLICK",
             'id' => 'App\\Notifications\\StatusChangedPayment',
             'status' => 'done',
-            'walletId' => (string) $this->wallet->id,
+            'walletId' => (string) $this->transaction->wallet->id,
         ];
         $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
 
@@ -112,7 +113,7 @@ class NewReceivedPayment extends Notification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'wallet_id' => $this->wallet['id'],
+           
         ];
     }
 }

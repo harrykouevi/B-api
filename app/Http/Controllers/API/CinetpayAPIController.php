@@ -199,6 +199,7 @@ class CinetpayAPIController extends Controller
             // Mettre à jour la transaction
             $walletTransaction->update($updateData);
             try{
+                // TODO: revoir le parametre envoyé à NewReceivedPayment
                 Notification::send([$wallet->user], new NewReceivedPayment($transactionId, $wallet));
 
             }catch(\Exception $e){

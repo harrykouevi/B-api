@@ -10,7 +10,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\View\View;
 use Laracasts\Flash\Flash;
-use App\Events\BookingChangedEvent;
+use App\Events\BookingPaymentUpdatedEvent;
 use App\DataTables\BookingDataTable;
 use Illuminate\Http\RedirectResponse;
 use App\Repositories\AddressRepository;
@@ -158,17 +158,32 @@ class BookingController extends Controller
                 $input['payment_status_id'] = 3; // failed
                 $input['booking_status_id'] = 7; // failed
             }
-            
-            $booking = $this->bookingRepository->update($input, $id);
-            if (isset($input['payment_status_id'])) {
-                $this->paymentRepository->update(
-                    ['payment_status_id' => $input['payment_status_id']],
-                    $booking->payment_id
-                );
-                event(new BookingChangedEvent($booking));
+
+            // si il y a commission
+            if(array_key_exists('taxe', $input))
+            {
+                //autres données recu du mobile
+                // montant_a_reverser
+                // commission_calculee
+                $input["purchase_taxes"] = $input['taxe'] ;
+                unset($input['taxe']);  
             }
+
+            $booking = $this->bookingRepository->update($input, $id);
+            // if (isset($input['payment_status_id'])) {
+            //     $this->paymentRepository->update(
+            //         ['payment_status_id' => $input['payment_status_id']],
+            //         $booking->payment_id
+            //     );
+            //     event(new BookingPaymentUpdatedEvent($booking));
+            // }
+            
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {
-                event(new BookingStatusChangedEvent($booking));
+                if (isset($input['payment_status_id'])) {
+                    event(new BookingPaymentUpdatedEvent($booking));
+                }else{ 
+                    event(new BookingStatusChangedEvent($booking));
+                }
             }
 
             foreach (getCustomFieldsValues($customFields, $request) as $value) {

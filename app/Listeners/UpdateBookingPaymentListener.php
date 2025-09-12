@@ -13,14 +13,29 @@ use App\Repositories\BookingRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\WalletRepository;
 use App\Repositories\PurchaseRepository;
-use Illuminate\Support\Facades\Notification;
 use App\Services\PaymentService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use App\Notifications\StatusChangedPayment;
 use App\Repositories\TaxRepository;
+
+
+/**
+ * Listener UpdateBookingPaymentListener
+ *
+ * Ce listener centralise et gère toutes les transactions financières
+ * nécessaires lors d’un changement d’état d’une réservation (Booking).
+ *
+ * Les cas pris en charge :
+ * - Annulation : remboursement client (selon qui annule : salon ou client).
+ * - Report : prélèvement d’une commission (salon ou client).
+ * - Acceptation : création/mise à jour d’un achat et traitement du paiement
+ *   (Wallet ou Cash).
+ *
+ * En résumé, ce listener est le point unique où sont orchestrées
+ * les logiques financières liées au cycle de vie d’un booking.
+ */
 
 class UpdateBookingPaymentListener
 {
@@ -119,8 +134,9 @@ class UpdateBookingPaymentListener
             }
 
             else if($booking->booking_status_id == 9 && $booking->payment->payment_status_id != 3){
-                
                 //si le statut de la reservation est reporté et que le statut du paiement est tout sauf failed
+                Log::Error(['about do do payement transactions about report']);
+                
                 if(auth()->user()->hasRole('salon owner') ){
                    // c'est le coiffeur qui reporte
                     $salonW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
@@ -140,9 +156,9 @@ class UpdateBookingPaymentListener
             }
             
             else if($booking->booking_status_id == 4 && $booking->payment->payment_status_id != 3 && $booking->payment->paymentMethod->name == 'Wallet'){
-                
+                //si le statut de la reservation est accepted et que le statut du paiement de la reservation est tout sauf failed
                 $is_pyment_cash = false ;
-                //si le statut de la reservation est accepted et que le statut du paiement est tout sauf failed
+                
                 //le montant du service (montant de l'achat)
                 $purchaseamount = $booking->getSubtotal(); 
 
@@ -193,12 +209,6 @@ class UpdateBookingPaymentListener
                                 try{ 
                                     if($booking->payment->paymentMethod->name == 'Wallet'){
                                         $purchase = $this->purchaseRepository->update(['payment_id' => $payment->id , 'purchase_status_id' => 2  ], $purchase->id);
-                                        // Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
-
-                                        // Notification::send($booking->salon->users, new StatusChangedPayment($purchase));
-                                        // Notification::send(collect($booking->user), new StatusChangedPayment($purchase));
-                                        //mentionner au coiffeur et au client qu'une reservation a été faite
-                                            //or i est deja mentionner BookingAPIController store q
                                     }
                                     
                                 } catch (Exception $e) {

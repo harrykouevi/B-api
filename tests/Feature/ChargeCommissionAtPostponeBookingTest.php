@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Events\BookingStatusChangedEvent;
 use App\Models\Booking;
 use App\Models\Currency;
 use App\Models\Purchase;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Repositories\PurchaseRepository;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +38,8 @@ class ChargeCommissionAtPostponeBookingTest extends TestCase
                 'password' => Hash::make('password125'),
                 'api_token' => Str::random(60),
                 'device_token' => '',
+                'booking_at' => Carbon::now()->addDays(3)->format('Y-m-d H:i:s'),
+
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -95,6 +97,8 @@ class ChargeCommissionAtPostponeBookingTest extends TestCase
                 'quantity' =>  1,
                 'user_id' => $user2->id,
                 'booking_status_id' =>  1,
+                'booking_at' => Carbon::now()->addDays(2)->format('Y-m-d H:i:s'),
+
                 'created_at' => now(),
                 'updated_at' => now(),
                     
