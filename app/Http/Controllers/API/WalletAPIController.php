@@ -445,7 +445,9 @@ class WalletAPIController extends Controller
                     $response = $this->paygateService->initPayment(
                         $amount,
                         $transactionId,
+                        $userId,
                         $notifyUrl = url("api/paygate/callback/{$userId}")
+
                     );
                     log::info("reponse Paygate",['reponse'=> $response]);
 

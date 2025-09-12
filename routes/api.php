@@ -65,7 +65,8 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
-Route::post('paygate/callback/{userId}', [App\Http\Controllers\API\PaygateCallbackController::class, 'handleCallback']);
+Route::post('paygate/callback', [App\Http\Controllers\API\PaygateCallbackController::class, 'handleCallback']);
+
 
 Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,
     'handleTransferNotification'

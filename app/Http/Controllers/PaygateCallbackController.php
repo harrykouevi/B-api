@@ -16,14 +16,13 @@ class PaygateCallbackController extends Controller
         $this->paygateService = $paygateService;
     }
 
-    public function handleCallback(Request $request, string $userId)
+    public function handleCallback(Request $request)
     {
         Log::info("Requête de callback Paygate reçue", [
-            'user_id' => $userId,
             'request_data' => $request->all()
         ]);
 
-        $this->paygateService->handleReturnUrl($request, $userId);
+        $this->paygateService->handleReturnUrl($request);
 
         return response()->json(['status' => 'ok']);
     }
