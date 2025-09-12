@@ -15,7 +15,7 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use App\Notifications\NewBooking;
 use Illuminate\Http\JsonResponse;
-use App\Events\BookingChangedEvent;
+use App\Events\BookingPaymentUpdatedEvent;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Repositories\SalonRepository;
@@ -206,17 +206,17 @@ class BookingAPIController extends Controller
             // Log des IDs utilisateurs pour vérification sans risquer les références circulaires
             Log::debug('Notifying salon users', [
                 'salon_id' => $salon->id,
-                'user_ids' => $salon->users->pluck('id')->toArray()
+                'user_ids' => $salon->users()->pluck('id')->toArray()
             ]);
             Log::info('Notification sent to salon users', [
                 'salon_id' => $salon->id,
-                'users_count' => $salon->users->count(),
+                'users_count' => $salon->users()->count(),
                 'booking_id' => $booking->id
             ]);
 
             // Envoi de la notification avec les données essentielles
             Notification::send(
-                $salon->users->pluck('id')->toArray(),
+                $salon->users,
                 new NewBooking($booking->setRelations([]))
             );
         } catch (Exception $e) {
@@ -255,8 +255,6 @@ class BookingAPIController extends Controller
                 $input['booking_status_id'] = 7;
             }
 
-            
-
             // si il y a commission
             if(array_key_exists('taxe', $input))
             {
@@ -268,15 +266,12 @@ class BookingAPIController extends Controller
             }
             $booking = $this->bookingRepository->update($input, $id);
             
-            if (isset($input['payment_status_id'])) {
-        
-                event(new BookingChangedEvent($booking)); 
-            }
-
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {
-                
-                event(new BookingStatusChangedEvent($booking));
-
+                if (isset($input['payment_status_id'])) {
+                    event(new BookingPaymentUpdatedEvent($booking)); 
+                }else{
+                    event(new BookingStatusChangedEvent($booking));
+                }
             }
 
         } catch (ValidatorException $e) {

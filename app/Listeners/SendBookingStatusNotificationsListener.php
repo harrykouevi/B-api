@@ -14,6 +14,7 @@ use App\Services\BookingReminderService;
 use App\Notifications\StatusChangedBooking;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\OwnerStatusChangedBooking;
+use Carbon\Carbon;
 
 /**
  * Class SendBookingStatusNotificationsListener
@@ -38,64 +39,126 @@ class SendBookingStatusNotificationsListener
     {
         try{
 
-            Log::error(['handle',$event->booking->user]);
+            $booking = $event->booking;
+            Log::info([
+                'Booking event reçu',
+                'id'     => $booking->id,
+                'status' => $booking->bookingStatus->order,
+                'at_salon' => $booking->at_salon,
+                'salon' => $booking->salon->toArray(),
+            ]);
 
-            // Vérifier si le statut est "Reported" (statut 9 avec order = 80)
-            if ($event->booking->bookingStatus->order == 80) {
-                // Envoyer la notification au client
-                Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-                Log::info(['rrrrrrrrrr' ,$event->booking]) ;
-                Log::info(['rrrrrrrrrr' ,$event->booking->salon->users()->get()]) ;
-                // Envoyer la notification aux propriétaires et employés du salon uniquement
-                if ($event->booking->salon) {
-                    // Charger les utilisateurs du salon s'ils ne sont pas déjà chargés
-                    $salonUsers = $event->booking->salon->users ?? $event->booking->salon->users()->get();
-                    
-                    // Filtrer les utilisateurs : propriétaires ('salon owner') et employés (autres rôles)
-                    $recipients = $salonUsers->filter(function ($user) {
-                        // Vérifier si l'utilisateur a le rôle 'salon owner' ou tout autre rôle (employés)
-                        return $user->hasRole('salon owner') || $user->roles->count() > 0;
-                    });
-                    
-                    // Envoyer la notification aux destinataires filtrés
-                    if ($recipients->count() > 0) {
-                        Notification::send($recipients, new OwnerStatusChangedBooking($event->booking));
-                    }
-                }
-            } else if ($event->booking->bookingStatus->order !== 1) {
-                if ($event->booking->at_salon) {
-                    if ($event->booking->bookingStatus->order < 20) {
-                        Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-                    } else if ($event->booking->bookingStatus->order >= 20 && $event->booking->bookingStatus->order < 40) {
-                        Notification::send($event->booking->salon->users, new OwnerStatusChangedBooking($event->booking));
-                    } else {
-                        Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-                    }
-                } else {
-                    if ($event->booking->bookingStatus->order < 40) {
-                        Notification::send([$event->booking->user], new StatusChangedBooking($event->booking));
-                    } else {
-                        Notification::send($event->booking->salon->users, new OwnerStatusChangedBooking($event->booking));
-                    }
-                }
+            
+            /**
+             * ───────────────────────────────────────────────
+             * SECTION 1 : Notifications (tout est géré ici)
+             * ───────────────────────────────────────────────
+             */
+            $this->handleStatusNotifications($booking);
+
+
+            /**
+             * ───────────────────────────────────────────────
+             * SECTION 2 : Planification & replanification des rappels
+             * ───────────────────────────────────────────────
+             */
+            // Planifier les rappels uniquement si booking payé et accepté
+            // Statut 10 = "Accepted" 
+            if ($booking->bookingStatus->order === 10) {
+                $this->reminderService->scheduleAllReminders($booking);
             }
 
-            // Statut 1 = "Received" (nouvelle réservation)
-            if ($event->booking->bookingStatus->order === 1) {
-                Log::info("Nouvelle réservation détectée (statut Received) - Planification des rappels pour la réservation {$event->booking->id}");
-                $this->reminderService->scheduleAllReminders($event->booking);
-            }
-
-            // NOUVELLE LOGIQUE : Replanifier les rappels si la date/heure de la réservation change
-            if (isset($event->booking->getOriginal()['booking_at']) && 
-                $event->booking->getOriginal()['booking_at'] !== $event->booking->booking_at->format('Y-m-d H:i:s')) {
-                Log::info("Changement d'heure détecté pour la réservation {$event->booking->id} - Replanification des rappels");
-                $this->reminderService->rescheduleReminders($event->booking);
+            // Replanification si changement de date/heure
+            if (isset($booking->getOriginal()['booking_at']) &&
+                !Carbon::parse($booking->getOriginal()['booking_at'])->equalTo($booking->booking_at)) {
+                Log::info("Changement d'heure pour booking #{$booking->id} → Replanification des rappels");
+                $this->reminderService->rescheduleReminders($booking);
             }
 
 
         } catch (Exception $e) {
             Log::error("Erreur dans SendBookingStatusNotificationsListener: " . $e->getMessage());
+        }
+    }
+
+
+    /**
+     * Gère les notifications selon le statut et at_salon
+     */
+    private function handleStatusNotifications($booking): void
+    {
+        if (in_array($booking->bookingStatus->order, [1, 80])) {
+            // Recu ou Reporté → notifier le client et le coiffeur
+            Log::info("viens peut etre de creer ou reporter booking #{$booking->id} → ");
+
+            $this->notifyClient($booking);
+            $this->notifySalonOwners($booking);
+
+        } else{
+            if ($booking->at_salon) {
+                Log::info("Notification pour booking au salon  : r#{$booking->id}");
+
+                if ($booking->bookingStatus->order < 20) {
+                    // Accepté → notifier le client
+                    $this->notifyClient($booking);
+
+                } elseif ($booking->bookingStatus->order < 40) {
+                    // En chemin, arrivé → notifier le salon
+                    $this->notifySalonOwners($booking);
+
+                } else {
+                    // Après l’arrivée (service en cours, terminé, annulé, etc.) → notifier le client
+                    $this->notifyClient($booking);
+                }
+            } else {
+                Log::info("Notification pour booking à domicile  : r#{$booking->id}");
+
+                if ($booking->bookingStatus->order < 40) {
+                    // Avant l’arrivée → notifier le client
+                    $this->notifyClient($booking);
+                } else {
+                    // Après l’arrivée → notifier le salon
+                    $this->notifySalonOwners($booking);
+                }
+            }
+        }
+        
+    }
+
+    /**
+     * Notification client
+     */
+    private function notifyClient($booking): void
+    {   try{
+            Log::info("Notification pour booking #{$booking->id} → Notification envoyé au clien");
+            Notification::send([$booking->user], new StatusChangedBooking($booking));
+        } catch (Exception $e) {
+            Log::error("Erreur dans SendBookingStatusNotificationsListener avec l'envoie de notifications: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Notification salon (owners + employés)
+     */
+    private function notifySalonOwners($booking): void
+    {
+        Log::info("Notification pour booking #{$booking->id} → Notification envoyé au salon");
+
+        if (!$booking->salon) {
+            return;
+        }
+
+        $salonUsers = $booking->salon->users ?? $booking->salon->users()->get();
+        $recipients = $salonUsers->filter(fn($user) =>
+            $user->hasRole('salon owner') 
+            //|| $user->roles->count() > 0
+        );
+        try{
+            if ($recipients->count() > 0) {
+                Notification::send($recipients, new OwnerStatusChangedBooking($booking));
+            }
+        } catch (Exception $e) {
+            Log::error("Erreur dans SendBookingStatusNotificationsListener avec l'envoie de notifications: " . $e->getMessage());
         }
     }
 }

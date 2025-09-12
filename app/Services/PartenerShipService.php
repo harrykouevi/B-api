@@ -27,6 +27,7 @@ use App\Notifications\NewReceivedPayment;
 use App\Notifications\NewDebitPayment ;
 use App\Notifications\StatusChangedPayment;
 use App\Types\WalletType;
+use Illuminate\Support\Facades\Log;
 use PhpParser\Node\Expr\Cast\Double;
 
 class PartenerShipService
@@ -109,6 +110,7 @@ class PartenerShipService
         // Attribue la récompense à l'utilisateur qui a utilisé un code d'affiliation
         $amount = $user->hasRole('customer') ? setting('referral_rewards') : setting('owner_referral_rewards') ;
         $paymentInfo = ["amount"=> $amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user , "walletType"=> WalletType::BONUS] ;
+        Log::info('about to be patronize with '.$amount) ;
         event(new DoPaymentEvent($paymentInfo));
 
         return  $conversion ;

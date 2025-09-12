@@ -8,18 +8,24 @@
 
 namespace App\Providers;
 
-use App\Events\BookingChangedEvent;
+use App\Events\BookingPaymentUpdatedEvent;
 use App\Events\BookingStatusChangedEvent;
 use App\Events\DoPaymentEvent;
+use App\Events\NotifyBookingEvent;
+use App\Events\NotifyPaymentEvent;
+use App\Events\PaymentUpdatedEvent;
 use App\Events\SendEmailOtpEvent;
 use App\Events\WalletTransactionCreatedEvent;
 use App\Listeners\CreatedWalletTransactionListener;
 use App\Listeners\CreatingPaymentListener;
 use App\Listeners\DebitCustomerForService;
+use App\Listeners\NotifyForBookingPaymentListener;
 use App\Listeners\UpdateBookingPaymentListener;
 use App\Listeners\SendBookingStatusNotificationsListener;
 use App\Listeners\SendEmailOtpEventListener;
+use App\Listeners\SendPaymentNotificationListener;
 use App\Listeners\UpdateBookingEarningTable;
+use App\Listeners\UpdatePaymentListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -48,17 +54,28 @@ class EventServiceProvider extends ServiceProvider
         DoPaymentEvent::class => [
             CreatingPaymentListener::class,
         ],
-        BookingChangedEvent::class => [
-            UpdateBookingPaymentListener::class,
-            // UpdateBookingEarningTable::class,
-        ],
-        BookingStatusChangedEvent::class => [
+
+        BookingPaymentUpdatedEvent::class => [
             UpdateBookingPaymentListener::class,
             SendBookingStatusNotificationsListener::class,
+            // UpdateBookingEarningTable::class,
+        ],
+        
+        BookingStatusChangedEvent::class => [
+            UpdateBookingPaymentListener::class, //met a jour les information  de paymemnt lié au changement de status chez le booking
+            SendBookingStatusNotificationsListener::class, //envoi à qui de droit une notification au changement de status du le booking
         ],
        
         SendEmailOtpEvent::class => [
             SendEmailOtpEventListener::class,
+        ],
+
+        NotifyPaymentEvent::class => [
+            SendPaymentNotificationListener::class
+        ],
+
+        NotifyBookingEvent::class => [
+            SendBookingStatusNotificationsListener::class
         ],
 
     ];

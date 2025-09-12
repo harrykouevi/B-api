@@ -13,14 +13,29 @@ use App\Repositories\BookingRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\WalletRepository;
 use App\Repositories\PurchaseRepository;
-use Illuminate\Support\Facades\Notification;
 use App\Services\PaymentService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use App\Notifications\StatusChangedPayment;
 use App\Repositories\TaxRepository;
+
+
+/**
+ * Listener UpdateBookingPaymentListener
+ *
+ * Ce listener centralise et gère toutes les transactions financières
+ * nécessaires lors d’un changement d’état d’une réservation (Booking).
+ *
+ * Les cas pris en charge :
+ * - Annulation : remboursement client (selon qui annule : salon ou client).
+ * - Report : prélèvement d’une commission (salon ou client).
+ * - Acceptation : création/mise à jour d’un achat et traitement du paiement
+ *   (Wallet ou Cash).
+ *
+ * En résumé, ce listener est le point unique où sont orchestrées
+ * les logiques financières liées au cycle de vie d’un booking.
+ */
 
 class UpdateBookingPaymentListener
 {
@@ -80,7 +95,7 @@ class UpdateBookingPaymentListener
         try {
             /** @var Booking $booking */
             $booking = $event->booking;
-            $payments =[];
+            $payment_intents =[];
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->payment_status_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
                 //le montant de la reservation
@@ -101,7 +116,7 @@ class UpdateBookingPaymentListener
                     if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
                     //le coiffeur rembourse au client le montant du service
                     //si il y a eu achat de service
-                    if($purchase) array_push($payments ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
+                    if($purchase) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
                 }
                 
                 if(auth()->user()->hasRole('customer') ){ 
@@ -110,7 +125,7 @@ class UpdateBookingPaymentListener
                     if($salonW == Null) throw new \Exception('user dont have a wallet yet');
                     //le coiffeur rembourse au client le montant du service
                     //si il y a eu achat de service
-                    if($purchase) array_push($payments ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
+                    if($purchase) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user] );
                 }
                 if($purchase) {
                     $purchase = $this->purchaseRepository->update([ 'purchase_status_id' => 3 ,
@@ -119,15 +134,16 @@ class UpdateBookingPaymentListener
             }
 
             else if($booking->booking_status_id == 9 && $booking->payment->payment_status_id != 3){
-                
                 //si le statut de la reservation est reporté et que le statut du paiement est tout sauf failed
+                Log::Error(['about do do payement transactions about report']);
+                
                 if(auth()->user()->hasRole('salon owner') ){
                    // c'est le coiffeur qui reporte
                     $salonW = $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($salonW == Null) throw new \Exception('user dont have a wallet yet');
                     //le coiffeur verse une commision à l'appli
-                    array_push($payments ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
-                    // array_push($payments ,  ["amount"=> setting('postpone_charge', 1000),"payer_wallet"=>$salonW, "user"=> null] );
+                    array_push($payment_intents ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
+                    // array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 1000),"payer_wallet"=>$salonW, "user"=> null] );
                 }
 
                 if(auth()->user()->hasRole('customer') ){ 
@@ -135,14 +151,14 @@ class UpdateBookingPaymentListener
                     $clientW =  $this->walletRepository->findByField('user_id',  auth()->user()->id)->first() ;
                     if($clientW == Null) throw new \Exception('user dont have a wallet yet');
                     //le client verse une commision à l'appli
-                    array_push($payments ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null] );
+                    array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null] );
                 }
             }
             
             else if($booking->booking_status_id == 4 && $booking->payment->payment_status_id != 3 && $booking->payment->paymentMethod->name == 'Wallet'){
-                
+                //si le statut de la reservation est accepted et que le statut du paiement de la reservation est tout sauf failed
                 $is_pyment_cash = false ;
-                //si le statut de la reservation est accepted et que le statut du paiement est tout sauf failed
+                
                 //le montant du service (montant de l'achat)
                 $purchaseamount = $booking->getSubtotal(); 
 
@@ -193,8 +209,6 @@ class UpdateBookingPaymentListener
                                 try{ 
                                     if($booking->payment->paymentMethod->name == 'Wallet'){
                                         $purchase = $this->purchaseRepository->update(['payment_id' => $payment->id , 'purchase_status_id' => 2  ], $purchase->id);
-                                        // Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
-                                        Notification::send($booking->salon->users, new StatusChangedPayment($purchase));
                                     }
                                     
                                 } catch (Exception $e) {
@@ -213,7 +227,7 @@ class UpdateBookingPaymentListener
                             if($salonW == Null) throw new \Exception('salon user dont have a wallet yet');
                 
                            
-                            $payment = $this->paymentService->intentPayment( $input,$salonW,$purchase->taxes);
+                            $payment = $this->paymentService->intentCashPayment( $input,$salonW,$purchase->taxes);
                             //$payment = $this->paymentService->update(['payment_status_id' => 2 ], $payment->id);
                             
                            
@@ -224,9 +238,9 @@ class UpdateBookingPaymentListener
                 }
             }
 
-            if(!empty($payments)){
-                Log::error('payment:' , $payments);
-                foreach ($payments as $value) {
+            if(!empty($payment_intents)){
+                Log::error('payment:' , $payment_intents);
+                foreach ($payment_intents as $value) {
                     event(new DoPaymentEvent($value));
                 }
             }
@@ -240,3 +254,6 @@ class UpdateBookingPaymentListener
         }
     }
 }
+            
+
+       

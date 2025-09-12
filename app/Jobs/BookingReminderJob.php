@@ -60,19 +60,31 @@ class BookingReminderJob implements ShouldQueue
 
             // Envoyer le rappel au client
             if ($currentBooking->user) {
-                Notification::send(
-                    [$currentBooking->user], 
-                    new BookingReminderNotification($currentBooking, $this->reminderType, 'client')
-                );
+                try{
+                    Notification::send(
+                        [$currentBooking->user], 
+                        new BookingReminderNotification($currentBooking, $this->reminderType, 'client')
+                    );
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi Notification au client {$this->reminderType} pour la réservation {$this->booking->id}: " . $e->getMessage(), [
+                        // 'trace' => $e->getTraceAsString()
+                    ]);
+                }
                 Log::info("Rappel {$this->reminderType} envoyé au client {$currentBooking->user->name} pour la réservation {$this->booking->id}");
             }
 
             // Envoyer le rappel au salon (sauf pour confirmation)
             if ($this->reminderType !== 'confirmation' && $currentBooking->salon && $currentBooking->salon->users->isNotEmpty()) {
-                Notification::send(
-                    $currentBooking->salon->users, 
-                    new BookingReminderNotification($currentBooking, $this->reminderType, 'salon')
-                );
+                try{
+                    Notification::send(
+                        $currentBooking->salon->users, 
+                        new BookingReminderNotification($currentBooking, $this->reminderType, 'salon')
+                    );
+                } catch (\Exception $e) {
+                    Log::error("Erreur envoi Notification au salon {$this->reminderType} pour la réservation {$this->booking->id}: " . $e->getMessage(), [
+                        // 'trace' => $e->getTraceAsString()
+                    ]);
+                }
                 Log::info("Rappel {$this->reminderType} envoyé au salon {$currentBooking->salon->name} pour la réservation {$this->booking->id}");
             }
 

@@ -8,6 +8,7 @@
 
 namespace App\Services;
 
+use App\Events\NotifyPaymentEvent;
 use App\Notifications\RechargePayment;
 use App\Repositories\BookingRepository;
 use App\Repositories\WalletRepository;
@@ -96,9 +97,10 @@ class PaymentService
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet] , $tax) ;
-                    // Log::info(['PaymentServicee-createPayment',$wallet->user]);
+                    Log::info(['Padsdfffee-createPayment']);
+                    event(new NotifyPaymentEvent($payment ,$payer_wallet ,$user ));
+
                     return [$payment , $wallet] ;
-                    Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
@@ -144,8 +146,10 @@ class PaymentService
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-
-                    Notification::send([$wallet->user], new NewReceivedPayment($payment,$wallet));
+                    Log::info(['00000001']);
+                    
+                    event(new NotifyPaymentEvent( $payment , $payer_wallet,$user  ));
+                
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
@@ -304,7 +308,7 @@ class PaymentService
      * 
      * @return Payment | Null
      */
-    public function intentPayment(Array $input , $wallet, $tax = null):Payment | Null
+    public function intentCashPayment(Array $input , $wallet, $tax = null):Payment | Null
     {
         //si l'intension de payement est pour le coiffeur
         $amount = $input['payment']['amount'] ;
@@ -325,6 +329,7 @@ class PaymentService
                 for ($i=0; $i <= 1  ; $i++) { 
                     $transaction = [];
                     $transaction['payment_id'] = $payment->id;
+
                     if($i == 0){
                         //il a t'il une commission a prendre chez le coiffeur
                         if(  $commission > 0 ){
@@ -335,6 +340,8 @@ class PaymentService
                             $transaction['description'] = 'compte débité';
                             $transaction['action'] =  'debit';
                             $transaction['amount'] = $commission;
+                        }else{
+                            break ;
                         }
                     }
                     if($i == 1){
@@ -352,8 +359,9 @@ class PaymentService
                         }else{
                             break ;
                         }
+                        
                     }
-
+                    
                     $this->walletTransactionRepository->create($transaction);
                 }
                 return $payment ;

@@ -7,6 +7,7 @@ use App\Models\Currency;
 use App\Models\Purchase;
 use App\Models\User;
 use App\Models\Wallet;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -90,6 +91,8 @@ class PayCashforBookingTest extends TestCase
                     'quantity' =>  1,
                     'user_id' => $user->id,
                     'booking_status_id' =>  1,
+                    'booking_at' => Carbon::now()->addDays(2)->format('Y-m-d H:i:s'),
+
                     'created_at' => now(),
                     'updated_at' => now(),
                   
@@ -110,6 +113,8 @@ class PayCashforBookingTest extends TestCase
                     'user_id' => $user2->id,
 
                     'booking_status_id' =>  1,
+                    'booking_at' => Carbon::now()->addDays(3)->format('Y-m-d H:i:s'),
+
                     'created_at' => now(),
                     'updated_at' => now(),
             ]);
@@ -131,6 +136,8 @@ class PayCashforBookingTest extends TestCase
                     'user_id' => $user->id,
 
                     'booking_status_id' =>  1,
+                    'booking_at' => Carbon::now()->addDays(1)->format('Y-m-d H:i:s'),
+
                     'created_at' => now(),
                     'updated_at' => now(),
             ]);

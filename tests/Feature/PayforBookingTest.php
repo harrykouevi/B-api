@@ -9,6 +9,7 @@ use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 use Illuminate\Support\Facades\Hash;
@@ -78,6 +79,7 @@ class PayforBookingTest extends TestCase
                     'quantity' =>  1,
                     'user_id' => $user->id,
                     'booking_status_id' =>  1,
+                    'booking_at' => Carbon::now()->addDays(2)->format('Y-m-d H:i:s'),
                     'created_at' => now(),
                     'updated_at' => now(),
                   
@@ -98,6 +100,7 @@ class PayforBookingTest extends TestCase
                     'user_id' => $user2->id,
 
                     'booking_status_id' =>  1,
+                    'booking_at' => Carbon::now()->addDays(1)->format('Y-m-d H:i:s'),
                     'created_at' => now(),
                     'updated_at' => now(),
             ]);
@@ -119,6 +122,8 @@ class PayforBookingTest extends TestCase
                     'user_id' => $user->id,
 
                     'booking_status_id' =>  1,
+                    'booking_at' => Carbon::now()->addDays(3)->format('Y-m-d H:i:s'),
+
                     'created_at' => now(),
                     'updated_at' => now(),
             ]);
@@ -134,7 +139,7 @@ class PayforBookingTest extends TestCase
             //     'status' => $response->status(),   // code HTTP
             //     'response' => $responseData        // contenu réel
             // ]);
-                 Log::info( Wallet::find($wallet->id) ) ;
+            Log::info( Wallet::find($wallet->id) ) ;
             $response->assertStatus(200);
            
         } catch (\Throwable $e) {
