@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\WalletTransaction;
+use App\Repositories\UserRepository;
 use App\Types\PaymentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -12,15 +13,16 @@ use InvalidArgumentException;
 class PaygateService
 {
     private PaymentService $paymentService;
-
+    private UserRepository $userRepository;
     protected string $apiKey;
     protected string $baseUrl;
 
-    public function __construct(PaymentService $paymentService)
+    public function __construct(PaymentService $paymentService,  UserRepository $userRepository)
     {
         $this->apiKey = config('services.paygate.api_key');
         $this->baseUrl = config('services.paygate.base_url', 'https://paygateglobal.com');
         $this->paymentService = $paymentService;
+        $this->userRepository = $userRepository;
     }
 
     /**
@@ -224,7 +226,7 @@ class PaygateService
             // Vérifier que la transaction est réussie
             if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
-
+                $user = $this->userRepository->find($userId);
                 if ($amount > 0) {
                     Log::info("Paiement réussi, création du lien de paiement", [
                         'amount' => $amount,
