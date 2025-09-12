@@ -368,8 +368,6 @@ class WalletAPIController extends Controller
         ];
     }
 
-    //méthode de rechage du wallet(reception des données utilisateur et envoie au service de paiement)
-//méthode de rechage du wallet(reception des données utilisateur et envoie au service de paiement)
     public function increaseWallet(Request $request): JsonResponse
     {
         try {

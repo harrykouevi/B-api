@@ -146,7 +146,7 @@ class PaygateService
             $url = "{$this->baseUrl}/api/v1/status";
             $data = [
                 "auth_token" => $this->apiKey,
-                "tx_reference" => $transactionId
+                "identifier" => $transactionId
             ];
 
             Log::info("Paygate checkPaymentState request", [
