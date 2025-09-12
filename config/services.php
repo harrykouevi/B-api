@@ -86,5 +86,11 @@ return [
     'transfert_base_url' => env('CINETPAY_TRANSFERT_BASE_URL', 'https://client.cinetpay.com/v1'),
     'api_password' => env('CINETPAY_PASSWORD')
 ],
+    'paygate' => [
+    'api_key' => env('PAYGATE_API_KEY'),
+    'base_url' => env('PAYGATE_BASE_URL', 'https://api.cinetpay.com/v1'),
+    'transfert_base_url' => env('CINETPAY_TRANSFERT_BASE_URL', 'https://client.cinetpay.com/v1'),
+    'api_password' => env('CINETPAY_PASSWORD')
+],
 
 ];

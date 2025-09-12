@@ -350,13 +350,15 @@ public function addContact(string $prefix, string $phone, string $name, string $
 
     try {
         // Tableau d'objets comme demandé par la doc
-        $contactData = [[
+        $contactData = [
+            [
             'prefix' => $prefix,
             'phone' => $rawNumber,
             'name' => $name,
             'surname' => $surname,
             'email' => $email
-        ]];
+            ]
+        ];
 
         $payload = [
             'data' => json_encode($contactData)

@@ -20,6 +20,7 @@ use App\Repositories\CurrencyRepository;
 use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
 use App\Services\CinetPayService;
+use App\Services\PaygateService;
 use App\Services\PaymentService;
 use App\Types\WalletType;
 use Exception;
@@ -366,6 +367,7 @@ class WalletAPIController extends Controller
     }
 
     //méthode de rechage du wallet(reception des données utilisateur et envoie au service de paiement)
+//méthode de rechage du wallet(reception des données utilisateur et envoie au service de paiement)
     public function increaseWallet(Request $request): JsonResponse
     {
         try {
@@ -405,28 +407,52 @@ class WalletAPIController extends Controller
             $customerData = $this->buildCustomerData($request, $paymentChannel, $userId);
             Log::info('Sortie dans customerData ', ['user_id' => $userId, 'request' => $request->all()]);
 
-
             $notifyUrl = url("/api/recharge/callback/{$userId}");
             log::info("notify Url",['url'=> $notifyUrl]);
             $returnUrl = route('payments.return', ['transaction' => $transactionId]);
 
+            // Vérifier si CinetPay est disponible
+            $cinetPayTokenResponse = $this->cinetPayService->getAuthToken();
 
+            // Si CinetPay est disponible, utiliser CinetPay
+            if (isset($cinetPayTokenResponse['success']) && $cinetPayTokenResponse['success']) {
+                log::info("Début d'envoi via CinetPay");
+                $response = $this->cinetPayService->initPayment(
+                    $amount,
+                    'XOF',
+                    $transactionId,
+                    $description,
+                    $paymentChannel,
+                    $customerData,
+                    $notifyUrl,
+                    $returnUrl
+                );
+                log::info("reponse CinetPay",['reponse'=> $response]);
 
-            log::info("Début d'envoi");
-            $response = $this->cinetPayService->initPayment(
-                $amount,
-                'XOF',
-                $transactionId,
-                $description,
-                $paymentChannel,
-                $customerData,
-                $notifyUrl,
-                $returnUrl
-            );
-            log::info("reponse",['reponse'=> $response]);
+                if (isset($response['data']['payment_url'])) {
+                    return $this->sendResponse($response, "Contact établi avec succès");
+                }
+            } else {
+                // CinetPay n'est pas disponible, utiliser Paygate comme solution de secours
+                Log::warning('CinetPay indisponible, bascule vers Paygate', [
+                    'cinetpay_error' => $cinetPayTokenResponse['message'] ?? 'Erreur inconnue'
+                ]);
 
-            if (isset($response['data']['payment_url'])) {
-                return $this->sendResponse($response, "Recharge effectuée avec succès");
+                // Initialiser le service Paygate
+                $paygateService = new PaygateService();
+
+                    log::info("Début d'envoi via Paygate");
+                    $response = $paygateService->initPayment(
+                        $amount,
+                        $transactionId,
+                        $notifyUrl = url("/api/paygate/callback/{$userId}")
+                    );
+                    log::info("reponse Paygate",['reponse'=> $response]);
+
+                    if (isset($response['data']['payment_url']) || (isset($response['success']) && $response['success'])) {
+                        return $this->sendResponse($response, "Recharge effectuée avec succès via Paygate");
+                    }
+
             }
 
             return $this->sendError('Erreur lors de l\'initialisation du paiement', 500);
@@ -439,6 +465,7 @@ class WalletAPIController extends Controller
             return $this->sendError($e->getMessage(), 500);
         }
     }
+
 
     /**
      * @throws RepositoryException
