@@ -126,7 +126,7 @@ class UpdateBookingPaymentListener
                 
                 if(auth()->user()->hasRole('customer') ){ 
                     // c'est le client qui annule  
-                    $salonUsers = $booking->salon->users ?? $booking->salon->users()->get();
+                    $salonUsers = $booking->salon?->users ?? collect();
                     Log::info(['les utilisateurs du salon ',$salonUsers] );
                     if(!$salonUsers->isEmpty()){ ;
                         $salonW = $this->walletRepository->findByField('user_id' ,$salonUsers->first()->id )->first() ;        
