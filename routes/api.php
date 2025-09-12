@@ -65,12 +65,13 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
+Route::post('paygate/callback/{userId}', [App\Http\Controllers\API\PaygateCallbackController::class, 'handleCallback']);
+
 Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,
     'handleTransferNotification'
 
 ])->name('cinetpay.transfer.webhook');
 
-Route::post('paygate/callback/{userId}', [App\Http\Controllers\API\PaygateCallbackController::class, 'handleCallback']);
 
 // Route pour le ping (GET)
 Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
