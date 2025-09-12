@@ -70,8 +70,7 @@ Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,
 
 ])->name('cinetpay.transfer.webhook');
 
-Route::post('/api/paygate/callback/{$userId}', [PaygateService::class,
-    'handleReturnUrl']);
+Route::post('/api/paygate/callback/{userId}', [App\Http\Controllers\API\PaygateCallbackController::class, 'handleCallback']);
 
 // Route pour le ping (GET)
 Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
