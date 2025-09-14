@@ -21,13 +21,13 @@ class PaygateService
     protected string $baseUrl;
 
 
-    public function __construct(PaymentService $paymentService,  UserRepository $userRepository,WalletTransactionRepository $transactionRepository)
+    public function __construct(PaymentService $paymentService, UserRepository $userRepository, WalletTransactionRepository $transactionRepository)
     {
         $this->apiKey = config('services.paygate.api_key');
         $this->baseUrl = config('services.paygate.base_url', 'https://paygateglobal.com');
         $this->paymentService = $paymentService;
         $this->userRepository = $userRepository;
-        $this->transactionRepository  = $transactionRepository;
+        $this->transactionRepository = $transactionRepository;
     }
 
     /**
@@ -44,9 +44,9 @@ class PaygateService
      * @throws InvalidArgumentException si montant invalide
      */
     public function initPayment(
-        float $amount,
-        string $identifier,
-        string $returnUrl = null,
+        float   $amount,
+        string  $identifier,
+        string  $returnUrl = null,
         ?string $description = null,
         ?string $phoneNumber = null,
         ?string $network = null,
@@ -219,7 +219,7 @@ class PaygateService
             }
 
             $txReference = $request->tx_reference;
-            $identifier = trim($request->identifier, '{}'); // ✅ Nettoyer l'identifier
+            $identifier = trim($request->identifier, '{}');
 
             // Récupérer la transaction
             $transaction = $this->transactionRepository->findWithoutFail($identifier);
@@ -232,7 +232,7 @@ class PaygateService
                 return;
             }
 
-            // Vérifier l'état du paiement (optionnel, le callback contient déjà les infos)
+            // Vérifier l'état du paiement
             $response = $this->checkPaymentState($txReference);
 
             if (!$response['success']) {
@@ -241,7 +241,7 @@ class PaygateService
                     'error' => $response['message']
                 ]);
                 $transaction->status = WalletTransaction::STATUS_REJECTED;
-                $transaction->save(); // ✅ Sauvegarder
+                $transaction->save();
                 return;
             }
 
@@ -252,12 +252,9 @@ class PaygateService
                 Log::error("Utilisateur introuvable", ['user_id' => $transaction->user_id]);
                 return;
             }
-            Log::info("data", [
-                'data' => $data
-            ]);
 
-            // Vérifier que la transaction est réussie
-            if (isset($data['request_data']) && $data['request_data'] != null) {
+            // ✅ CORRECTION : Vérifier le bon champ 'status'
+            if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
                 $transaction->status = WalletTransaction::STATUS_COMPLETED;
 
@@ -293,6 +290,7 @@ class PaygateService
             }
         }
     }
+
     /**
      * Consulter le solde
      *
