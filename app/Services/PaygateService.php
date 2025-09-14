@@ -111,7 +111,7 @@ class PaygateService
                     'status' => $responseData['status'],
                 ];
             }
-            $redirect_url = "$this->baseUrl/v1/page?token=$this->apiKey&amount=1&description=recharger votre portefeuille sur l'application CHARM&identifier=$identifier}";
+            $redirect_url = "$this->baseUrl/v1/page?token=$this->apiKey&amount=$amount&description=recharger votre portefeuille sur l'application CHARM&identifier=$identifier}";
 
             return [
                 'success' => true,
