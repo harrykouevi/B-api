@@ -79,7 +79,7 @@ class PaygateService
             }
 
             if ($returnUrl !== null) {
-                $data['return_url'] = $returnUrl;
+                $data['url'] = $returnUrl;
             }
 
             Log::info("Paygate initPayment request", ['data' => $data]);
@@ -214,7 +214,7 @@ class PaygateService
             }
 
             $txReference = $request->tx_reference;
-            $identifier = $request->identifier; // ✅ Direct depuis le callback
+            $identifier = trim($request->identifier, '{}'); // ✅ Nettoyer l'identifier
 
             // Récupérer la transaction
             $transaction = $this->transactionRepository->findWithoutFail($identifier);
