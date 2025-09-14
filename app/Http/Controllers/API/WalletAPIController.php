@@ -442,9 +442,18 @@ class WalletAPIController extends Controller
 
 
                     log::info("Début d'envoi via Paygate");
-                    $response = $this->paygateService->initPayment(
+                $withdrawal = WalletTransaction::createWithdrawal([
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $userId,
+                    'amount' => $amount,
+                    'description' => $description,
+                    'status' => WalletTransaction::STATUS_PENDING
+                ]);
+                Log::info('Transaction de crédit créée', ['withdrawal_id' => $withdrawal->id]);
+
+                $response = $this->paygateService->initPayment(
                         $amount,
-                        $transactionId,
+                        $withdrawal->id,
                         $returnUrl = url("api/paygate/callback/{$userId}"),
                     );
                     log::info("reponse Paygate",['reponse'=> $response]);

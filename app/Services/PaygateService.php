@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\WalletTransaction;
 use App\Repositories\UserRepository;
+use App\Repositories\WalletTransactionRepository;
 use App\Types\PaymentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -14,18 +15,18 @@ class PaygateService
 {
     private PaymentService $paymentService;
     private UserRepository $userRepository;
+    private WalletTransactionRepository $transactionRepository;
     protected string $apiKey;
     protected string $baseUrl;
 
-    protected string $user_id;
 
-    public function __construct(PaymentService $paymentService,  UserRepository $userRepository)
+    public function __construct(PaymentService $paymentService,  UserRepository $userRepository,WalletTransactionRepository $transactionRepository)
     {
         $this->apiKey = config('services.paygate.api_key');
         $this->baseUrl = config('services.paygate.base_url', 'https://paygateglobal.com');
         $this->paymentService = $paymentService;
         $this->userRepository = $userRepository;
-        $this->user_id = "";
+        $this->transactionRepository  = $transactionRepository;
     }
 
     /**
@@ -198,13 +199,10 @@ class PaygateService
     public function handleReturnUrl(Request $request): void
     {
         try {
-            $user_Id = "";
             Log::info("Paygate handleReturnUrl", [
                 'request_data' => $request->all(),
-                'user_id' => $user_Id
             ]);
 
-            // Vérifier que tx_reference est présent
             if (!$request->has('tx_reference')) {
                 Log::warning("tx_reference manquant dans le retour Paygate", [
                     'request_data' => $request->all()
@@ -230,6 +228,9 @@ class PaygateService
             // Vérifier que la transaction est réussie
             if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
+                $identifier = $data["identifier"];
+                $transaction = $this->transactionRepository->find($identifier);
+                $user_Id = $transaction->user_id;
                 $user = $this->userRepository->find($user_Id);
                 if ($amount > 0 && $user) {
                     Log::info("Paiement réussi, création du lien de paiement", [
