@@ -446,7 +446,7 @@ class WalletAPIController extends Controller
                         $amount,
                         $transactionId,
                         $userId,
-                        $notifyUrl = url("api/paygate/callback/")
+                        $returnUrl = url("api/paygate/callback/{$userId}"),
 
                     );
                     log::info("reponse Paygate",['reponse'=> $response]);

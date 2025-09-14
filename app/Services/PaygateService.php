@@ -44,11 +44,11 @@ class PaygateService
     public function initPayment(
         float $amount,
         string $identifier,
-        string $notifyUrl = null,
+        string $returnUrl = null,
         ?string $description = null,
         ?string $phoneNumber = null,
         ?string $network = null,
-        ?string $returnUrl = null
+        ?string $notifyUrl = null
     ): array
     {
         try {
@@ -60,7 +60,7 @@ class PaygateService
                 'token' => $this->apiKey,
                 'amount' => (int)$amount,
                 'identifier' => $identifier,
-                'url' => $notifyUrl,
+                'return_url' => $notifyUrl,
 
             ];
 
