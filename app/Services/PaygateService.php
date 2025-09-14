@@ -160,7 +160,10 @@ class PaygateService
             ]);
 
             $response = Http::asJson()->post($url, $data);
-
+            Log::info("Réponse", [
+                'url' => $url,
+                'data' => $response
+            ]);
             if ($response->failed()) {
                 return [
                     'success' => false,
@@ -171,7 +174,9 @@ class PaygateService
             }
 
             $responseData = $response->json();
-
+            Log::info("reponse retournée", [
+                'data' => $responseData
+            ]);
             return [
                 'success' => true,
                 'data' => $responseData,
@@ -247,9 +252,12 @@ class PaygateService
                 Log::error("Utilisateur introuvable", ['user_id' => $transaction->user_id]);
                 return;
             }
+            Log::info("data", [
+                'data' => $data
+            ]);
 
             // Vérifier que la transaction est réussie
-            if (isset($data['status']) && $data['status'] == 0) {
+            if (isset($data['request_data']) && $data['request_data'] != null) {
                 $amount = $data['amount'] ?? 0;
                 $transaction->status = WalletTransaction::STATUS_COMPLETED;
 
