@@ -151,7 +151,7 @@ class PaygateService
             $url = "{$this->baseUrl}/api/v1/status";
             $data = [
                 "auth_token" => $this->apiKey,
-                "identifier" => $transactionId
+                "tx_reference" => $transactionId
             ];
 
             Log::info("Paygate checkPaymentState request", [
@@ -205,16 +205,25 @@ class PaygateService
                 'request_data' => $request->all(),
             ]);
 
-            if (!$request->has('tx_reference')) {
-                Log::warning("tx_reference manquant dans le retour Paygate", [
+            // Vérifications des paramètres requis
+            if (!$request->has(['tx_reference', 'identifier'])) {
+                Log::warning("Paramètres manquants dans le retour Paygate", [
                     'request_data' => $request->all()
                 ]);
                 return;
             }
 
             $txReference = $request->tx_reference;
+            $identifier = $request->identifier; // ✅ Direct depuis le callback
 
-            // Vérifier l'état du paiement
+            // Récupérer la transaction
+            $transaction = $this->transactionRepository->find($identifier);
+            if (!$transaction) {
+                Log::error("Transaction introuvable", ['identifier' => $identifier]);
+                return;
+            }
+
+            // Vérifier l'état du paiement (optionnel, le callback contient déjà les infos)
             $response = $this->checkPaymentState($txReference);
 
             if (!$response['success']) {
@@ -222,30 +231,34 @@ class PaygateService
                     'tx_reference' => $txReference,
                     'error' => $response['message']
                 ]);
+                $transaction->status = WalletTransaction::STATUS_REJECTED;
+                $transaction->save(); // ✅ Sauvegarder
                 return;
             }
 
             $data = $response['data'];
-            $identifier = $data["identifier"];
-            $transaction = $this->transactionRepository->find($identifier);
-            $user_Id = $transaction->user_id;
+            $user = $this->userRepository->find($transaction->user_id);
+
+            if (!$user) {
+                Log::error("Utilisateur introuvable", ['user_id' => $transaction->user_id]);
+                return;
+            }
 
             // Vérifier que la transaction est réussie
             if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
-                $user = $this->userRepository->find($user_Id);
                 $transaction->status = WalletTransaction::STATUS_COMPLETED;
-                if ($amount > 0 && $user) {
+
+                if ($amount > 0) {
                     Log::info("Paiement réussi, création du lien de paiement", [
                         'amount' => $amount,
-                        'user_id' => $user_Id,
+                        'user_id' => $user->id,
                         'tx_reference' => $txReference
                     ]);
 
                     $this->paymentService->createPaymentLinkWithExternal($amount, $user, \App\Types\PaymentType::CREDIT);
                 }
             } else {
-
                 Log::warning("Paiement non réussi", [
                     'tx_reference' => $txReference,
                     'status' => $data['status'] ?? 'inconnu'
@@ -253,16 +266,21 @@ class PaygateService
                 $transaction->status = WalletTransaction::STATUS_REJECTED;
             }
 
+            $transaction->save();
+
         } catch (\Exception $e) {
             Log::error("Erreur lors du traitement du retour Paygate", [
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
             ]);
-            $transaction->status = WalletTransaction::STATUS_REJECTED;
+
+            if ($transaction) {
+                $transaction->status = WalletTransaction::STATUS_REJECTED;
+                $transaction->save(); s
+            }
         }
     }
-
     /**
      * Consulter le solde
      *
