@@ -34,7 +34,6 @@ class SendPaymentNotificationListener
     {
         $payer_wallet = ($event->payer_wallet instanceof Wallet ) ? $event->payer_wallet  : app(WalletRepository::class)->find($event->payer_wallet)  ;
         $user = $event->user ;
-        if($user) Log::info(['NsdcsdddntEvent', $user]) ;
         
         if($payer_wallet){
             
@@ -43,7 +42,7 @@ class SendPaymentNotificationListener
             }) ;
 
             if($transaction && $transaction->action == PaymentType::DEBIT->value){
-                Log::info(['NotifyPaymentEvent', 'Payement : Type '. $transaction->action. ' → montant de '.$transaction->amount.' débité du compte pour le compte de '.$payer_wallet->user->name]) ;
+                Log::info(['NotifyPaymentEvent', 'Payement : Type '. $transaction->action. ' → montant de '.$transaction->amount.' débité du compte  de '.$payer_wallet->user->name]) ;
                 try{
                     Notification::send([$payer_wallet->user], new NewDebitPayment($transaction));
                 } catch (\Exception $e) {
@@ -63,7 +62,7 @@ class SendPaymentNotificationListener
                 }) ;
 
                 if($transaction && $transaction->action == PaymentType::CREDIT->value){
-                    Log::info(['NotifyPaymentEvent', 'Paiement : Type ' . $transaction->action . ' → montant de'.$transaction->amount.' crédité sur le compte. Venant de '.$user->name]) ;
+                    Log::info(['NotifyPaymentEvent', 'Paiement : Type ' . $transaction->action . ' → montant '.$transaction->amount.' crédité sur le compte de '.$user->name]) ;
                     try{
                         Notification::send([$payer_wallet->user], new NewReceivedPayment($transaction));
                     } catch (\Exception $e) {

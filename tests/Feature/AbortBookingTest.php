@@ -111,7 +111,8 @@ class AbortBookingTest extends TestCase
 
 
             $res =  $this->actingAs($user, 'api')->putJson(route('api.bookings.update', $booking->id), [
-                'booking_status_id' =>  4 
+                'booking_status_id' =>  4 ,
+                'taxe'  =>  ["value" => 10, "type" => "percent"]
             ]);
 
             $response2 =  $this->actingAs($user2, 'api')->postJson(route('api.bookings.cancel', $booking->id), [

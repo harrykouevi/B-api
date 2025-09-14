@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Exceptions\InvalidPaymentInfoException;
+use App\Models\Tax;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Types\WalletType;
@@ -24,33 +25,20 @@ class DoPaymentEvent
     public Int|String|Wallet $payer_wallet;
     public User $user;
     public WalletType|Null $walletType;
+    public Tax|array|null $taxes;
     /**
      * Create a new event instance.
      */
     public function __construct(Array $paymentInfo )
     {
-       
-        // if (!isset($paymentInfo["amount"]) && !isset($paymentInfo["payer_wallet"]) && !isset($paymentInfo["user"]) ) {
-        //     throw new Exception('Invalid payment information.');
-        // }
-
-        // if (!is_numeric($paymentInfo['amount'])) {
-        //     throw new Exception('required amount.');
-        // }
-
-        // if (!is_int($paymentInfo['payer_wallet']) && !is_string($paymentInfo['payer_wallet']) && !($paymentInfo['payer_wallet'] instanceof Wallet) ) {
-        //     throw new Exception('Payer wallet must be an integer or string or Wallet instance.');
-        // }
-
-        // if (!($paymentInfo['user'] instanceof User)) {
-        //     throw new Exception('User must be an object.');
-        // }
+    
         InvalidPaymentInfoException::check($paymentInfo);
 
         $this->amount = (int) $paymentInfo['amount'];
         $this->payer_wallet = $paymentInfo['payer_wallet'];
         $this->user = !is_null($paymentInfo['user'])? $paymentInfo['user'] : new User();
         $this->walletType = array_key_exists('walletType',$paymentInfo)? $paymentInfo['walletType'] : Null;
+        $this->taxes =  array_key_exists('taxes',$paymentInfo)? $paymentInfo['taxes'] : Null;
      
     }
 

@@ -80,7 +80,9 @@ class PaymentService
                                                                     'user_id' => $user->id,
                                                                     'name'    => $wallettype->value,
                                                                 ])->first() 
-                                : $this->walletRepository->findByField('user_id',  $user->id)->first() ;
+                                : $this->walletRepository->findWhere(['user_id' =>$user->id,
+                                                                    'name' => WalletType::PRINCIPAL->value,
+                                                                ])->first() ;
         }else{
             $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
         }
@@ -129,7 +131,8 @@ class PaymentService
         if($user->id != null){ 
             $wallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $user->id)
                                                                     ->findByField('name',  $wallettype)->first() 
-                                : $this->walletRepository->findByField('user_id',  $user->id)->first() ;
+                                : $this->walletRepository->findByField('user_id',  $user->id)
+                                ->findByField('name',  $wallettype)->first() ;
         }else{
             $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
         }
@@ -146,8 +149,6 @@ class PaymentService
             if($amount != 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-                    Log::info(['00000001']);
-                    
                     event(new NotifyPaymentEvent( $payment , $payer_wallet,$user  ));
                 
                 } catch (Exception $e) {
@@ -290,19 +291,39 @@ class PaymentService
                         $transaction['description'] = 'compte débité';
                         $transaction['action'] =  'debit';
                         $transaction['amount'] = $amount ;
+                        
+                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
+                            //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
+                            //de l'argent provenant du client 
+                            $transaction['amount'] = $amount - $commission;
+                        }
+
                     }
                     if($i == 2){
                         
-                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
-                            //il a t'il une commission prix chez le coiffeur parce qu'il recoit
-                            //de l'argent provenant du client 
+                        if(  $commission > 0 ){ 
+
                             $transaction['amount'] = $commission ;
                             $w= $this->walletRepository->find(setting('app_default_wallet_id'));
                             $transaction['user_id'] = $w->user_id;
                             $transaction['status'] = "completed" ;
                             $transaction['wallet_id'] = $w->id;
-                            $transaction['description'] = 'compte crédité';
-                            $transaction['action'] =  'credit';
+
+
+                            if(  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                                //il y a t'il une commission prise chez le coiffeur parce qu'il recoit
+                                //de l'argent provenant du client 
+                                $transaction['description'] = 'compte crédité';
+                                $transaction['action'] =  'credit';
+
+                            }else if( $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
+                                //y a t'il une commission à rembourser au client  parce qu'il avait payé
+                                //de l'argent au coiffeur 
+                                $transaction['description'] = 'compte débité';
+                                $transaction['action'] =  'debit';
+                            }else{
+                                $transaction = [];
+                            }
                         }else{
                             break ;
                         }

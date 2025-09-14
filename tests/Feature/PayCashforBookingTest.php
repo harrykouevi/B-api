@@ -133,7 +133,7 @@ class PayCashforBookingTest extends TestCase
                         ,
                     'employee_id' => $user->id,
                     'quantity' =>  1,
-                    'user_id' => $user->id,
+                    'user_id' => $user2->id,
 
                     'booking_status_id' =>  1,
                     'booking_at' => Carbon::now()->addDays(1)->format('Y-m-d H:i:s'),

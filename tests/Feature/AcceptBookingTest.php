@@ -111,9 +111,9 @@ class AcceptBookingTest extends TestCase
             ] );
 
            
-            $response2 =  $this->actingAs($user, 'api')->putJson(route('api.bookings.update', $booking->id), [
+            $response2 =  $this->actingAs($user2, 'api')->putJson(route('api.bookings.update', $booking->id), [
                 'booking_status_id' =>  4 ,
-                'taxes'  =>  ["value" => 10, "type" => "percent"]
+                'taxe'  =>  ["value" => 10, "type" => "percent"]
                             
             ]);
 

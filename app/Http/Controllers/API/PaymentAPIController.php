@@ -150,6 +150,7 @@ class PaymentAPIController extends Controller
                     $payment = $this->paymentService->createPayment($transactionAmount,$wallet);
                     $payment = $payment[0];
                     if($payment){
+                        event(new NotifyPaymentEvent($payment ,$wallet ,new User()));
                         
                         try{ 
                             $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
@@ -164,8 +165,8 @@ class PaymentAPIController extends Controller
                                 'hint' => 'cash' ,
                                 'purchase_at'  => now()  
                             ]);
-                            event(new BookingStatusChangedEvent($booking));
-                            // Notification::send($booking->salon->users, new StatusChangedPayment($booking));
+                            event( new NotifyBookingEvent($booking)) ;
+
                         } catch (Exception $e) {
                             Log::error($e->getMessage());
                         }
@@ -175,7 +176,6 @@ class PaymentAPIController extends Controller
                     return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
                 }
 
-                Notification::send($booking->salon->users, new StatusChangedPayment($booking));
 
             } catch (Exception $e) {
                 Log::error($e->getMessage());
