@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\WalletTransaction;
 use App\Repositories\UserRepository;
+use App\Repositories\WalletTransactionRepository;
 use App\Types\PaymentType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -13,19 +14,20 @@ use InvalidArgumentException;
 class PaygateService
 {
     private PaymentService $paymentService;
+
     private UserRepository $userRepository;
+    private WalletTransactionRepository $transactionRepository;
     protected string $apiKey;
     protected string $baseUrl;
 
-    protected string $user_id;
 
-    public function __construct(PaymentService $paymentService,  UserRepository $userRepository)
+    public function __construct(PaymentService $paymentService, UserRepository $userRepository, WalletTransactionRepository $transactionRepository)
     {
         $this->apiKey = config('services.paygate.api_key');
         $this->baseUrl = config('services.paygate.base_url', 'https://paygateglobal.com');
         $this->paymentService = $paymentService;
         $this->userRepository = $userRepository;
-        $this->user_id = "";
+        $this->transactionRepository = $transactionRepository;
     }
 
     /**
@@ -42,13 +44,13 @@ class PaygateService
      * @throws InvalidArgumentException si montant invalide
      */
     public function initPayment(
-        float $amount,
-        string $identifier,
-        string $notifyUrl = null,
+        float   $amount,
+        string  $identifier,
+        string  $returnUrl = null,
         ?string $description = null,
         ?string $phoneNumber = null,
         ?string $network = null,
-        ?string $returnUrl = null
+        ?string $notifyUrl = null
     ): array
     {
         try {
@@ -60,7 +62,7 @@ class PaygateService
                 'token' => $this->apiKey,
                 'amount' => (int)$amount,
                 'identifier' => $identifier,
-                'url' => $notifyUrl,
+                'url' => $returnUrl,
 
             ];
 
@@ -109,7 +111,7 @@ class PaygateService
                     'status' => $responseData['status'],
                 ];
             }
-            $redirect_url = "$this->baseUrl/v1/page?token=$this->apiKey&amount=1&description=test&identifier=$identifier}";
+            $redirect_url = "$this->baseUrl/v1/page?token=$this->apiKey&amount=$amount&description=recharger votre portefeuille sur l'application CHARM&identifier=$identifier}";
 
             return [
                 'success' => true,
@@ -149,7 +151,7 @@ class PaygateService
             $url = "{$this->baseUrl}/api/v1/status";
             $data = [
                 "auth_token" => $this->apiKey,
-                "identifier" => $transactionId
+                "tx_reference" => $transactionId
             ];
 
             Log::info("Paygate checkPaymentState request", [
@@ -158,7 +160,10 @@ class PaygateService
             ]);
 
             $response = Http::asJson()->post($url, $data);
-
+            Log::info("Réponse", [
+                'url' => $url,
+                'data' => $response
+            ]);
             if ($response->failed()) {
                 return [
                     'success' => false,
@@ -169,7 +174,9 @@ class PaygateService
             }
 
             $responseData = $response->json();
-
+            Log::info("reponse retournée", [
+                'data' => $responseData
+            ]);
             return [
                 'success' => true,
                 'data' => $responseData,
@@ -198,21 +205,32 @@ class PaygateService
     public function handleReturnUrl(Request $request): void
     {
         try {
-            $user_Id = "";
+            $transaction = null;
             Log::info("Paygate handleReturnUrl", [
                 'request_data' => $request->all(),
-                'user_id' => $user_Id
             ]);
 
-            // Vérifier que tx_reference est présent
-            if (!$request->has('tx_reference')) {
-                Log::warning("tx_reference manquant dans le retour Paygate", [
+            // Vérifications des paramètres requis
+            if (!$request->has(['tx_reference', 'identifier'])) {
+                Log::warning("Paramètres manquants dans le retour Paygate", [
                     'request_data' => $request->all()
                 ]);
                 return;
             }
 
             $txReference = $request->tx_reference;
+            $identifier = trim($request->identifier, '{}');
+
+            // Récupérer la transaction
+            $transaction = $this->transactionRepository->findWithoutFail($identifier);
+            if (!$transaction) {
+                Log::warning("Transaction introuvable - identifier mismatch", [
+                    'identifier_recu' => $identifier,
+                    'tx_reference' => $txReference,
+                    'callback_data' => $request->all()
+                ]);
+                return;
+            }
 
             // Vérifier l'état du paiement
             $response = $this->checkPaymentState($txReference);
@@ -222,19 +240,28 @@ class PaygateService
                     'tx_reference' => $txReference,
                     'error' => $response['message']
                 ]);
+                $transaction->status = WalletTransaction::STATUS_REJECTED;
+                $transaction->save();
                 return;
             }
 
             $data = $response['data'];
+            $user = $this->userRepository->find($transaction->user_id);
 
-            // Vérifier que la transaction est réussie
+            if (!$user) {
+                Log::error("Utilisateur introuvable", ['user_id' => $transaction->user_id]);
+                return;
+            }
+
+            // ✅ CORRECTION : Vérifier le bon champ 'status'
             if (isset($data['status']) && $data['status'] == 0) {
-                $amount = $data['amount'] ?? 0;
-                $user = $this->userRepository->find($user_Id);
-                if ($amount > 0 && $user) {
+                $amount = $request->amount ?? 0 ;
+                    $transaction->status = WalletTransaction::STATUS_COMPLETED;
+
+                if ($amount > 0) {
                     Log::info("Paiement réussi, création du lien de paiement", [
                         'amount' => $amount,
-                        'user_id' => $user_Id,
+                        'user_id' => $user->id,
                         'tx_reference' => $txReference
                     ]);
 
@@ -245,7 +272,10 @@ class PaygateService
                     'tx_reference' => $txReference,
                     'status' => $data['status'] ?? 'inconnu'
                 ]);
+                $transaction->status = WalletTransaction::STATUS_REJECTED;
             }
+
+            $transaction->save();
 
         } catch (\Exception $e) {
             Log::error("Erreur lors du traitement du retour Paygate", [
@@ -253,6 +283,11 @@ class PaygateService
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
             ]);
+
+            if ($transaction) {
+                $transaction->status = WalletTransaction::STATUS_REJECTED;
+                $transaction->save();
+            }
         }
     }
 

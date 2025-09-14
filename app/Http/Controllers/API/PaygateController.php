@@ -7,7 +7,7 @@ use App\Services\PaygateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-class PaygateCallbackController extends Controller
+class PaygateController extends Controller
 {
     private PaygateService $paygateService;
 

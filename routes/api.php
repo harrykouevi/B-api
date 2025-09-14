@@ -7,6 +7,7 @@
  */
 
 use App\Http\Controllers\API\AddressAPIController;
+use App\Http\Controllers\API\PaygateController;
 use App\Services\PaygateService;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
@@ -22,7 +23,6 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
-use App\Http\Controllers\API\CinetpayTransferController;
 
 
 /*
@@ -65,7 +65,7 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
-Route::post('paygate/callback', [App\Http\Controllers\API\PaygateCallbackController::class, 'handleCallback']);
+Route::match(['get', 'post'],'paygate/callback', [PaygateController::class, 'handleCallback']);
 
 
 Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,

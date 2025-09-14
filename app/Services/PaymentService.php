@@ -172,19 +172,38 @@ class PaymentService
      *
      * @return array|null Détails de la transaction ou null en cas d’échec.
      */
-    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type , string $wallettype = null): ?array
+    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type, string $wallettype = null): ?array
     {
         try {
 
-            if ($data instanceof Wallet )  $wallet = $data ;
-            if ($data instanceof User )  $user = $data ;
-           
+            $user = null;
+            $wallet = null;
+
+            // Déterminer le type de données reçues
+            if ($data instanceof Wallet) {
+                $wallet = $data;
+                $user = $wallet->user;
+            }
+
+            if ($data instanceof User) {
+                $user = $data;
+                $wallet = $this->walletRepository->findByField('user_id', $user->id)->first();
+            }
+
             if (!$wallet) {
-                
-                $wallet = ($wallettype == null )? $this->createWallet($user, 0) : $this->createWallet($user, 0, $wallettype);
+                if (!$user) {
+                    throw new Exception('No user found to create wallet');
+                }
+
+                $wallet = ($wallettype == null) ? $this->createWallet($user, 0) : $this->createWallet($user, 0, $wallettype);
                 if (!$wallet) {
                     throw new Exception('Failed to create wallet');
                 }
+            }
+
+            // S'assurer qu'on a un utilisateur
+            if (!$user && $wallet) {
+                $user = $wallet->user;
             }
 
             $currency = json_decode($wallet->currency, true);
@@ -193,7 +212,7 @@ class PaymentService
             }
 
             if ($amount == 0) {
-                return [null, $wallet]; // Retour cohérent même pour amount=0
+                return [null, $wallet];
             }
 
             $payment = $this->withExternalTransaction(
@@ -208,7 +227,6 @@ class PaymentService
                 }
             } catch (Exception $e) {
                 Log::error('Notification failed: ' . $e->getMessage());
-                // On continue malgré l'échec de la notification
             }
 
             return [$payment, $wallet];
@@ -218,7 +236,6 @@ class PaymentService
             return null;
         }
     }
-
 
 
     /**
