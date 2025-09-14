@@ -60,7 +60,7 @@ class PaygateService
                 'token' => $this->apiKey,
                 'amount' => (int)$amount,
                 'identifier' => $identifier,
-                'return_url' => $notifyUrl,
+                'return_url' => $returnUrl,
 
             ];
 
@@ -77,7 +77,7 @@ class PaygateService
             }
 
             if ($returnUrl !== null) {
-                $data['url'] = $returnUrl;
+                $data['return_url'] = $returnUrl;
             }
 
             Log::info("Paygate initPayment request", ['data' => $data]);
