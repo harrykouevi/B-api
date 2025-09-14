@@ -257,7 +257,11 @@ class PaygateService
             if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
                 $transaction->status = WalletTransaction::STATUS_COMPLETED;
-
+                Log::info("Paiement réussi, création du lien de paiement", [
+                    'amount' => $amount,
+                    'user_id' => $user->id,
+                    'tx_reference' => $txReference
+                ]);
                 if ($amount > 0) {
                     Log::info("Paiement réussi, création du lien de paiement", [
                         'amount' => $amount,
