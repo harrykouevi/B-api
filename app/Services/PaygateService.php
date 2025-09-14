@@ -277,7 +277,7 @@ class PaygateService
 
             if ($transaction) {
                 $transaction->status = WalletTransaction::STATUS_REJECTED;
-                $transaction->save(); s
+                $transaction->save();
             }
         }
     }
