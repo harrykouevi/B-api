@@ -136,17 +136,13 @@ class CinetPayService
     public function getAuthToken()
     {
         try {
+            $url = "{$this->transferBaseUrl}/v1/auth/login?lang=fr&apikey={$this->apiKey}&password={$this->apiPassword}";
+
             Log::info('CinetPay login request', [
-                'url' => "{$this->transferBaseUrl}/v1/auth/login",
-                'payload' => [
-                    'apikey' => $this->apiKey,
-                    'password' => $this->apiPassword,
-                    'lang' => 'fr'
-                ]
+                'url' => $url
             ]);
-            $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/auth/login?lang=fr&apiKey=$this->apiKey&password=$this->apiPassword"
-                );
-            
+
+            $response = Http::get($url);
 
             Log::info('CinetPay login response', [
                 'status' => $response->status(),
@@ -154,7 +150,6 @@ class CinetPayService
             ]);
 
             if ($response->failed()) {
-                Log::error("Erreur lors de la récupération du token", ["response" => $response->body()]);
                 return [
                     'success' => false,
                     'message' => 'Erreur lors de la communication avec le service de paiement.',
@@ -165,24 +160,19 @@ class CinetPayService
 
             $data = $response->json();
 
-            // Gérer les erreurs d'authentification
             if (isset($data['code']) && $data['code'] !== 0) {
                 $errorMessage = $data['message'] ?? 'Erreur d\'authentification inconnue';
 
-                if ($data['code'] === 701) {
+                if ($data['code'] == 701) { // Utilisez == pour la comparaison
                     return [
                         'success' => false,
                         'message' => 'Erreur: les identifiants CinetPay sont incorrects',
-                        'status' => $response->status(),
-                        'body' => $response->body(),
                     ];
                 }
 
                 return [
                     'success' => false,
                     'message' => $errorMessage,
-                    'status' => $response->status(),
-                    'body' => $response->body(),
                 ];
             }
 
@@ -202,7 +192,6 @@ class CinetPayService
             ];
         }
     }
-
     /**
      * Vérifier le solde disponible
      *
