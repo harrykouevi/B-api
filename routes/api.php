@@ -23,7 +23,6 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
-use App\Http\Controllers\API\CinetpayTransferController;
 
 
 /*
