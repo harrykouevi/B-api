@@ -200,6 +200,7 @@ class PaygateService
     public function handleReturnUrl(Request $request): void
     {
         try {
+            $transaction = null;
             Log::info("Paygate handleReturnUrl", [
                 'request_data' => $request->all(),
             ]);
@@ -228,11 +229,10 @@ class PaygateService
             $identifier = $data["identifier"];
             $transaction = $this->transactionRepository->find($identifier);
             $user_Id = $transaction->user_id;
+
             // Vérifier que la transaction est réussie
             if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
-
-
                 $user = $this->userRepository->find($user_Id);
                 $transaction->status = WalletTransaction::STATUS_COMPLETED;
                 if ($amount > 0 && $user) {
@@ -259,6 +259,7 @@ class PaygateService
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
             ]);
+            $transaction->status = WalletTransaction::STATUS_REJECTED;
         }
     }
 
