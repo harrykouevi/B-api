@@ -451,7 +451,7 @@ class WalletAPIController extends Controller
                 $response = $this->paygateService->initPayment(
                     $amount,
                     $withdrawal->id,
-                    $returnUrl = route('payments.return', ['transaction' => $withdrawal->id])
+                    $returnUrl = route('payments.paygate_return', ['transaction' => $withdrawal->id])
 
                 );
                 log::info("reponse Paygate", ['reponse' => $response]);

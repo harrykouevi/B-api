@@ -37,6 +37,9 @@ Route::get('login/{service}', 'Auth\LoginController@redirectToProvider');
 Route::match(['get', 'post'], '/payment/return', function (Request $request) {
     return view('payments.return');
 })->name('payments.return');
+Route::match(['get', 'post'], '/payment/paygate_return', function (Request $request) {
+    return view('payments.return_paygate');
+})->name('payments.paygate_return');
 
 Route::get('login/{service}/callback', 'Auth\LoginController@handleProviderCallback');
 Auth::routes();
