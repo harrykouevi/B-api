@@ -14,7 +14,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewMessage extends Notification
+class NewMessage extends BaseNotification
 {
     use Queueable;
 
@@ -80,25 +80,18 @@ class NewMessage extends Notification
 
     public function toFcm(mixed $notifiable): FcmMessage
     {
-        $message = new FcmMessage();
-        $notification = [
-            'title' => $this->user->name . " " . __("lang.notification_sent_new_message"),
-            'body' => $this->text,
+        $title = $this->user->name . " " . __("lang.notification_sent_new_message");
+        $body = $this->text;
 
-        ];
         $data = [
-            'icon' => $this->getUserAvatarUrl(),
-            'click_action' => "FLUTTER_NOTIFICATION_CLICK",
-            'id' => 'App\\Notifications\\NewMessage',
-            'status' => 'done',
-            'bookingId' => (string) $this->messageId,
+            'messageId' => (string) $this->messageId,
+            'senderId' => (string) $this->user->id,
+            'senderName' => $this->user->name,
+            'senderAvatar' => $this->getUserAvatarUrl(),
+            'messageText' => $this->text,
         ];
-        $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
 
-        if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
-            $message->to($to);
-        }
-        return $message;
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
     }
 
     private function getUserAvatarUrl(): string
@@ -108,6 +101,11 @@ class NewMessage extends Notification
         } else {
             return asset('images/image_default.png');
         }
+    }
+
+    protected function getIconUrl(): string
+    {
+        return $this->getUserAvatarUrl();
     }
 
     /**

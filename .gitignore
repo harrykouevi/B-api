@@ -21,3 +21,5 @@ _ide_helper*
 /database/seeds/AppSettingsDemoTableSeeder.php
 /database/seeds/DatabaseDemoSeeder.php
 /database/seeds/MediaDemoTableSeeder.php
+./qodo/
+./qoder/

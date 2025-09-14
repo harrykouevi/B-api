@@ -16,7 +16,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class NewDebitPayment extends Notification
+class NewDebitPayment extends BaseNotification
 {
     use Queueable;
 
@@ -76,32 +76,45 @@ class NewDebitPayment extends Notification
 
     public function toFcm($notifiable): FcmMessage
     {
-        $message = new FcmMessage();
-        $notification = [
-            'body' => trans('lang.notification_payment', ['payment_id' => $this->transaction->payment_id, 'payment_status' => $this->transaction->payment->paymentStatus->status],'fr'),
-            'title' => trans('lang.notification_status_changed_payment',[],'fr'),
+        $title = trans('lang.notification_status_changed_payment', [], 'fr');
+        $body = trans('lang.notification_payment', [
+            'payment_id' => $this->transaction->payment_id, 
+            'payment_status' => $this->transaction->payment->paymentStatus->status
+        ], 'fr');
 
-        ];
         $data = [
-            'icon' => $this->getSalonMediaUrl(),
-            'click_action' => "FLUTTER_NOTIFICATION_CLICK",
-            'id' => 'App\\Notifications\\StatusChangedPayment',
-            'status' => 'done',
+            'type' => 'wallet_debit',
+            'transactionId' => (string) $this->transaction->id,
             'walletId' => (string) $this->transaction->wallet->id,
+            'paymentId' => (string) $this->transaction->payment_id,
+            'paymentStatus' => $this->transaction->payment->paymentStatus->status,
+            'paymentStatusName' => trans('lang.payment_statuses.'.$this->transaction->payment->paymentStatus->status),
+            'paymentMethod' => $this->transaction->payment->paymentMethod->name ?? null,
+            'amount' => (string) $this->transaction->amount,
+            'currency' => 'EUR',
+            'action' => $this->transaction->action, // 'debit' ou 'credit'
+            'description' => $this->transaction->description ?? null,
+            'previousBalance' => (string) ($this->transaction->wallet->balance + $this->transaction->amount),
+            'newBalance' => (string) $this->transaction->wallet->balance,
+            'createdAt' => $this->transaction->created_at ? \Illuminate\Support\Carbon::parse($this->transaction->created_at)->toIso8601String() : null,
+            'user' => [
+                'id' => (string) $this->transaction->wallet->user->id,
+                'name' => $this->transaction->wallet->user->name,
+                'email' => $this->transaction->wallet->user->email,
+            ],
         ];
-        $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
 
-        if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
-            $message->to($to);
-        }
-        return $message;
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
     }
 
     private function getSalonMediaUrl(): string
     {
-        
-            return asset('images/image_default.png');
-        
+        return asset('images/image_default.png');
+    }
+
+    protected function getIconUrl(): string
+    {
+        return $this->getSalonMediaUrl();
     }
 
     /**

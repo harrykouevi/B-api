@@ -1473,4 +1473,39 @@ return [
         'Failed' => 'Échoué',
     ],
 
+    // Notification translations for booking reports
+    'notification_booking_reported_client_subject' => 'Votre rendez-vous #:booking_id a été reporté',
+    'notification_booking_reported_client_greeting' => 'Bonjour,',
+    'notification_booking_reported_client_line1' => 'Votre rendez-vous #:booking_id a été reporté.',
+    'notification_booking_reported_client_line2' => 'Votre nouveau rendez-vous est prévu le :new_date à :new_time.',
+    'notification_booking_reported_client_title' => 'Rendez-vous reporté',
+    'notification_booking_reported_client_body' => 'Votre rendez-vous #:booking_id a été reporté au :new_date à :new_time. Services: :services',
+    
+    'notification_booking_reported_salon_subject' => 'Rendez-vous #:booking_id reporté pour :client_name',
+    'notification_booking_reported_salon_greeting' => 'Bonjour,',
+    'notification_booking_reported_salon_line1' => 'Le rendez-vous de :client_name (#:booking_id) a été reporté.',
+    'notification_booking_reported_salon_line2' => 'Services: :services. Nouvel horaire: :new_date à :new_time.',
+    'notification_booking_reported_salon_title' => 'Rendez-vous reporté',
+    'notification_booking_reported_salon_body' => ':client_name (#:booking_id) a reporté son rendez-vous. Services: :services. Nouvel horaire: :new_date à :new_time.',
+    
+    // Traductions pour les notifications de changement de statut
+    'notification_status_changed_client_subject' => 'Mise à jour de votre rendez-vous #:booking_id',
+    'notification_status_changed_client_greeting' => 'Bonjour,',
+    'notification_status_changed_client_line1' => 'Le statut de votre rendez-vous #:booking_id a été mis à jour.',
+    'notification_status_changed_client_line2' => 'Nouveau statut: :booking_status',
+    'notification_status_changed_client_title' => 'Statut du rendez-vous mis à jour',
+    'notification_status_changed_client_body' => 'Le statut de votre rendez-vous #:booking_id a été mis à jour à :booking_status',
+    
+    'notification_status_changed_salon_subject' => 'Mise à jour du rendez-vous #:booking_id',
+    'notification_status_changed_salon_greeting' => 'Bonjour,',
+    'notification_status_changed_salon_line1' => 'Le statut du rendez-vous #:booking_id de :client_name a été mis à jour.',
+    'notification_status_changed_salon_line2' => 'Nouveau statut: :booking_status',
+    'notification_status_changed_salon_title' => 'Statut du rendez-vous mis à jour',
+    'notification_status_changed_salon_body' => 'Le statut du rendez-vous #:booking_id de :client_name a été mis à jour à :booking_status',
+
+    // Traductions pour les notifications de nouvelle réservation
+    'notification_new_booking_title' => 'Nouvelle réservation',
+    'notification_new_booking_body' => 'Nouvelle réservation #:booking_id par :user_name. Services: :services. Date: :booking_date',
+    'notification_new_booking_details' => 'Réservation #:booking_id confirmée. Services: :services. Date: :booking_date',
+
 ];

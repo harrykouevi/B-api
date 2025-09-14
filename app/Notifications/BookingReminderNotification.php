@@ -9,7 +9,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Carbon\Carbon;
 
-class BookingReminderNotification extends Notification
+class BookingReminderNotification extends BaseNotification
 {
     use Queueable;
 
@@ -108,21 +108,52 @@ class BookingReminderNotification extends Notification
      */
     public function toFcm($notifiable): FcmMessage
     {
-        $message = new FcmMessage();
-        $notification = [
-            'title' => $this->getFcmTitle(),
-            'body' => $this->getFcmBody(),
+        $title = $this->getFcmTitle();
+        $body = $this->getFcmBody();
+        
+        // Données enrichies selon le destinataire
+        $baseData = [
+            'bookingId' => (string) $this->booking->id,
+            'reminderType' => $this->reminderType,
+            'bookingAt' => $this->booking->booking_at ? \Illuminate\Support\Carbon::parse($this->booking->booking_at)->toIso8601String() : null,
+            'atSalon' => $this->booking->at_salon,
+            'totalPrice' => (string) $this->booking->total,
+            'timeUntilHours' => (string) $this->getTimeUntilAppointment()['message'],
+            'services' => collect($this->booking->e_services)->map(function($service) {
+                return [
+                    'id' => (string) $service->id,
+                    'name' => $service->name,
+                    'duration' => $service->duration ?? null,
+                ];
+            })->toArray(),
         ];
 
-        $data = $this->getData();
-
-        $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
-
-        if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
-            $message->to($to);
+        // Données spécifiques selon le destinataire
+        if ($this->recipient === 'salon') {
+            $data = array_merge($baseData, [
+                'client' => [
+                    'id' => (string) $this->booking->user->id,
+                    'name' => $this->booking->user->name,
+                    'phone' => $this->booking->user->phone_number,
+                ],
+                'address' => $this->booking->address ? [
+                    'description' => $this->booking->address->description,
+                    'latitude' => $this->booking->address->latitude,
+                    'longitude' => $this->booking->address->longitude,
+                ] : null,
+            ]);
+        } else {
+            $data = array_merge($baseData, [
+                'salon' => [
+                    'id' => (string) $this->booking->salon->id,
+                    'name' => $this->booking->salon->name,
+                    'phone' => $this->booking->salon->mobile_number,
+                    'address' => $this->booking->salon->address,
+                ],
+            ]);
         }
 
-        return $message;
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
     }
 
     /**
@@ -562,5 +593,10 @@ class BookingReminderNotification extends Notification
             return $this->booking->salon->getFirstMediaUrl('image', 'thumb');
         }
         return asset('images/image_default.png');
+    }
+
+    protected function getIconUrl(): string
+    {
+        return $this->getSalonMediaUrl();
     }
 }

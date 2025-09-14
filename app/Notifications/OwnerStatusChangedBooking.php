@@ -14,7 +14,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class OwnerStatusChangedBooking extends Notification
+class OwnerStatusChangedBooking extends BaseNotification
 {
     use Queueable;
 
@@ -59,16 +59,7 @@ class OwnerStatusChangedBooking extends Notification
      */
     public function toMail(mixed $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->markdown("notifications::booking", ['booking' => $this->booking])
-            ->subject(trans('lang.notification_your_booking', ['booking_id' => $this->booking->id, 'booking_status' => $this->booking->bookingStatus->status]) . " | " . setting('app_name', ''))
-            ->greeting(trans('lang.notification_your_booking', ['booking_id' => $this->booking->id, 'booking_status' => $this->booking->bookingStatus->status]))
-            ->action(trans('lang.booking_details'), route('bookings.show', $this->booking->id));
-    }
-
-    public function toFcm($notifiable): FcmMessage
-    {
-        // Récupérer les services choisis
+        // Format services
         $services = '';
         if ($this->booking->e_services && count($this->booking->e_services) > 0) {
             $serviceNames = [];
@@ -78,37 +69,97 @@ class OwnerStatusChangedBooking extends Notification
             $services = implode(', ', $serviceNames);
         }
 
-        // Formater l'horaire
-        $horaire = '';
+        // Format booking date and time
+        $bookingDateTime = '';
         if ($this->booking->booking_at) {
-            $horaire = $this->booking->booking_at->format('d/m/Y H:i');
+            $bookingDateTime = $this->booking->booking_at->format('d/m/Y à H:i');
         }
 
-        // Nom du client
         $clientName = $this->booking->user->name ?? 'Client';
+        $bookingStatus = trans('lang.booking_statuses.' . $this->booking->bookingStatus->status);
 
-        $message = new FcmMessage();
-        $notification = [
-            'title' => trans('lang.notification_status_changed_booking',[],'fr'),
-            'body' => "RDV reporté - Client: {$clientName}, Services: {$services}, Horaire: {$horaire}",
-
-        ];
-        $data = [
-            'icon' => $this->getSalonMediaUrl(),
-            'click_action' => "FLUTTER_NOTIFICATION_CLICK",
-            'id' => 'App\\Notifications\\OwnerStatusChangedBooking',
-            'status' => 'done',
-            'bookingId' => (string) $this->booking->id,
-        ];
-        $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
-
-        if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
-            $message->to($to);
-        }
-        return $message;
+        return (new MailMessage)
+            ->markdown("notifications::booking", ['booking' => $this->booking])
+            ->subject(trans('lang.notification_status_changed_salon_subject', ['booking_id' => $this->booking->id, 'client_name' => $clientName, 'booking_status' => $bookingStatus]) . " | " . setting('app_name', ''))
+            ->greeting(trans('lang.notification_status_changed_salon_greeting'))
+            ->line(trans('lang.notification_status_changed_salon_line1', [
+                'client_name' => $clientName,
+                'booking_id' => $this->booking->id
+            ]))
+            ->line(trans('lang.notification_status_changed_salon_line2', [
+                'booking_status' => $bookingStatus,
+                'services' => $services,
+                'booking_date' => $bookingDateTime
+            ]))
+            ->action(trans('lang.booking_details'), route('bookings.show', $this->booking->id));
     }
 
-    private function getSalonMediaUrl(): string
+    public function toFcm($notifiable): FcmMessage
+    {
+        // Format services
+        $services = '';
+        if ($this->booking->e_services && count($this->booking->e_services) > 0) {
+            $serviceNames = [];
+            foreach ($this->booking->e_services as $service) {
+                $serviceNames[] = $service->name;
+            }
+            $services = implode(', ', $serviceNames);
+        }
+
+        // Format booking date and time
+        $bookingDateTime = '';
+        if ($this->booking->booking_at) {
+            $bookingDateTime = $this->booking->booking_at->format('d/m/Y à H:i');
+        }
+
+        // Client name
+        $clientName = $this->booking->user->name ?? 'Client';
+        $bookingStatus = trans('lang.booking_statuses.' . $this->booking->bookingStatus->status);
+
+        $title = trans('lang.notification_status_changed_salon_title');
+        $body = trans('lang.notification_status_changed_salon_body', [
+            'client_name' => $clientName,
+            'booking_id' => $this->booking->id,
+            'booking_status' => $bookingStatus,
+            'services' => $services,
+            'booking_date' => $bookingDateTime
+        ]);
+
+        $data = [
+            'bookingId' => (string) $this->booking->id,
+            'bookingStatus' => $this->booking->bookingStatus->status,
+            'bookingStatusOrder' => $this->booking->bookingStatus->order,
+            'bookingStatusName' => $bookingStatus,
+            'bookingAt' => $this->booking->booking_at
+                ? (\Carbon\Carbon::parse($this->booking->booking_at))->toIso8601String()
+                : null,
+            'atSalon' => $this->booking->at_salon,
+            'totalPrice' => (string) $this->booking->total,
+            'client' => [
+                'id' => (string) $this->booking->user->id,
+                'name' => $clientName,
+                'phone' => $this->booking->user->phone_number,
+                'email' => $this->booking->user->email,
+            ],
+            'services' => array_map(function($service) {
+                return [
+                    'id' => (string) $service->id,
+                    'name' => $service->name,
+                    'price' => (string) $service->price,
+                    'duration' => $service->duration ?? null,
+                ];
+            }, $this->booking->e_services ?? []),
+            'address' => $this->booking->address ? [
+                'description' => $this->booking->address->description,
+                'latitude' => $this->booking->address->latitude,
+                'longitude' => $this->booking->address->longitude,
+            ] : null,
+        ];
+
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
+    }
+
+    protected function getIconUrl(): string
     {
         if ($this->booking->salon->hasMedia('image')) {
             return $this->booking->salon->getFirstMediaUrl('image', 'thumb');

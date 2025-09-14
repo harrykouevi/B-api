@@ -15,7 +15,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class StatusChangedPayment extends Notification
+class StatusChangedPayment extends BaseNotification
 {
     use Queueable;
 
@@ -77,29 +77,63 @@ class StatusChangedPayment extends Notification
 
     public function toFcm($notifiable): FcmMessage
     {
-        $message = new FcmMessage();
-        $notification = [
-            'body' =>  trans('lang.notification_payment',  ( $this->data instanceof Purchase)? 
-                            ['purchase_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status))] :
-                            ['booking_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status))],'fr'),
-            'title' => trans('lang.notification_status_changed_payment',[],'fr'),
+        $isPurchase = $this->data instanceof Purchase;
+        
+        $title = trans('lang.notification_status_changed_payment', [], 'fr');
+        $body = trans('lang.notification_payment', $isPurchase ? 
+            ['purchase_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status))] :
+            ['booking_id' => $this->data->id, 'payment_status' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status))], 'fr');
 
+        // Données de base communes
+        $baseData = [
+            'paymentStatus' => $this->data->payment->paymentStatus->status,
+            'paymentStatusName' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status)),
+            'paymentMethod' => $this->data->payment->paymentMethod->name ?? null,
+            'amount' => (string) $this->data->payment->price,
+            'currency' => 'EUR',
+            'paymentId' => (string) $this->data->payment->id,
+            'createdAt' => $this->data->payment->created_at ? \Illuminate\Support\Carbon::parse($this->data->payment->created_at)->toIso8601String() : null,
         ];
-        $data = [
-            'icon' => $this->getSalonMediaUrl(),
-            'click_action' => "FLUTTER_NOTIFICATION_CLICK",
-            'id' => 'App\\Notifications\\StatusChangedPayment',
-            'status' => 'done',
-        ];
-        if($this->data instanceof Purchase) $data['purchaseId'] = (string) $this->data->id ;
-        if($this->data instanceof Booking) $data['bookingId'] = (string) $this->data->id ;
 
-        $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
-
-        if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
-            $message->to($to);
+        if ($isPurchase) {
+            $data = array_merge($baseData, [
+                'type' => 'purchase',
+                'purchaseId' => (string) $this->data->id,
+                'salon' => [
+                    'id' => (string) $this->data->salon->id,
+                    'name' => $this->data->salon->name,
+                ],
+                'services' => collect($this->data->e_services)->map(function($service) {
+                    return [
+                        'id' => (string) $service->id,
+                        'name' => $service->name,
+                        'price' => (string) $service->price,
+                    ];
+                })->toArray(),
+            ]);
+        } else {
+            $data = array_merge($baseData, [
+                'type' => 'booking',
+                'bookingId' => (string) $this->data->id,
+                'bookingAt' => $this->data->booking_at ? \Illuminate\Support\Carbon::parse($this->data->booking_at)->toIso8601String() : null,
+                'atSalon' => $this->data->at_salon,
+                'salon' => [
+                    'id' => (string) $this->data->salon->id,
+                    'name' => $this->data->salon->name,
+                    'phone' => $this->data->salon->mobile_number,
+                ],
+                'services' => collect($this->data->e_services)->map(function($service) {
+                    return [
+                        'id' => (string) $service->id,
+                        'name' => $service->name,
+                        'price' => (string) $service->price,
+                        'duration' => $service->duration ?? null,
+                    ];
+                })->toArray(),
+            ]);
         }
-        return $message;
+
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
     }
 
     private function getSalonMediaUrl(): string
@@ -109,6 +143,11 @@ class StatusChangedPayment extends Notification
         } else {
             return asset('images/image_default.png');
         }
+    }
+
+    protected function getIconUrl(): string
+    {
+        return $this->getSalonMediaUrl();
     }
 
     /**

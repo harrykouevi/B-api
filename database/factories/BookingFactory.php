@@ -28,8 +28,7 @@ class BookingFactory extends Factory
         $salon = fake()->randomElement(Salon::where('accepted', '=', '1')->with('users')->get()->toArray());
         $eServices = EService::where('salon_id', '=', $salon['id'])->with('options')->limit(random_int(1, 3))->get();
         $userId = fake()->randomElement(['3', '5', '7']);
-        $bookingStatus =   Get.lazyPut(() => RootController());
-        ::get()->random();
+        $bookingStatus = BookingStatus::inRandomOrder()->first();
         $bookingAt = fake()->dateTimeBetween('-7 months', '70 hours');
         $startAt = fake()->dateTimeBetween('75 hours', '80 hours');
         $endsAt = fake()->dateTimeBetween('81 hours', '85 hours');

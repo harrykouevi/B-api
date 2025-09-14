@@ -87,8 +87,14 @@ class SendBookingStatusNotificationsListener
      */
     private function handleStatusNotifications($booking): void
     {
-        if (in_array($booking->bookingStatus->order, [1, 80])) {
-            // Recu ou Reporté → notifier le client et le coiffeur
+        // Ne pas envoyer les notifications génériques pour les reports
+        // Ces notifications sont gérées par SendBookingReportedNotificationsListener
+        if ($booking->bookingStatus->order == 80) {
+            return;
+        }
+        
+        if (in_array($booking->bookingStatus->order, [1])) {
+            // Recu → notifier le client et le coiffeur
             Log::info("viens peut etre de creer ou reporter booking #{$booking->id} → ");
 
             $this->notifyClient($booking);

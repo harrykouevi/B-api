@@ -15,7 +15,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class RechargePayment extends Notification
+class RechargePayment extends BaseNotification
 {
     use Queueable;
 
@@ -75,32 +75,43 @@ class RechargePayment extends Notification
 
     public function toFcm($notifiable): FcmMessage
     {
-        $message = new FcmMessage();
-        $notification = [
-            'body' => trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status,[],'fr') , 'payment_amount' => $this->payment->amount], 'fr'),
-            'title' => trans('lang.notification_status_changed_payment',[],'fr'),
+        $title = trans('lang.notification_status_changed_payment', [], 'fr');
+        $body = trans('lang.notification_recharge', [
+            'payment_id' => $this->payment->id, 
+            'payment_status' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status, [], 'fr'),
+            'payment_amount' => $this->payment->amount
+        ], 'fr');
 
-        ];
         $data = [
-            'icon' => $this->getSalonMediaUrl(),
-            'click_action' => "FLUTTER_NOTIFICATION_CLICK",
-            'id' => 'App\\Notifications\\StatusChangedPayment',
-            'status' => 'done',
+            'type' => 'wallet_recharge',
             'walletId' => (string) $this->wallet->id,
+            'paymentId' => (string) $this->payment->id,
+            'paymentStatus' => $this->payment->paymentStatus->status,
+            'paymentStatusName' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status),
+            'paymentMethod' => $this->payment->paymentMethod->name ?? null,
+            'amount' => (string) $this->payment->price,
+            'currency' => 'EUR',
+            'previousBalance' => (string) ($this->wallet->balance - $this->payment->price),
+            'newBalance' => (string) $this->wallet->balance,
+            'createdAt' => $this->payment->created_at ? \Illuminate\Support\Carbon::parse($this->payment->created_at)->toIso8601String() : null,
+            'user' => [
+                'id' => (string) $this->wallet->user->id,
+                'name' => $this->wallet->user->name,
+                'email' => $this->wallet->user->email,
+            ],
         ];
-        $message->content($notification)->data($data)->priority(FcmMessage::PRIORITY_HIGH);
 
-        if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
-            $message->to($to);
-        }
-        return $message;
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
     }
 
     private function getSalonMediaUrl(): string
     {
-        
-            return asset('images/image_default.png');
-        
+        return asset('images/image_default.png');
+    }
+
+    protected function getIconUrl(): string
+    {
+        return $this->getSalonMediaUrl();
     }
 
     /**

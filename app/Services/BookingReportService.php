@@ -7,6 +7,7 @@ use App\Models\Booking;
 use Illuminate\Support\Facades\DB;
 use App\Repositories\BookingRepository;
 use App\Events\BookingStatusChangedEvent;
+use App\Events\BookingReportedEvent;
 use App\Repositories\BookingStatusRepository;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 
@@ -46,6 +47,10 @@ class BookingReportService
             
             $newBooking = $this->createReportedBooking($originalBooking, $newBookingData);
             
+            // Déclencher l'événement de report
+            event(new BookingReportedEvent($originalBooking->fresh(), $newBooking->fresh()));
+            
+            // Conserver l'événement existant pour la compatibilité
             event(new BookingStatusChangedEvent($originalBooking->fresh()));
             
             return [
@@ -117,7 +122,7 @@ class BookingReportService
             'hint' => $originalBooking->hint,
             
             // === NOUVEAU CYCLE DE VIE ===
-            'booking_status_id' => 4, // Accepted - recommence à zéro
+            'booking_status_id' => 1, // Received - doit être accepté par le salon
             'cancel' => false,
             
             // === LIENS DE TRAÇABILITÉ ===
