@@ -148,8 +148,9 @@ class CinetPayService
                 'payload' => $payload
             ]);
 
-            // Utiliser POST avec les données dans le body
-            $response = Http::asForm()->post($url, $payload);
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            ])->asForm()->post($url, $payload);
 
             Log::info('CinetPay login response POST', [
                 'status' => $response->status(),
