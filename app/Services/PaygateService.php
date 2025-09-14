@@ -14,6 +14,7 @@ use InvalidArgumentException;
 class PaygateService
 {
     private PaymentService $paymentService;
+
     private UserRepository $userRepository;
     private WalletTransactionRepository $transactionRepository;
     protected string $apiKey;
@@ -224,14 +225,16 @@ class PaygateService
             }
 
             $data = $response['data'];
-
+            $identifier = $data["identifier"];
+            $transaction = $this->transactionRepository->find($identifier);
+            $user_Id = $transaction->user_id;
             // Vérifier que la transaction est réussie
             if (isset($data['status']) && $data['status'] == 0) {
                 $amount = $data['amount'] ?? 0;
-                $identifier = $data["identifier"];
-                $transaction = $this->transactionRepository->find($identifier);
-                $user_Id = $transaction->user_id;
+
+
                 $user = $this->userRepository->find($user_Id);
+                $transaction->status = WalletTransaction::STATUS_COMPLETED;
                 if ($amount > 0 && $user) {
                     Log::info("Paiement réussi, création du lien de paiement", [
                         'amount' => $amount,
@@ -242,10 +245,12 @@ class PaygateService
                     $this->paymentService->createPaymentLinkWithExternal($amount, $user, \App\Types\PaymentType::CREDIT);
                 }
             } else {
+
                 Log::warning("Paiement non réussi", [
                     'tx_reference' => $txReference,
                     'status' => $data['status'] ?? 'inconnu'
                 ]);
+                $transaction->status = WalletTransaction::STATUS_REJECTED;
             }
 
         } catch (\Exception $e) {
