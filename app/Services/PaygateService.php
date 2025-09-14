@@ -62,7 +62,7 @@ class PaygateService
                 'token' => $this->apiKey,
                 'amount' => (int)$amount,
                 'identifier' => $identifier,
-                'return_url' => $returnUrl,
+                'url' => $returnUrl,
 
             ];
 
@@ -217,9 +217,13 @@ class PaygateService
             $identifier = $request->identifier; // ✅ Direct depuis le callback
 
             // Récupérer la transaction
-            $transaction = $this->transactionRepository->find($identifier);
+            $transaction = $this->transactionRepository->findWithoutFail($identifier);
             if (!$transaction) {
-                Log::error("Transaction introuvable", ['identifier' => $identifier]);
+                Log::warning("Transaction introuvable - identifier mismatch", [
+                    'identifier_recu' => $identifier,
+                    'tx_reference' => $txReference,
+                    'callback_data' => $request->all()
+                ]);
                 return;
             }
 

@@ -57,7 +57,7 @@ class WalletAPIController extends Controller
     private PaygateService $paygateService;
     private PaymentMethodRepository $paymentMethodRepository;
 
-    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService,PaygateService $paygateService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository,PaymentMethodRepository $paymentMethodRepository)
+    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, PaygateService $paygateService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository, PaymentMethodRepository $paymentMethodRepository)
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
@@ -136,7 +136,7 @@ class WalletAPIController extends Controller
     {
         try {
             $resp = $this->paymentService->createPayment(Auth::user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user());
-            $resp_ = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user() , WalletType::BONUS);
+            $resp_ = $this->paymentService->createPayment(auth()->user()->hasRole('customer') ? 0 : 0, setting('app_default_wallet_id'), auth()->user(), WalletType::BONUS);
             $wallets = collect([
                 $resp[1],
                 $resp_[1],
@@ -144,12 +144,12 @@ class WalletAPIController extends Controller
             return $this->sendResponse($wallets, __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
 
         } catch (ValidationException $e) {
-             Log::info($e->getMessage());
+            Log::info($e->getMessage());
 
             return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
-             Log::error($e->getMessage() ,  [
-                 'trace' => $e->getTraceAsString()
+            Log::error($e->getMessage(), [
+                'trace' => $e->getTraceAsString()
             ]);
 
             return $this->sendError($e->getMessage());
@@ -331,7 +331,7 @@ class WalletAPIController extends Controller
             return 'MOBILE_MONEY';
         }
 
-        if (str_contains($name, 'card') || str_contains($name, 'credit')|| str_contains($name, 'Credit')|| str_contains($name, 'crédit')|| str_contains($name, 'Carte') || str_contains($name, 'carte')) {
+        if (str_contains($name, 'card') || str_contains($name, 'credit') || str_contains($name, 'Credit') || str_contains($name, 'crédit') || str_contains($name, 'Carte') || str_contains($name, 'carte')) {
             return 'CREDIT_CARD';
         }
 
@@ -339,15 +339,12 @@ class WalletAPIController extends Controller
     }
 
 
-
-
-
     private function buildCustomerData(Request $request, string $paymentChannel, int $userId): array
     {
         log::info("dans la fonction");
         if ($paymentChannel === 'CREDIT_CARD') {
             return [
-                'customer_id' => (string) $userId,
+                'customer_id' => (string)$userId,
                 'customer_name' => $request->input('customer_name'),
                 'customer_surname' => $request->input('customer_surname'),
                 'customer_phone_number' => $request->input('customer_phone_number'),
@@ -408,7 +405,7 @@ class WalletAPIController extends Controller
             Log::info('Sortie dans customerData ', ['user_id' => $userId, 'request' => $request->all()]);
 
             $notifyUrl = url("/api/recharge/callback/{$userId}");
-            log::info("notify Url",['url'=> $notifyUrl]);
+            log::info("notify Url", ['url' => $notifyUrl]);
             $returnUrl = route('payments.return', ['transaction' => $transactionId]);
 
             // Vérifier si CinetPay est disponible
@@ -427,7 +424,7 @@ class WalletAPIController extends Controller
                     $notifyUrl,
                     $returnUrl
                 );
-                log::info("reponse CinetPay",['reponse'=> $response]);
+                log::info("reponse CinetPay", ['reponse' => $response]);
 
                 if (isset($response['data']['payment_url'])) {
                     return $this->sendResponse($response, "Contact établi avec succès");
@@ -441,7 +438,7 @@ class WalletAPIController extends Controller
                 // Initialiser le service Paygate
 
 
-                    log::info("Début d'envoi via Paygate");
+                log::info("Début d'envoi via Paygate");
                 $withdrawal = WalletTransaction::createWithdrawal([
                     'wallet_id' => $wallet->id,
                     'user_id' => $userId,
@@ -452,15 +449,16 @@ class WalletAPIController extends Controller
                 Log::info('Transaction de crédit créée', ['withdrawal_id' => $withdrawal->id]);
 
                 $response = $this->paygateService->initPayment(
-                        $amount,
-                        $withdrawal->id,
-                        $returnUrl = url("api/paygate/callback/{$userId}"),
-                    );
-                    log::info("reponse Paygate",['reponse'=> $response]);
+                    $amount,
+                    $withdrawal->id,
+                    $returnUrl = route('payments.return', ['transaction' => $transactionId])
 
-                    if (isset($response['data']['payment_url']) || (isset($response['success']) && $response['success'])) {
-                        return $this->sendResponse($response, "Recharge effectuée avec succès via Paygate");
-                    }
+                );
+                log::info("reponse Paygate", ['reponse' => $response]);
+
+                if (isset($response['data']['payment_url']) || (isset($response['success']) && $response['success'])) {
+                    return $this->sendResponse($response, "Recharge effectuée avec succès via Paygate");
+                }
 
             }
 
@@ -502,7 +500,7 @@ class WalletAPIController extends Controller
         try {
             $userId = $validatedData['user_id'];
             $walletId = $validatedData['wallet_id'];
-            $amount = (float) $validatedData['amount'];
+            $amount = (float)$validatedData['amount'];
             $phoneNumber = $validatedData['phone_number'];
             $countryPrefix = $validatedData['country_prefix'];
             $paymentMethod = $validatedData['payment_method'] ?? null;
@@ -666,7 +664,7 @@ class WalletAPIController extends Controller
             ]);
 
             return response()->json([
-                'success'=> true,
+                'success' => true,
                 'message' => 'Retrait initié avec succès.',
                 'transaction_id' => $transferResponse['transaction_id'],
                 'client_transaction_id' => $transferResponse['client_transaction_id'],
@@ -851,14 +849,14 @@ class WalletAPIController extends Controller
         return $query->where('user_id', $userId);
     }
 
-/**
-* Scope pour filtrer par période
-*
-* @param $query
-* @param string $startDate
-* @param string $endDate
-* @return mixed
-*/
+    /**
+     * Scope pour filtrer par période
+     *
+     * @param $query
+     * @param string $startDate
+     * @param string $endDate
+     * @return mixed
+     */
     public function scopeBetweenDates($query, string $startDate, string $endDate)
     {
         return $query->whereBetween('created_at', [$startDate, $endDate]);
