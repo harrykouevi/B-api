@@ -34,7 +34,10 @@ class CreatingPaymentListener
                 Log::channel('listeners_transactions')->debug('Ceci est un message $this->paymentService->createPayment( montant='. $event->amount.' , user= '.$event->user->id);
 
                 $payment = $this->paymentService->createPayment($event->amount,$event->payer_wallet,$event->user , $event->walletType , $event->taxes );
-                $payment = $payment[0];      
+                $payment = $payment[0];  
+
+                // Déclencher la notification de paiement (débit/crédit)
+                event(new NotifyPaymentEvent($payment, $event->payer_wallet, $event->user));
             }
         } catch (\Exception $e) {
             // Gestion de l'exception

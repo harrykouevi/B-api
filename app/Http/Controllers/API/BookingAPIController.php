@@ -196,6 +196,9 @@ class BookingAPIController extends Controller
 
             $booking = $this->bookingRepository->create($input);
             
+            // Déclenchement des notifications statut (client + salon)
+            event(new BookingStatusChangedEvent($booking));
+            
         } catch (ValidationException $e) {
            
             return $this->sendError(array_values($e->errors()),422);
