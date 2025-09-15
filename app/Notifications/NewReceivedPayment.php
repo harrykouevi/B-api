@@ -87,7 +87,7 @@ class NewReceivedPayment extends BaseNotification
             'transactionId' => (string) $this->transaction->id,
             'paymentId' => (string) $this->transaction->payment->id,
             'amount' => (string) $this->transaction->amount,
-            'paymentStatus' => $this->transaction->payment->paymentStatus->status,
+            'paymentStatus' => (string) $this->transaction->payment->paymentStatus->status,
             'paymentMethod' => $this->transaction->payment->paymentMethod->name ?? null,
             'transactionType' => $this->transaction->action,
         ];

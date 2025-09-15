@@ -166,7 +166,7 @@ class BookingReminderNotification extends BaseNotification
         
         return [
             // Informations de base
-            'booking_id' => $this->booking->id,
+            'booking_id' => (string) $this->booking->id,
             'reminder_type' => $this->reminderType,
             'recipient' => $this->recipient,
             
@@ -193,22 +193,22 @@ class BookingReminderNotification extends BaseNotification
             'salon' => [
                 'id' => $this->booking->salon->id ?? null,
                 'name' => $this->booking->salon->name ?? '',
-                'phone' => $this->booking->salon->phone_number ?? null,
+                'phone' => (string) $this->booking->salon->phone_number ?? null,
                 'address' => $this->getFormattedAddress(),
                 'image_url' => $this->getSalonMediaUrl(),
             ],
             
             // Informations sur le client (visible pour le salon)
             'client' => $this->recipient === 'salon' ? [
-                'id' => $this->booking->user->id,
+                'id' =>(string) $this->booking->user->id,
                 'name' => $this->booking->user->name,
                 'email' => $this->booking->user->email,
-                'phone' => $this->booking->user->phone_number ?? null,
+                'phone' => (string) $this->booking->user->phone_number ?? null,
             ] : null,
             
             // Informations sur l'employé assigné
             'employee' => $this->booking->employee ? [
-                'id' => $this->booking->employee->id,
+                'id' => (string)$this->booking->employee->id,
                 'name' => $this->booking->employee->name,
             ] : null,
             
@@ -220,21 +220,21 @@ class BookingReminderNotification extends BaseNotification
             
             // Statut et suivi
             'booking_status' => [
-                'id' => $this->booking->bookingStatus->id ?? null,
-                'name' => $this->booking->bookingStatus->status ?? 'Inconnu',
-                'order' => $this->booking->bookingStatus->order ?? null,
+                'id' => (string) $this->booking->bookingStatus->id ?? null,
+                'name' => (string) $this->booking->bookingStatus->status ?? 'Inconnu',
+                'order' => (string) $this->booking->bookingStatus->order ?? null,
             ],
             
             // Informations de paiement
             'payment_status' => $this->booking->payment ? [
                 'method' => $this->booking->payment->payment_method->name ?? 'Non définie',
-                'status' => $this->booking->payment->payment_status->status ?? 'En attente',
+                'status' => (string) $this->booking->payment->payment_status->status ?? 'En attente',
             ] : null,
             
             // Informations spéciales
             'special_notes' => $this->booking->hint ?? null,
             'is_reported' => $this->booking->isReported(),
-            'quantity' => $this->booking->quantity,
+            'quantity' => (string) $this->booking->quantity,
             
             // URLs pour actions rapides (mobile)
             'deep_links' => [
@@ -390,10 +390,10 @@ class BookingReminderNotification extends BaseNotification
         $services = [];
         foreach ($this->booking->e_services as $service) {
             $services[] = [
-                'id' => $service->id ?? null,
+                'id' => (string) $service->id ?? null,
                 'name' => $service->name ?? 'Service inconnu',
-                'price' => isset($service->price) ? number_format($service->getPrice(), 2) . ' €' : null,
-                'duration' => $service->duration ?? null,
+                'price' => (string) isset($service->price) ? number_format($service->getPrice(), 2) . ' €' : null,
+                'duration' => (string) $service->duration ?? null,
                 'description' => $service->description ?? null,
                 'category' => $service->category->name ?? null,
             ];
@@ -414,7 +414,7 @@ class BookingReminderNotification extends BaseNotification
         $options = [];
         foreach ($this->booking->options as $option) {
             $options[] = [
-                'id' => $option->id ?? null,
+                'id' => (string) $option->id ?? null,
                 'name' => $option->name ?? 'Option inconnue',
                 'price' => isset($option->price) ? number_format($option->price, 2) . ' FCFA' : null,
                 'description' => $option->description ?? null,
@@ -436,7 +436,7 @@ class BookingReminderNotification extends BaseNotification
             return [
                 'status' => 'passed',
                 'message' => 'Rendez-vous déjà passé',
-                'total_hours' => 0
+                'total_hours' => (string) 0
             ];
         }
         
@@ -444,9 +444,9 @@ class BookingReminderNotification extends BaseNotification
         
         return [
             'status' => 'upcoming',
-            'days' => $diff->days,
-            'hours' => $diff->h,
-            'minutes' => $diff->i,
+            'days' => (string) $diff->days,
+            'hours' => (string) $diff->h,
+            'minutes' => (string)  $diff->i,
             'total_hours' => round($now->diffInHours($bookingTime, false), 1),
             'human_readable' => $now->diffForHumans($bookingTime, true),
             'message' => $this->getTimeMessage($diff)

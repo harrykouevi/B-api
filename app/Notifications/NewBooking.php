@@ -118,16 +118,16 @@ class NewBooking extends BaseNotification
         $baseData = [
             'bookingId' => (string) $this->booking->id,
             'bookingStatus' => $this->booking->bookingStatus->status,
-            'bookingStatusOrder' => $this->booking->bookingStatus->order,
+            'bookingStatusOrder' => (string) $this->booking->bookingStatus->order,
             'bookingAt' => $this->booking->booking_at ? \Illuminate\Support\Carbon::parse($this->booking->booking_at)->toIso8601String() : null,
-            'atSalon' => $this->booking->at_salon,
+            'atSalon' => (string) $this->booking->at_salon,
             'totalPrice' => (string) $this->booking->total,
             'services' => collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
-                    'duration' => $service->duration ?? null,
+                    'duration' => (string) $service->duration ?? null,
                 ];
             })->toArray(),
         ];
@@ -139,13 +139,13 @@ class NewBooking extends BaseNotification
                 'client' => [
                     'id' => (string) $this->booking->user->id,
                     'name' => $this->booking->user->name,
-                    'phone' => $this->booking->user->phone_number,
+                    'phone' => (string) $this->booking->user->phone_number,
                     'email' => $this->booking->user->email,
                 ],
                 'address' => $this->booking->address ? [
                     'description' => $this->booking->address->description,
-                    'latitude' => $this->booking->address->latitude,
-                    'longitude' => $this->booking->address->longitude,
+                    'latitude' => (string) $this->booking->address->latitude,
+                    'longitude' => (string) $this->booking->address->longitude,
                 ] : null,
             ]);
         } else {
@@ -154,7 +154,7 @@ class NewBooking extends BaseNotification
                 'salon' => [
                     'id' => (string) $this->booking->salon->id,
                     'name' => $this->booking->salon->name,
-                    'phone' => $this->booking->salon->mobile_number,
+                    'phone' => (string) $this->booking->salon->mobile_number,
                     'address' => $this->booking->salon->address,
                 ],
             ]);

@@ -127,32 +127,32 @@ class OwnerStatusChangedBooking extends BaseNotification
 
         $data = [
             'bookingId' => (string) $this->booking->id,
-            'bookingStatus' => $this->booking->bookingStatus->status,
-            'bookingStatusOrder' => $this->booking->bookingStatus->order,
-            'bookingStatusName' => $bookingStatus,
-            'bookingAt' => $this->booking->booking_at
+            'bookingStatus' => (string) $this->booking->bookingStatus->status,
+            'bookingStatusOrder' => (string) $this->booking->bookingStatus->order,
+            'bookingStatusName' => (string) $bookingStatus,
+            'bookingAt' => (string) $this->booking->booking_at
                 ? (\Carbon\Carbon::parse($this->booking->booking_at))->toIso8601String()
                 : null,
-            'atSalon' => $this->booking->at_salon,
+            'atSalon' => (string) $this->booking->at_salon,
             'totalPrice' => (string) $this->booking->total,
             'client' => [
                 'id' => (string) $this->booking->user->id,
                 'name' => $clientName,
-                'phone' => $this->booking->user->phone_number,
-                'email' => $this->booking->user->email,
+                'phone' => (string) $this->booking->user->phone_number,
+                'email' => (string) $this->booking->user->email,
             ],
             'services' => collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
-                    'duration' => $service->duration ?? null,
+                    'duration' => (string) $service->duration ?? null,
                 ];
             })->toArray(),
             'address' => $this->booking->address ? [
                 'description' => $this->booking->address->description,
-                'latitude' => $this->booking->address->latitude,
-                'longitude' => $this->booking->address->longitude,
+                'latitude' => (string) $this->booking->address->latitude,
+                'longitude' => (string) $this->booking->address->longitude,
             ] : null,
         ];
 

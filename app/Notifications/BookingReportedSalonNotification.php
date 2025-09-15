@@ -128,12 +128,12 @@ class BookingReportedSalonNotification extends BaseNotification
             'reportType' => 'booking_rescheduled',
             'originalBookingAt' => $this->originalBooking->booking_at ? \Illuminate\Support\Carbon::parse($this->originalBooking->booking_at)->toIso8601String() : null,
             'newBookingAt' => $this->newBooking->booking_at ? \Illuminate\Support\Carbon::parse($this->newBooking->booking_at)->toIso8601String() : null,
-            'atSalon' => $this->newBooking->at_salon,
+            'atSalon' => (string) $this->newBooking->at_salon,
             'totalPrice' => (string) $this->newBooking->total,
             'client' => [
                 'id' => (string) $this->originalBooking->user->id,
                 'name' => $clientName,
-                'phone' => $this->originalBooking->user->phone_number,
+                'phone' => (string) $this->originalBooking->user->phone_number,
                 'email' => $this->originalBooking->user->email,
             ],
             'services' => collect($this->newBooking->e_services)->map(function($service) {
@@ -141,13 +141,13 @@ class BookingReportedSalonNotification extends BaseNotification
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
-                    'duration' => $service->duration ?? null,
+                    'duration' => (string) $service->duration ?? null,
                 ];
             })->toArray(),
             'address' => $this->newBooking->address ? [
                 'description' => $this->newBooking->address->description,
-                'latitude' => $this->newBooking->address->latitude,
-                'longitude' => $this->newBooking->address->longitude,
+                'latitude' => (string) $this->newBooking->address->latitude,
+                'longitude' => (string) $this->newBooking->address->longitude,
             ] : null,
         ];
 

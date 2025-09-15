@@ -88,7 +88,7 @@ class RechargePayment extends BaseNotification
             'paymentId' => (string) $this->payment->id,
             'paymentStatus' => $this->payment->paymentStatus->status,
             'paymentStatusName' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status),
-            'paymentMethod' => $this->payment->paymentMethod->name ?? null,
+            'paymentMethod' => (string) $this->payment->paymentMethod->name ?? null,
             'amount' => (string) $this->payment->price,
             'currency' => 'EUR',
             'previousBalance' => (string) ($this->wallet->balance - $this->payment->price),

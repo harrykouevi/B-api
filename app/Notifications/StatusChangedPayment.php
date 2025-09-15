@@ -86,13 +86,13 @@ class StatusChangedPayment extends BaseNotification
 
         // Données de base communes
         $baseData = [
-            'paymentStatus' => $this->data->payment->paymentStatus->status,
+            'paymentStatus' => (string)  $this->data->payment->paymentStatus->status,
             'paymentStatusName' => trans('lang.payment_statuses.'.strtolower($this->data->payment->paymentStatus->status)),
             'paymentMethod' => $this->data->payment->paymentMethod->name ?? null,
             'amount' => (string) $this->data->payment->price,
             'currency' => 'EUR',
             'paymentId' => (string) $this->data->payment->id,
-            'createdAt' => $this->data->payment->created_at ? \Illuminate\Support\Carbon::parse($this->data->payment->created_at)->toIso8601String() : null,
+            'createdAt' => (string) $this->data->payment->created_at ? \Illuminate\Support\Carbon::parse($this->data->payment->created_at)->toIso8601String() : null,
         ];
 
         if ($isPurchase) {
@@ -101,12 +101,12 @@ class StatusChangedPayment extends BaseNotification
                 'purchaseId' => (string) $this->data->id,
                 'salon' => [
                     'id' => (string) $this->data->salon->id,
-                    'name' => $this->data->salon->name,
+                    'name' => (string) $this->data->salon->name,
                 ],
                 'services' => collect($this->data->e_services)->map(function($service) {
                     return [
                         'id' => (string) $service->id,
-                        'name' => $service->name,
+                        'name' => (string) $service->name,
                         'price' => (string) $service->price,
                     ];
                 })->toArray(),
@@ -115,19 +115,19 @@ class StatusChangedPayment extends BaseNotification
             $data = array_merge($baseData, [
                 'type' => 'booking',
                 'bookingId' => (string) $this->data->id,
-                'bookingAt' => $this->data->booking_at ? \Illuminate\Support\Carbon::parse($this->data->booking_at)->toIso8601String() : null,
-                'atSalon' => $this->data->at_salon,
+                'bookingAt' => (string)  $this->data->booking_at ? \Illuminate\Support\Carbon::parse($this->data->booking_at)->toIso8601String() : null,
+                'atSalon' => (string)  $this->data->at_salon,
                 'salon' => [
                     'id' => (string) $this->data->salon->id,
-                    'name' => $this->data->salon->name,
-                    'phone' => $this->data->salon->mobile_number,
+                    'name' => (string) $this->data->salon->name,
+                    'phone' => (string) $this->data->salon->mobile_number,
                 ],
                 'services' => collect($this->data->e_services)->map(function($service) {
                     return [
                         'id' => (string) $service->id,
-                        'name' => $service->name,
+                        'name' => (string) $service->name,
                         'price' => (string) $service->price,
-                        'duration' => $service->duration ?? null,
+                        'duration' => (string) $service->duration ?? null,
                     ];
                 })->toArray(),
             ]);

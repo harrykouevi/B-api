@@ -104,12 +104,12 @@ class BookingReportedClientNotification extends BaseNotification
             'reportType' => 'booking_rescheduled',
             'originalBookingAt' => $this->originalBooking->booking_at ? \Illuminate\Support\Carbon::parse($this->originalBooking->booking_at)->toIso8601String() : null,
             'newBookingAt' => $this->newBooking->booking_at ? \Illuminate\Support\Carbon::parse($this->newBooking->booking_at)->toIso8601String() : null,
-            'atSalon' => $this->newBooking->at_salon,
+            'atSalon' => (string) $this->newBooking->at_salon,
             'totalPrice' => (string) $this->newBooking->total,
             'salon' => [
                 'id' => (string) $this->newBooking->salon->id,
                 'name' => $this->newBooking->salon->name,
-                'phone' => $this->newBooking->salon->mobile_number,
+                'phone' => (string) $this->newBooking->salon->mobile_number,
                 'address' => $this->newBooking->salon->address,
             ],
             'services' => collect($this->newBooking->services)->map(function($service) {
@@ -117,7 +117,7 @@ class BookingReportedClientNotification extends BaseNotification
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
-                    'duration' => $service->duration ?? null,
+                    'duration' => (string) $service->duration ?? null,
                 ];
             })->toArray(),
         ];

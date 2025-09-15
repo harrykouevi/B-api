@@ -87,7 +87,7 @@ class NewDebitPayment extends BaseNotification
             'transactionId' => (string) $this->transaction->id,
             'walletId' => (string) $this->transaction->wallet->id,
             'paymentId' => (string) $this->transaction->payment_id,
-            'paymentStatus' => $this->transaction->payment->paymentStatus->status,
+            'paymentStatus' => (string) $this->transaction->payment->paymentStatus->status,
             'paymentStatusName' => trans('lang.payment_statuses.'.$this->transaction->payment->paymentStatus->status),
             'paymentMethod' => $this->transaction->payment->paymentMethod->name ?? null,
             'amount' => (string) $this->transaction->amount,

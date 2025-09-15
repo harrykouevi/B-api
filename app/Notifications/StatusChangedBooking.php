@@ -120,24 +120,24 @@ class StatusChangedBooking extends BaseNotification
 
         $data = [
             'bookingId' => (string) $this->booking->id,
-            'bookingStatus' => $this->booking->bookingStatus->status,
-            'bookingStatusOrder' => $this->booking->bookingStatus->order,
-            'bookingStatusName' => $bookingStatus,
-            'bookingAt' => $this->booking->booking_at ? \Illuminate\Support\Carbon::parse($this->booking->booking_at)->toIso8601String() : null,
-            'atSalon' => $this->booking->at_salon,
+            'bookingStatus' => (string) $this->booking->bookingStatus->status,
+            'bookingStatusOrder' => (string) $this->booking->bookingStatus->order,
+            'bookingStatusName' => (string) $bookingStatus,
+            'bookingAt' => (string) $this->booking->booking_at ? \Illuminate\Support\Carbon::parse($this->booking->booking_at)->toIso8601String() : null,
+            'atSalon' => (string) $this->booking->at_salon,
             'totalPrice' => (string) $this->booking->total,
             'salon' => [
                 'id' => (string) $this->booking->salon->id,
-                'name' => $this->booking->salon->name,
-                'phone' => $this->booking->salon->mobile_number,
-                'address' => $this->booking->salon->address,
+                'name' => (string)  $this->booking->salon->name,
+                'phone' => (string)  $this->booking->salon->mobile_number,
+                'address' => (string)  $this->booking->salon->address,
             ],
             'services' => collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
-                    'duration' => $service->duration ?? null,
+                    'duration' => (string) $service->duration ?? null,
                 ];
             })->toArray(),
         ];
