@@ -224,7 +224,11 @@ class PaymentService
 
             try {
                 if ($payment && $wallet->user) {
-                    Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
+                    try {
+                        Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
+                    } catch (Exception $e) {
+                        Log::error("Error sending booking reported notification to salon: " . $e->getMessage());
+                    }
                 }
             } catch (Exception $e) {
                 Log::error('Notification failed: ' . $e->getMessage());
