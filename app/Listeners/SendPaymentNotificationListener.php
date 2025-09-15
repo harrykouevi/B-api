@@ -64,7 +64,8 @@ class SendPaymentNotificationListener
                 if($transaction && $transaction->action == PaymentType::CREDIT->value){
                     Log::info(['NotifyPaymentEvent', 'Paiement : Type ' . $transaction->action . ' → montant '.$transaction->amount.' crédité sur le compte de '.$user->name]) ;
                     try{
-                        Notification::send([$payer_wallet->user], new NewReceivedPayment($transaction));
+                        // Notifier le bénéficiaire (user), et non le payeur
+                        Notification::send([$user], new NewReceivedPayment($transaction));
                     } catch (\Exception $e) {
                         Log::error("Erreur dans SendPaymentNotificationListener avec l'envoie de notifications: " . $e->getMessage());
                     }
