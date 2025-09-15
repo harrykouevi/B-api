@@ -207,6 +207,9 @@ class UpdateBookingPaymentListener
                     array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null , "walletType"=> $walletType] );
                 }
 
+                if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
+
+
                 if($purchase) {
                     $purchase = $this->purchaseRepository->update([ 'purchase_status_id' => 3 ,
                         ], $purchase->id);
