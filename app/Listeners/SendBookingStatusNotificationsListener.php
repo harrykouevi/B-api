@@ -159,7 +159,7 @@ class SendBookingStatusNotificationsListener
             $user->hasRole('salon owner') 
             //|| $user->roles->count() > 0
         );
-        Log::info(["Nosqfffefefzv vrvr booking " , $recipients]);
+        Log::info(["Nosqfffefefzv vrvr booking " , $recipients->toArray()]);
         try{
             if ($recipients->count() > 0) {
                 Notification::send($recipients, new OwnerStatusChangedBooking($booking));
