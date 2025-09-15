@@ -185,7 +185,7 @@ class UpdateBookingPaymentListener
                         //le coiffeur rembourse au client le montant du service
                         //si il y a eu achat de service
                         if($purchaseamount > 0 ) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user , "walletType"=> $walletType  , "taxes" => ($purchase)? $purchase->taxes : Null ] );
-                        if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
+                        if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>$salonW, "user"=> $booking->user , "walletType"=> $walletType ] );
 
                     }
                     
