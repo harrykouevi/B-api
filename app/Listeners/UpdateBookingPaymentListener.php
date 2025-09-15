@@ -153,15 +153,7 @@ class UpdateBookingPaymentListener
             /** @var Booking $booking */
             $booking = $event->booking;
             $payment_intents =[];
-            Log::info(['eefefefefefefe', $booking->getOriginal()]) ;
-            if( in_array($booking->booking_status_id, [7, 8]) && $booking->getOriginal()['booking_status_id'] < 4){
-                
-                [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
-
-                if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
-
-
-            }else
+            
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->payment_status_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
                 //le montant de la reservation
@@ -182,40 +174,45 @@ class UpdateBookingPaymentListener
                 if($purchase) {
                     $purchaseamount = $purchase->payment->amount ;
                     $purchasepayment = $purchase->payment ;
-                }
-
-                if(auth()->user()->hasRole('salon owner') ){
-                    // c'est le coiffeur qui annule
-                    $salonW = $this->walletRepository->findWhere(['user_id' => auth()->user()->id,
-                                                                    'name' => WalletType::PRINCIPAL->value,
-                                                                ])->first() ;
-                    if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
-                    //le coiffeur rembourse au client le montant du service
-                    //si il y a eu achat de service
-                    if($purchaseamount > 0 ) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user , "walletType"=> $walletType  , "taxes" => ($purchase)? $purchase->taxes : Null ] );
-                    array_push($payment_intents ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
-                    if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
-
-                }
                 
-                if(auth()->user()->hasRole('customer') ){ 
-                   
-                    // c'est le client qui annule  
-                    $salonUsers = $booking->salon?->users ?? collect();
-                    Log::info(['les utilisateurs du salon ',$salonUsers->toArray()] );
-    
-                    if(!$salonUsers->isEmpty()){ ;
-                        $salonW = $this->walletRepository->findWhere(['user_id' => $salonUsers->first()->id ,
-                                                                    'name' => WalletType::PRINCIPAL->value,
-                                                                ])->first() ;        
+
+                    if(auth()->user()->hasRole('salon owner') ){
+                        // c'est le coiffeur qui annule
+                        $salonW = $this->walletRepository->findWhere(['user_id' => auth()->user()->id,
+                                                                        'name' => WalletType::PRINCIPAL->value,
+                                                                    ])->first() ;
+                        if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
                         //le coiffeur rembourse au client le montant du service
                         //si il y a eu achat de service
-                        if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user  , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
-                    }else{
-                        if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
+                        if($purchaseamount > 0 ) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user , "walletType"=> $walletType  , "taxes" => ($purchase)? $purchase->taxes : Null ] );
+                        array_push($payment_intents ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
+                        if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
+
                     }
-                    array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null , "walletType"=> $walletType] );
                     
+                    if(auth()->user()->hasRole('customer') ){ 
+                    
+                        // c'est le client qui annule  
+                        $salonUsers = $booking->salon?->users ?? collect();
+                        Log::info(['les utilisateurs du salon ',$salonUsers->toArray()] );
+        
+                        if(!$salonUsers->isEmpty()){ ;
+                            $salonW = $this->walletRepository->findWhere(['user_id' => $salonUsers->first()->id ,
+                                                                        'name' => WalletType::PRINCIPAL->value,
+                                                                    ])->first() ;        
+                            //le coiffeur rembourse au client le montant du service
+                            //si il y a eu achat de service
+                            if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user  , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
+                        }else{
+                            if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
+                        }
+                        array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null , "walletType"=> $walletType] );
+                        
+                    }
+                }else{
+                    
+                    if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
+
                 }
 
 
