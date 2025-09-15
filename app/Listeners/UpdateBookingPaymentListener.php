@@ -172,9 +172,9 @@ class UpdateBookingPaymentListener
                         }) ;
 
                 if($purchase) {
-                    $purchaseamount = $purchase->payment->amount ;
-                    $purchasepayment = $purchase->payment ;
-                
+                    
+                    if($purchase->purchaseStatus->order == 50) $purchaseamount = $purchase->payment->amount ;
+                    
 
                     if(auth()->user()->hasRole('salon owner') ){
                         // c'est le coiffeur qui annule
