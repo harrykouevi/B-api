@@ -156,10 +156,13 @@ class SendBookingStatusNotificationsListener
 
         $salonUsers = $booking->salon->users ?? $booking->salon->users()->get();
         $recipients = $salonUsers->filter(fn($user) =>
-            $user->hasRole('salon owner') 
-            //|| $user->roles->count() > 0
-        )->pluck('id');
-        Log::info(["Nosqfffefefzv vrvr booking " , $recipients->toArray()]);
+            $user->hasRole('salon owner')
+        );
+
+        Log::info("Recipients for booking #{$booking->id}", [
+            'ids' => $recipients->pluck('id')->toArray(),
+        ]);
+
         try{
             if ($recipients->count() > 0) {
                 Notification::send($recipients, new OwnerStatusChangedBooking($booking));
