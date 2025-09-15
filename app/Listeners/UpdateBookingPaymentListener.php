@@ -153,6 +153,14 @@ class UpdateBookingPaymentListener
             /** @var Booking $booking */
             $booking = $event->booking;
             $payment_intents =[];
+            if( in_array($booking->booking_status_id, [7, 8]) && $booking->getOriginal()['booking_status_id'] < 4){
+                
+                [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
+
+                if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
+
+
+            }else
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->payment_status_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
                 //le montant de la reservation
@@ -185,6 +193,7 @@ class UpdateBookingPaymentListener
                     //si il y a eu achat de service
                     if($purchaseamount > 0 ) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user , "walletType"=> $walletType  , "taxes" => ($purchase)? $purchase->taxes : Null ] );
                     array_push($payment_intents ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
+                    if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
 
                 }
                 
@@ -205,9 +214,9 @@ class UpdateBookingPaymentListener
                         if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
                     }
                     array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 0 ) ,"payer_wallet"=>$clientW, "user"=> null , "walletType"=> $walletType] );
+                    
                 }
 
-                if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
 
 
                 if($purchase) {
