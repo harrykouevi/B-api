@@ -112,6 +112,16 @@ class SendBookingStatusNotificationsListener
                     // En chemin, arrivé → notifier le salon
                     $this->notifySalonOwners($booking);
 
+                }elseif ($booking->bookingStatus->order < 60) {
+                    // Accepté → notifier le client
+                    $this->notifyClient($booking);
+
+                }elseif (in_array($booking->bookingStatus->order, [60,70])) {
+                    // En chemin, arrivé → notifier le salon
+                    $this->notifySalonOwners($booking);
+                    $this->notifyClient($booking);
+
+
                 } else {
                     // Après l’arrivée (service en cours, terminé, annulé, etc.) → notifier le client
                     $this->notifyClient($booking);
@@ -122,7 +132,12 @@ class SendBookingStatusNotificationsListener
                 if ($booking->bookingStatus->order < 40) {
                     // Avant l’arrivée → notifier le client
                     $this->notifyClient($booking);
-                } else {
+                }elseif (in_array($booking->bookingStatus->order, [60,70])) {
+                    // En chemin, arrivé → notifier le salon
+                    $this->notifySalonOwners($booking);
+                    $this->notifyClient($booking);
+
+                }  else {
                     // Après l’arrivée → notifier le salon
                     $this->notifySalonOwners($booking);
                 }
