@@ -153,6 +153,7 @@ class UpdateBookingPaymentListener
             /** @var Booking $booking */
             $booking = $event->booking;
             $payment_intents =[];
+            Log::info(['eefefefefefefe', $booking->getOriginal()]) ;
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->getOriginal()['booking_status_id'] < 4){
                 
                 [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
