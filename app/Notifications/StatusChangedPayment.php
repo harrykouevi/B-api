@@ -117,19 +117,19 @@ class StatusChangedPayment extends BaseNotification
                 'bookingId' => (string) $this->data->id,
                 'bookingAt' => (string)  $this->data->booking_at ? \Illuminate\Support\Carbon::parse($this->data->booking_at)->toIso8601String() : null,
                 'atSalon' => (string)  $this->data->at_salon,
-                'salon' => [
+                'salon' => json_encode( [
                     'id' => (string) $this->data->salon->id,
                     'name' => (string) $this->data->salon->name,
                     'phone' => (string) $this->data->salon->mobile_number,
-                ],
-                'services' => collect($this->data->e_services)->map(function($service) {
+                ]),
+                'services' => json_encode(collect($this->data->e_services)->map(function($service) {
                     return [
                         'id' => (string) $service->id,
                         'name' => (string) $service->name,
                         'price' => (string) $service->price,
                         'duration' => (string) $service->duration ?? null,
                     ];
-                })->toArray(),
+                })->toArray()),
             ]);
         }
 
@@ -161,11 +161,11 @@ class StatusChangedPayment extends BaseNotification
       
         if ( $this->data instanceof Purchase){
             return [
-                'purchase_id' => $this->data['id'],
+                'purchase_id' => (string) $this->data['id'],
             ];
         }
         return [
-            'booking_id' => $this->data['id'],
+            'booking_id' => (string) $this->data['id'],
         ];
         
     }

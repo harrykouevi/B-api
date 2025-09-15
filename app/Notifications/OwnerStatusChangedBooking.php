@@ -135,25 +135,25 @@ class OwnerStatusChangedBooking extends BaseNotification
                 : null,
             'atSalon' => (string) $this->booking->at_salon,
             'totalPrice' => (string) $this->booking->total,
-            'client' => [
+            'client' => json_encode([
                 'id' => (string) $this->booking->user->id,
                 'name' => $clientName,
                 'phone' => (string) $this->booking->user->phone_number,
                 'email' => (string) $this->booking->user->email,
-            ],
-            'services' => collect($this->booking->e_services)->map(function($service) {
+            ]),
+            'services' => json_encode(collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
                     'duration' => (string) $service->duration ?? null,
                 ];
-            })->toArray(),
-            'address' => $this->booking->address ? [
+            })->toArray()),
+            'address' => $this->booking->address ? json_encode([
                 'description' => $this->booking->address->description,
                 'latitude' => (string) $this->booking->address->latitude,
                 'longitude' => (string) $this->booking->address->longitude,
-            ] : null,
+            ]) : null,
         ];
 
         return $this->getFcmMessage($notifiable, $title, $body, $data);

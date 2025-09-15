@@ -126,20 +126,20 @@ class StatusChangedBooking extends BaseNotification
             'bookingAt' => (string) $this->booking->booking_at ? \Illuminate\Support\Carbon::parse($this->booking->booking_at)->toIso8601String() : null,
             'atSalon' => (string) $this->booking->at_salon,
             'totalPrice' => (string) $this->booking->total,
-            'salon' => [
+            'salon' => json_encode([
                 'id' => (string) $this->booking->salon->id,
                 'name' => (string)  $this->booking->salon->name,
                 'phone' => (string)  $this->booking->salon->mobile_number,
                 'address' => (string)  $this->booking->salon->address,
-            ],
-            'services' => collect($this->booking->e_services)->map(function($service) {
+            ]),
+            'services' => json_encode(collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
                     'duration' => (string) $service->duration ?? null,
                 ];
-            })->toArray(),
+            })->toArray()),
         ];
 
         return $this->getFcmMessage($notifiable, $title, $body, $data);

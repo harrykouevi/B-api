@@ -106,20 +106,20 @@ class BookingReportedClientNotification extends BaseNotification
             'newBookingAt' => $this->newBooking->booking_at ? \Illuminate\Support\Carbon::parse($this->newBooking->booking_at)->toIso8601String() : null,
             'atSalon' => (string) $this->newBooking->at_salon,
             'totalPrice' => (string) $this->newBooking->total,
-            'salon' => [
+            'salon' => json_encode([
                 'id' => (string) $this->newBooking->salon->id,
                 'name' => $this->newBooking->salon->name,
                 'phone' => (string) $this->newBooking->salon->mobile_number,
                 'address' => $this->newBooking->salon->address,
-            ],
-            'services' => collect($this->newBooking->services)->map(function($service) {
+            ]),
+            'services' => json_encode(collect($this->newBooking->services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
                     'duration' => (string) $service->duration ?? null,
                 ];
-            })->toArray(),
+            })->toArray()),
         ];
 
         return $this->getFcmMessage($notifiable, $title, $body, $data);

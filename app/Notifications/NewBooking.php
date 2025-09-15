@@ -122,41 +122,41 @@ class NewBooking extends BaseNotification
             'bookingAt' => $this->booking->booking_at ? \Illuminate\Support\Carbon::parse($this->booking->booking_at)->toIso8601String() : null,
             'atSalon' => (string) $this->booking->at_salon,
             'totalPrice' => (string) $this->booking->total,
-            'services' => collect($this->booking->e_services)->map(function($service) {
+            'services' => json_encode(collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
                     'duration' => (string) $service->duration ?? null,
                 ];
-            })->toArray(),
+            })->toArray()),
         ];
 
         // Données spécifiques selon le destinataire
         if ($notifiable->hasRole('salon owner')) {
             // Pour les salons : informations client
             $data = array_merge($baseData, [
-                'client' => [
+                'client' => json_encode([
                     'id' => (string) $this->booking->user->id,
                     'name' => $this->booking->user->name,
                     'phone' => (string) $this->booking->user->phone_number,
                     'email' => $this->booking->user->email,
-                ],
-                'address' => $this->booking->address ? [
+                ]),
+                'address' => $this->booking->address ? json_encode([
                     'description' => $this->booking->address->description,
                     'latitude' => (string) $this->booking->address->latitude,
                     'longitude' => (string) $this->booking->address->longitude,
-                ] : null,
+                ]) : null,
             ]);
         } else {
             // Pour les clients : informations salon
             $data = array_merge($baseData, [
-                'salon' => [
+                'salon' => json_encode([
                     'id' => (string) $this->booking->salon->id,
                     'name' => $this->booking->salon->name,
                     'phone' => (string) $this->booking->salon->mobile_number,
                     'address' => $this->booking->salon->address,
-                ],
+                ]),
             ]);
         }
 

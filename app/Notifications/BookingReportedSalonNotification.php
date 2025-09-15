@@ -130,25 +130,25 @@ class BookingReportedSalonNotification extends BaseNotification
             'newBookingAt' => $this->newBooking->booking_at ? \Illuminate\Support\Carbon::parse($this->newBooking->booking_at)->toIso8601String() : null,
             'atSalon' => (string) $this->newBooking->at_salon,
             'totalPrice' => (string) $this->newBooking->total,
-            'client' => [
+            'client' => json_encode([
                 'id' => (string) $this->originalBooking->user->id,
                 'name' => $clientName,
                 'phone' => (string) $this->originalBooking->user->phone_number,
                 'email' => $this->originalBooking->user->email,
-            ],
-            'services' => collect($this->newBooking->e_services)->map(function($service) {
+            ]),
+            'services' => json_encode(collect($this->newBooking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
                     'duration' => (string) $service->duration ?? null,
                 ];
-            })->toArray(),
-            'address' => $this->newBooking->address ? [
+            })->toArray()),
+            'address' => $this->newBooking->address ?json_encode( [
                 'description' => $this->newBooking->address->description,
                 'latitude' => (string) $this->newBooking->address->latitude,
                 'longitude' => (string) $this->newBooking->address->longitude,
-            ] : null,
+            ]) : null,
         ];
 
         return $this->getFcmMessage($notifiable, $title, $body, $data);

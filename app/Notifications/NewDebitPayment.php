@@ -97,11 +97,11 @@ class NewDebitPayment extends BaseNotification
             'previousBalance' => (string) ($this->transaction->wallet->balance + $this->transaction->amount),
             'newBalance' => (string) $this->transaction->wallet->balance,
             'createdAt' => $this->transaction->created_at ? \Illuminate\Support\Carbon::parse($this->transaction->created_at)->toIso8601String() : null,
-            'user' => [
+            'user' => json_encode([
                 'id' => (string) $this->transaction->wallet->user->id,
                 'name' => $this->transaction->wallet->user->name,
                 'email' => $this->transaction->wallet->user->email,
-            ],
+            ]),
         ];
 
         return $this->getFcmMessage($notifiable, $title, $body, $data);

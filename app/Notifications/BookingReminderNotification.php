@@ -119,37 +119,37 @@ class BookingReminderNotification extends BaseNotification
             'atSalon' => $this->booking->at_salon,
             'totalPrice' => (string) $this->booking->total,
             'timeUntilHours' => (string) $this->getTimeUntilAppointment()['message'],
-            'services' => collect($this->booking->e_services)->map(function($service) {
+            'services' => json_encode(collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'duration' => $service->duration ?? null,
                 ];
-            })->toArray(),
+            })->toArray()),
         ];
 
         // Données spécifiques selon le destinataire
         if ($this->recipient === 'salon') {
             $data = array_merge($baseData, [
-                'client' => [
+                'client' => json_encode([
                     'id' => (string) $this->booking->user->id,
                     'name' => $this->booking->user->name,
                     'phone' => $this->booking->user->phone_number,
-                ],
-                'address' => $this->booking->address ? [
+                ]),
+                'address' => $this->booking->address ? json_encode([
                     'description' => $this->booking->address->description,
                     'latitude' => $this->booking->address->latitude,
                     'longitude' => $this->booking->address->longitude,
-                ] : null,
+                ]) : null,
             ]);
         } else {
             $data = array_merge($baseData, [
-                'salon' => [
+                'salon' => json_encode([
                     'id' => (string) $this->booking->salon->id,
                     'name' => $this->booking->salon->name,
                     'phone' => $this->booking->salon->mobile_number,
                     'address' => $this->booking->salon->address,
-                ],
+                ]),
             ]);
         }
 
@@ -190,27 +190,27 @@ class BookingReminderNotification extends BaseNotification
             'total_price' => number_format($this->booking->getTotal(), 2) . ' €',
             
             // Informations sur le salon
-            'salon' => [
+            'salon' => json_encode([
                 'id' => $this->booking->salon->id ?? null,
                 'name' => $this->booking->salon->name ?? '',
                 'phone' => (string) $this->booking->salon->phone_number ?? null,
                 'address' => $this->getFormattedAddress(),
                 'image_url' => $this->getSalonMediaUrl(),
-            ],
+            ]),
             
             // Informations sur le client (visible pour le salon)
-            'client' => $this->recipient === 'salon' ? [
+            'client' => $this->recipient === 'salon' ? json_encode([
                 'id' =>(string) $this->booking->user->id,
                 'name' => $this->booking->user->name,
                 'email' => $this->booking->user->email,
                 'phone' => (string) $this->booking->user->phone_number ?? null,
-            ] : null,
+            ]) : null,
             
             // Informations sur l'employé assigné
-            'employee' => $this->booking->employee ? [
+            'employee' => $this->booking->employee ? json_encode([
                 'id' => (string)$this->booking->employee->id,
                 'name' => $this->booking->employee->name,
-            ] : null,
+            ]) : null,
             
             // Détails logistiques
             'location_type' => $this->booking->at_salon ? 'au_salon' : 'a_domicile',
@@ -219,17 +219,17 @@ class BookingReminderNotification extends BaseNotification
                 $this->getFormattedCustomerAddress(),
             
             // Statut et suivi
-            'booking_status' => [
+            'booking_status' => json_encode([
                 'id' => (string) $this->booking->bookingStatus->id ?? null,
                 'name' => (string) $this->booking->bookingStatus->status ?? 'Inconnu',
                 'order' => (string) $this->booking->bookingStatus->order ?? null,
-            ],
+            ]),
             
             // Informations de paiement
-            'payment_status' => $this->booking->payment ? [
+            'payment_status' => $this->booking->payment ? json_encode([
                 'method' => $this->booking->payment->payment_method->name ?? 'Non définie',
                 'status' => (string) $this->booking->payment->payment_status->status ?? 'En attente',
-            ] : null,
+            ]) : null,
             
             // Informations spéciales
             'special_notes' => $this->booking->hint ?? null,
@@ -237,11 +237,11 @@ class BookingReminderNotification extends BaseNotification
             'quantity' => (string) $this->booking->quantity,
             
             // URLs pour actions rapides (mobile)
-            'deep_links' => [
+            'deep_links' => json_encode([
                 'view_booking' => $this->getDeepLink('booking', $this->booking->id),
                 'contact_salon' => $this->getDeepLink('salon', $this->booking->salon->id ?? null),
                 'directions' => $this->getDirectionsLink(),
-            ],
+            ]),
             
             // Métadonnées de notification
             'notification_sent_at' => now()->format('Y-m-d H:i:s'),

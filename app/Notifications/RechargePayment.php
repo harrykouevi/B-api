@@ -94,11 +94,11 @@ class RechargePayment extends BaseNotification
             'previousBalance' => (string) ($this->wallet->balance - $this->payment->price),
             'newBalance' => (string) $this->wallet->balance,
             'createdAt' => $this->payment->created_at ? \Illuminate\Support\Carbon::parse($this->payment->created_at)->toIso8601String() : null,
-            'user' => [
+            'user' => json_encode([
                 'id' => (string) $this->wallet->user->id,
                 'name' => $this->wallet->user->name,
                 'email' => $this->wallet->user->email,
-            ],
+            ]),
         ];
 
         return $this->getFcmMessage($notifiable, $title, $body, $data);
