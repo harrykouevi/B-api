@@ -141,14 +141,14 @@ class OwnerStatusChangedBooking extends BaseNotification
                 'phone' => $this->booking->user->phone_number,
                 'email' => $this->booking->user->email,
             ],
-            'services' => array_map(function($service) {
+            'services' => collect($this->booking->e_services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
                     'price' => (string) $service->price,
                     'duration' => $service->duration ?? null,
                 ];
-            }, $this->booking->e_services ?? []),
+            })->toArray(),
             'address' => $this->booking->address ? [
                 'description' => $this->booking->address->description,
                 'latitude' => $this->booking->address->latitude,

@@ -112,7 +112,7 @@ class BookingReportedClientNotification extends BaseNotification
                 'phone' => $this->newBooking->salon->mobile_number,
                 'address' => $this->newBooking->salon->address,
             ],
-            'services' => collect($this->newBooking->e_services)->map(function($service) {
+            'services' => collect($this->newBooking->services)->map(function($service) {
                 return [
                     'id' => (string) $service->id,
                     'name' => $service->name,
