@@ -208,16 +208,6 @@ class BookingAPIController extends Controller
 
         try {
             // Log des IDs utilisateurs pour vérification sans risquer les références circulaires
-            Log::debug('Notifying salon users', [
-                'salon_id' => $salon->id,
-                'user_ids' => $salon->users()->pluck('id')->toArray()
-            ]);
-            Log::info('Notification sent to salon users', [
-                'salon_id' => $salon->id,
-                'users_count' => $salon->users()->count(),
-                'booking_id' => $booking->id
-            ]);
-
             // Envoi de la notification avec les données essentielles
             event( new NotifyBookingEvent($booking)) ;
         } catch (Exception $e) {
