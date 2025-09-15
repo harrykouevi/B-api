@@ -154,18 +154,18 @@ class SendBookingStatusNotificationsListener
             return;
         }
 
-        $salonUsers = $booking->salon->users ?? $booking->salon->users()->get();
-        $recipients = $salonUsers->filter(fn($user) =>
-            $user->hasRole('salon owner')
-        );
+        $salonUsers = $booking->salon->users ?? collect() ;
+        // $salonUsers = $salonUsers->filter(fn($user) =>
+        //     $user->hasRole('salon owner')
+        // );
 
         Log::info("Recipients for booking #{$booking->id}", [
-            'ids' => $recipients->pluck('id')->toArray(),
+            'ids' => $salonUsers->pluck('id')->toArray(),
         ]);
 
         try{
-            if ($recipients->count() > 0) {
-                Notification::send($recipients, new OwnerStatusChangedBooking($booking));
+            if ($salonUsers->count() > 0) {
+                Notification::send($salonUsers, new OwnerStatusChangedBooking($booking));
             }
         } catch (Exception $e) {
             Log::error("Erreur dans SendBookingStatusNotificationsListener avec l'envoie de notifications: " . $e->getMessage());
