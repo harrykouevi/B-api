@@ -34,6 +34,7 @@ use App\Repositories\BookingStatusRepository;
 use Illuminate\Validation\ValidationException;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Criteria\Bookings\BookingsOfUserCriteria;
+use App\Events\NotifyBookingEvent;
 use App\Models\Tax;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Validator\Exceptions\ValidatorException;
@@ -215,10 +216,7 @@ class BookingAPIController extends Controller
             ]);
 
             // Envoi de la notification avec les données essentielles
-            Notification::send(
-                $salon->users,
-                new NewBooking($booking->setRelations([]))
-            );
+            event( new NotifyBookingEvent($booking)) ;
         } catch (Exception $e) {
             Log::error('Notification error', [
                 'error' => $e->getMessage(),
