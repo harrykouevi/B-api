@@ -458,12 +458,12 @@ class AppSettingsTableSeeder extends Seeder
             array(
                 'id' => 160,
                 'key' => 'purchase_taxe',
-                'value' => 10,
+                'value' => '{"value":10,"type":"percent"}',
             ),
             array(
                 'id' => 161,
                 'key' => 'postpone_charge',
-                'value' => 10,
+                'value' => 0,
             ),
            
         ));
