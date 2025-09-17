@@ -240,27 +240,29 @@ class UserAPIController extends Controller
             // Récupère l'ID d'affiliation à partir du paramètre de requête
             if ($request->has('code_affiliation') && $request->input('code_affiliation') != ""  ) { 
                 $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
-                
-                $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
-                
-                // Attribue la récompense au partenaire
-                $partner = $affiliation->user;
-                if($partner){ 
-                    $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
-                    event(new DoPaymentEvent($paymentInfo));
+                if(!is_null($affiliation)){
+                    $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
                     
-                }
+                    // Attribue la récompense au partenaire
+                    $partner = $affiliation->user;
+                    if($partner){ 
+                        $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
+                        event(new DoPaymentEvent($paymentInfo));
+                        
+                    }
 
-                $user->update([
-                    'sponsorship' => $affiliation,
-                    'sponsorship_at' => now(),
-                ]);
+                    $user->update([
+                        'sponsorship' => $affiliation,
+                        'sponsorship_at' => now(),
+                    ]);
+
+                    //credité le wallet du client
+                    $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user , "walletType"=> WalletType::BONUS] ;
+                    event(new DoPaymentEvent($paymentInfo));
+            
+                }
             }
 
-            //credité le wallet du client
-            $paymentInfo = ["amount"=>setting('customer_initial_amount'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$user , "walletType"=> WalletType::BONUS] ;
-            event(new DoPaymentEvent($paymentInfo));
-            
         
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->userRepository->model());
 
