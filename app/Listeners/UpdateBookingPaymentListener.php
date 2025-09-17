@@ -116,7 +116,7 @@ class UpdateBookingPaymentListener
     private function getWalletUseToPayBooking(Booking $booking): ?array
     {
         // Vérifie si le paiement est avec le wallet et non encore validé
-        if ($booking->payment->payment_status_id != 3 
+        if ($booking->payment->paymentStatus_id != 3 
             && $booking->payment->paymentMethod->name === 'Wallet') {
             
             $walletTransaction = $this->walletTransactionRepository->findWhere([
@@ -154,7 +154,7 @@ class UpdateBookingPaymentListener
             $booking = $event->booking;
             $payment_intents =[];
             
-            if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->payment_status_id != 3){
+            if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->paymentStatus_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
                 //le montant de la reservation
                 $purchaseamount = 0  ;
@@ -221,7 +221,7 @@ class UpdateBookingPaymentListener
                 }
             }
 
-            else if($booking->booking_status_id == 9 && $booking->payment->payment_status_id != 3){
+            else if($booking->booking_status_id == 9 && $booking->payment->paymentStatus_id != 3){
                 //si le statut de la reservation est reporté et que le statut du paiement est tout sauf failed
                 Log::Error(['about do do payement transactions about report']);
                 
@@ -244,7 +244,7 @@ class UpdateBookingPaymentListener
                 }
             }
             
-            else if($booking->booking_status_id == 4 && $booking->payment->payment_status_id != 3 && $booking->payment->paymentMethod->name == 'Wallet'){
+            else if($booking->booking_status_id == 4 && $booking->payment->paymentStatus_id != 3 && $booking->payment->paymentMethod->name == 'Wallet'){
                 //si le statut de la reservation est accepted et que le statut du paiement de la reservation est tout sauf failed
                 $is_pyment_cash = false ;
                 

@@ -22,7 +22,7 @@
                         <dd class="col-sm-7">{{ $payment->description }}</dd>
 
                         <dt class="col-sm-5">{{ trans("lang.payment_status") }}</dt>
-                        <dd class="col-sm-7">{{ $payment->payment_status_id }}</dd>
+                        <dd class="col-sm-7">{{ $payment->paymentStatus_id }}</dd>
                     </dl>
                 </div>
 

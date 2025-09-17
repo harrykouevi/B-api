@@ -228,7 +228,7 @@ class BookingReminderNotification extends BaseNotification
             // Informations de paiement
             'payment_status' => $this->booking->payment ? json_encode([
                 'method' => $this->booking->payment->payment_method->name ?? 'Non définie',
-                'status' => (string) $this->booking->payment->payment_status->status ?? 'En attente',
+                'status' => (string) $this->booking->payment->paymentStatus->status ?? 'En attente',
             ]) : null,
             
             // Informations spéciales

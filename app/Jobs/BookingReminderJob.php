@@ -52,8 +52,9 @@ class BookingReminderJob implements ShouldQueue
                 return;
             }
 
-            // Vérifier si la réservation n'est pas déjà passée
+            
             if (Carbon::now()->isAfter($currentBooking->booking_at)) {
+                // Vérifier si la réservation n'est pas déjà passée
                 Log::info("Rappel {$this->reminderType} annulé - Réservation {$this->booking->id} déjà passée");
                 return;
             }
@@ -102,7 +103,7 @@ class BookingReminderJob implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::error("Échec définitif du rappel {$this->reminderType} pour la réservation {$this->booking->id}: " . $exception->getMessage(), [
-                 'trace' => $exception->getTraceAsString()
+                //  'trace' => $exception->getTraceAsString()
             ]);
     }
 }

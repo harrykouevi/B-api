@@ -118,7 +118,7 @@ class BookingController extends Controller
         $booking->address_id = $booking->address->id;
         $bookingStatus = $this->bookingStatusRepository->orderBy('order')->pluck('status', 'id');
         if (!empty($booking->payment_id)) {
-            $booking->payment_status_id = $booking->payment->payment_status_id;
+            $booking->payment_status_id = $booking->payment->paymentStatus_id;
             $paymentStatuses = $this->paymentStatusRepository->pluck('status', 'id');
         } else {
             $paymentStatuses = null;
