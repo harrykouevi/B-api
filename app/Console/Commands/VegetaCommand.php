@@ -19,7 +19,7 @@ class VegetaCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Commande qui écrit dans vegeta.log toutes les 5 minutes';
+    protected $description = 'Commande qui écrit dans vegeta.log toutes les 2 minutes';
 
     /**
      * Execute the console command.
