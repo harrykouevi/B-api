@@ -21,7 +21,7 @@ class ProcessMissedRemindersCommand extends Command
 
     public function handle(): int
     {
-        $this->info('🔄 Début du traitement des rappels manqués...');
+        $this->info('🔄 Début du traitement des rappels manqués...'. now());
         Log::channel('vegeta')->info('🔄 Début du traitement des rappels manqués... ' . now());
 
         try {
