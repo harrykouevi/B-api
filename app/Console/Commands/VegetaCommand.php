@@ -29,7 +29,7 @@ class VegetaCommand extends Command
          // Écrire un message dans le log vegeta.log
         Log::channel('vegeta')->info('Commande vegeta exécutée à ' . now());
 
-        $this->info('Log écrit avec succès.');
+        $this->info('Log écrit avec succès.' . now());
         return 0;
     }
 }
