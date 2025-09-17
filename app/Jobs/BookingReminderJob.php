@@ -67,7 +67,7 @@ class BookingReminderJob implements ShouldQueue
                     );
                 } catch (\Exception $e) {
                     Log::error("Erreur envoi Notification au client {$this->reminderType} pour la réservation {$this->booking->id}: " . $e->getMessage(), [
-                        // 'trace' => $e->getTraceAsString()
+                        'trace' => $e->getTraceAsString()
                     ]);
                 }
                 Log::info("Rappel {$this->reminderType} envoyé au client {$currentBooking->user->name} pour la réservation {$this->booking->id}");
@@ -82,7 +82,7 @@ class BookingReminderJob implements ShouldQueue
                     );
                 } catch (\Exception $e) {
                     Log::error("Erreur envoi Notification au salon {$this->reminderType} pour la réservation {$this->booking->id}: " . $e->getMessage(), [
-                        // 'trace' => $e->getTraceAsString()
+                        'trace' => $e->getTraceAsString()
                     ]);
                 }
                 Log::info("Rappel {$this->reminderType} envoyé au salon {$currentBooking->salon->name} pour la réservation {$this->booking->id}");
