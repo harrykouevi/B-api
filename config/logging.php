@@ -105,6 +105,12 @@ return [
             'path' => storage_path('logs/wallet_transactions.log'),
             'level' => env('APP_LOG_LEVEL', 'debug'),
         ],
+
+        'vegeta' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/vegeta.log'),
+            'level' => 'debug',
+        ],
     ],
 
 ];

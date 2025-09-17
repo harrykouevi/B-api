@@ -31,6 +31,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('app:vegeta-command')
+                ->everyTwoMinutes()
+                ->runInBackground()
+                ->appendOutputTo(storage_path('logs/vegeta.log'));;
         // $schedule->command('inspire')->hourly();
         // $schedule->command('inspire')->everyMinute();
         $schedule->command('bookings:process-missed-reminders')
@@ -43,6 +47,7 @@ class Kernel extends ConsoleKernel
         // Nettoyage des jobs échoués quotidiennement (optionnel)
         $schedule->command('queue:flush')
                  ->daily()
+                  ->runInBackground()
                  ->withoutOverlapping();
     }
 
