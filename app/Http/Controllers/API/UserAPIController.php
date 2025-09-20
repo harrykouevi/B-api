@@ -242,20 +242,7 @@ class UserAPIController extends Controller
                 $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
                 if(!is_null($affiliation)){
                     $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
-                    
-                    // Attribue la récompense au partenaire
-                    // $partner = $affiliation->user;
-                    // if($partner){ 
-                    //     $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
-                    //     event(new DoPaymentEvent($paymentInfo));
-                        
-                    // }
-
-                    // $user->update([
-                    //     'sponsorship' => $affiliation,
-                    //     'sponsorship_at' => now(),
-                    // ]);
-
+                
                 }
             }
 

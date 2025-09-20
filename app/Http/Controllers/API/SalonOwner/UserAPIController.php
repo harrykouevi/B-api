@@ -219,20 +219,8 @@ class UserAPIController extends Controller
           
             if ($request->has('code_affiliation') && $request->input('code_affiliation') != ""  ) { 
                 $affiliation = $this->partenerShipService->find($request->input('code_affiliation')) ;
-                
                 $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
-                // Attribue la récompense au partenaire
-                // $partner = $affiliation->user;
-                // if($partner){ 
-                //     // $this->paymentService->createPayment(50,setting('app_default_wallet_id'),$partner );
-                //     $paymentInfo = ["amount"=> setting('owner_partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
-                //     event(new DoPaymentEvent($paymentInfo));
-                // }
-
-                // $user->update([
-                //     'sponsorship' => $affiliation,
-                //     'sponsorship_at' => now(),
-                // ]);
+                
             }
         
             //credité le wallet du coiffeur

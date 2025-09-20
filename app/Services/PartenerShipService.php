@@ -88,11 +88,8 @@ class PartenerShipService
 
         if ($user!= Null && $user->sponsorship_at != Null )  throw new \Exception("already get sponsored");
         if ($user->id == $affiliation->user_id) throw new \Exception("unprocessable partenership") ;
-        //if ($affiliation->user->sponsorhip_at != Null && $user->id == $affiliation->user->sponsorhip->user_id) throw new \Exception("unprocessable partenership") ;
-
-        // Met à jour la conversion en tant que réussie
-        //$conversion = $affiliation->conversions()->where('status', 'pending')->first();
-
+        
+        
         // Creer une conversion en tant que réussie
         $conversion = $this->conversionRepository->create([
             'affiliate_id' => $affiliation->id ,
@@ -113,9 +110,6 @@ class PartenerShipService
         Log::info('about to be patronize with '.$amount) ;
         event(new DoPaymentEvent($paymentInfo));
 
-        
-
-        
         //recuperation du user a qui appartient le code
         $partner = $affiliation->user;
         if( $partner){ 
