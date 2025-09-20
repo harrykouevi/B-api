@@ -257,7 +257,7 @@ class AffiliateAPIController extends Controller
                 $partner = $affiliation->user;
                 if( $partner){ 
                     //si il est trouvé user a qui appartient le code recois son bunus
-                    $amount =  auth()->user()->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
+                    $amount =  $partner->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
                     $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
 
                 }
