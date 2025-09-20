@@ -132,6 +132,9 @@ class AffiliateAPIController extends Controller
                 // Vérifie si ce code existe déjà
                 $existingCode = $this->affiliateRepository->findByField('code', $code)->first();
             // Tant qu'il existe déjà, on recommence
+                if ($existingCode) {
+                    Log::info("Le code {$code} existe déjà, génération d'un nouveau code...");
+                }
             } while ($existingCode);
 
     
