@@ -41,7 +41,8 @@ class Affiliate extends Model
     public $fillable = [
         'click',
         'code',
-        'user_id'
+        'user_id',
+        'link'
     ];
     /**
      * The attributes that should be casted to native types.
