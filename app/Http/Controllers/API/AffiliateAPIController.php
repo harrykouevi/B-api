@@ -126,10 +126,17 @@ class AffiliateAPIController extends Controller
                 return $this->sendResponse($existingAffiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
             }
 
-            $code = $this->getdigits(Auth::id()) ;
+            do {
+                // Génère un code
+                $code = $this->getdigits_v2(Auth::id());
+                // Vérifie si ce code existe déjà
+                $existingCode = $this->affiliateRepository->findByField('code', $code)->first();
+            // Tant qu'il existe déjà, on recommence
+            } while ($existingCode);
+
     
             // Générer un code unique basé sur l'ID utilisateur
-            $referralCode = 'REF' . $input['user_id'] . strtoupper(Str::random(4));
+            $referralCode = 'REF' . $input['user_id'] . $code;
             // Crypter le mot de passe avant de l'assigner au lien
             $encryptedReferralCode = Hash::make($referralCode);
             // Génération du lien d'affiliation
@@ -138,9 +145,7 @@ class AffiliateAPIController extends Controller
  
         
             $affiliate = $this->affiliateRepository->create($input);
-            // $payment = $this->paymentRepository->create($input['payment']);
-            // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-            //Notification::send($booking->salon->users, new NewReceivedPayment($payment));
+            
             return $this->sendResponse($affiliate->toArray(), __('lang.saved_successfully', ['operator' => __('lang.affiliationcode')]));
 
 
@@ -188,6 +193,23 @@ class AffiliateAPIController extends Controller
 
         // Concaténer les nombres avec le nombre initial
         return (string)$nombre . $nombre3Chiffres . $nombre5Chiffres;
+
+        
+    }
+
+    private function getdigits_v2($nombre) {
+
+        // Multiplier l'ID par un grand nombre premier
+        $prime = 7919;
+
+        // Ajouter un "offset" secret pour complexifier
+        $offset = 421396; // tu peux stocker ce nombre en config/env pour changer facilement
+
+        // Calcul intermédiaire
+        $codeNum = ($nombre * $prime + $offset) % 1000000; // modulo 1 million pour 6 chiffres
+
+        // Retourner en chaîne de 6 chiffres avec padding
+        return (string) str_pad((string)$codeNum, 6, '0', STR_PAD_LEFT);
 
         
     }
