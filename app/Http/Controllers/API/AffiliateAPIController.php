@@ -250,19 +250,20 @@ class AffiliateAPIController extends Controller
             $affiliation =$this->affiliateRepository->findByField('code',$affiliationCode_)->first();
             if( is_null($affiliation) ) throw new InvalidArgumentException('referral do not exist');
             
+            
             $conversion = $this->partenerShipService->proceedPartenerShip(auth()->user(),$affiliation) ;
             
-            if( $conversion ){ 
-                //recuperation du user a qui appartient le code
-                $partner = $affiliation->user;
-                if( $partner){ 
-                    //si il est trouvé user a qui appartient le code recois son bunus
-                    $amount =  $partner->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
-                    $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
+            // if( $conversion ){ 
+            //     //recuperation du user a qui appartient le code
+            //     $partner = $affiliation->user;
+            //     if( $partner){ 
+            //         //si il est trouvé user a qui appartient le code recois son bunus
+            //         $amount =  $partner->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
+            //         $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
 
-                }
+            //     }
 
-            }
+            // }
             return $this->sendResponse($conversion, __('lang.saved_successfully', ['operator' => __('lang.affiliation')]));
         } catch (\InvalidArgumentException $e) {
            

@@ -113,7 +113,22 @@ class PartenerShipService
         Log::info('about to be patronize with '.$amount) ;
         event(new DoPaymentEvent($paymentInfo));
 
+        
+
+        
+        //recuperation du user a qui appartient le code
+        $partner = $affiliation->user;
+        if( $partner){ 
+            //si il est trouvé user a qui appartient le code recois son bunus
+            $amount =  $partner->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
+            // $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
+            
+            $paymentInfo = ["amount"=> $amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
+            event(new DoPaymentEvent($paymentInfo));
+        }
+        
         return  $conversion ;
+        
     }
 
 
