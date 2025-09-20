@@ -114,36 +114,41 @@ class AffiliateAPIController extends Controller
      */
     public function generateLink(Request $request): JsonResponse
     {
-        $input = $request->all();
-        // $user = Auth::user(); // Utilisez auth()->user() au lieu de auth()->Auth::user()
-        $input['user_id'] = Auth::id();
-    
-        // Vérifier si l'utilisateur a déjà un lien d'affiliation
-        $existingAffiliate = $this->affiliateRepository->findByField('user_id', $input['user_id'])->first();
-        if ($existingAffiliate) {
-            return $this->sendResponse($existingAffiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
-        }
-
-        $code = $this->getdigits(Auth::id()) ;
- 
-        // Générer un code unique basé sur l'ID utilisateur
-        $referralCode = 'REF' . $input['user_id'] . strtoupper(Str::random(4));
-        // Crypter le mot de passe avant de l'assigner au lien
-        $encryptedReferralCode = Hash::make($referralCode);
-        // Génération du lien d'affiliation
-        $input['link']= 'affilate-link?ref=' . $encryptedReferralCode;
-        $input['code']=  $code;
- 
         try {
+
+            $input = $request->all();
+            // $user = Auth::user(); // Utilisez auth()->user() au lieu de auth()->Auth::user()
+            $input['user_id'] = Auth::id();
+        
+            // Vérifier si l'utilisateur a déjà un lien d'affiliation
+            $existingAffiliate = $this->affiliateRepository->findByField('user_id', $input['user_id'])->first();
+            if ($existingAffiliate) {
+                return $this->sendResponse($existingAffiliate->toArray(), __('lang.updated_successfully', ['operator' => __('lang.address')]));
+            }
+
+            $code = $this->getdigits(Auth::id()) ;
+    
+            // Générer un code unique basé sur l'ID utilisateur
+            $referralCode = 'REF' . $input['user_id'] . strtoupper(Str::random(4));
+            // Crypter le mot de passe avant de l'assigner au lien
+            $encryptedReferralCode = Hash::make($referralCode);
+            // Génération du lien d'affiliation
+            $input['link']= 'affilate-link?ref=' . $encryptedReferralCode;
+            $input['code']=  $code;
+ 
+        
             $affiliate = $this->affiliateRepository->create($input);
             // $payment = $this->paymentRepository->create($input['payment']);
             // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
             //Notification::send($booking->salon->users, new NewReceivedPayment($payment));
+            return $this->sendResponse($affiliate->toArray(), __('lang.saved_successfully', ['operator' => __('lang.affiliationcode')]));
+
 
         } catch (Exception $e) {
+            Log::error("Erreur dans generateLink: " . $e->getMessage());
+
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($affiliate->toArray(), __('lang.saved_successfully', ['operator' => __('lang.affiliationcode')]));
 
     }
 
