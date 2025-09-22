@@ -10,6 +10,7 @@ namespace App\Http\Requests;
 use App\Models\User;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Utils\ResponseUtil;
 
@@ -37,7 +38,7 @@ class UpdateUserRequest extends FormRequest
             return ['device_token' => 'required|max:255'];
         }
         User::$rules['email'] = ['nullable','max:255','email',
-                              Rule::unique('users', 'email')->ignore($this->route('user'))]
+                              Rule::unique('users', 'email')->ignore($this->route('user'))];
         User::$rules['phone_number'] = 'nullable|max:255|unique:users,phone_number,' . $this->route('user');
         User::$rules['password'] = 'nullable';
         return User::$rules;
