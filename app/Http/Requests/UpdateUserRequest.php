@@ -36,7 +36,8 @@ class UpdateUserRequest extends FormRequest
         if ($this->has('device_token')) {
             return ['device_token' => 'required|max:255'];
         }
-        User::$rules['email'] = 'nullable|max:255|email|unique:users,email,' . $this->route('user');
+        User::$rules['email'] = ['nullable','max:255','email',
+                              Rule::unique('users', 'email')->ignore($this->route('user'))]
         User::$rules['phone_number'] = 'nullable|max:255|unique:users,phone_number,' . $this->route('user');
         User::$rules['password'] = 'nullable';
         return User::$rules;
