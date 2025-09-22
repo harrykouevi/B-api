@@ -346,7 +346,7 @@ class UserAPIController extends Controller
             return $this->sendError($e->getMessage());
         }
 
-        return $this->sendResponse($user, __('lang.updated_successfully', ['operator' => __('lang.user')]));
+        return $this->sendResponse($user->load('roles'), __('lang.updated_successfully', ['operator' => __('lang.user')]));
     }
 
     function sendResetLinkEmail(Request $request): JsonResponse
