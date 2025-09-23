@@ -121,71 +121,76 @@ class PaymentAPIController extends Controller
             // $payment = $this->paymentRepository->create($input['payment']);
             // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
             $transactionAmount= $input['payment']['amount'] ;
-            try{
-                // $wallet = $this->walletRepository->find($walletId);
-                $this->walletRepository->pushCriteria(new EnabledCriteria());
-                $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
-                $wallet = $this->walletRepository->all()->first(function ($wallet) use ($transactionAmount) {
-                    // Si wallet "bonus" avec fonds suffisants
-                    if ($wallet->name === WalletType::BONUS->value && $wallet->balance >= $transactionAmount) {
-                        return true;
-                    }
-
-                    // Si wallet "igris" avec beaucoup plus de fonds
-                    if ($wallet->name === WalletType::PRINCIPAL->value && $wallet->balance >= $transactionAmount) {
-                        return true;
-                    }
-
-                    return false;
-                });
-
-                if(is_null($wallet) ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
-
-                $currency = json_decode($wallet->currency, true);
-                $booking = $this->bookingRepository->find($input['id']);
-                
-
-                if ($wallet && $currency['code'] == setting('default_currency_code')) {
-                   
-                    $payment = $this->paymentService->createPayment($transactionAmount,$wallet);
-                    $payment = $payment[0];
-                    if($payment){
-                        event(new NotifyPaymentEvent($payment ,$wallet ,new User()));
-                        
-                        try{ 
-                            $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-                            $purchase = $this->purchaseRepository->Create([
-                                'salon' => $booking->salon ,
-                                'booking' => $booking,
-                                'e_services' => $booking->e_services ,
-                                'quantity' => $booking->quantity,
-                                'user_id' => $booking->user_id ,
-                                'taxes'=>  $booking->purchase_taxes ,
-                                'purchase_status_id' => 1 ,
-                                'hint' => 'cash' ,
-                                'purchase_at'  => now()  
-                            ]);
-                            event( new NotifyBookingEvent($booking)) ;
-
-                        } catch (Exception $e) {
-                            Log::error($e->getMessage());
-                        }
-                    }
-
-                } else {
-                    return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
+            
+            // $wallet = $this->walletRepository->find($walletId);
+            $this->walletRepository->pushCriteria(new EnabledCriteria());
+            $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
+            $wallet = $this->walletRepository->all()->first(function ($wallet) use ($transactionAmount) {
+                // Si wallet "bonus" avec fonds suffisants
+                if ($wallet->name === WalletType::BONUS->value && $wallet->balance >= $transactionAmount) {
+                    return true;
                 }
 
+                // Si wallet "igris" avec beaucoup plus de fonds
+                if ($wallet->name === WalletType::PRINCIPAL->value && $wallet->balance >= $transactionAmount) {
+                    return true;
+                }
 
-            } catch (Exception $e) {
-                Log::error($e->getMessage());
+                return false;
+            });
+
+            if(is_null($wallet) ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
+           
+            Log::info(['PaymentAPIController-wallet',$wallet]);
+            $currency = json_decode($wallet->currency, true);
+            $booking = $this->bookingRepository->find($input['id']);
+
+
+            
+
+            if ($wallet && $currency['code'] == setting('default_currency_code')) {
+                
+                $payment = $this->paymentService->createPayment($transactionAmount,$wallet);
+                $payment = $payment[0];
+                if($payment){
+                    event(new NotifyPaymentEvent($payment ,$wallet ,new User()));
+                }   
+                    try{ 
+                        $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+                        $purchase = $this->purchaseRepository->Create([
+                            'salon' => $booking->salon ,
+                            'booking' => $booking,
+                            'e_services' => $booking->e_services ,
+                            'quantity' => $booking->quantity,
+                            'user_id' => $booking->user_id ,
+                            'taxes'=>  $booking->purchase_taxes ,
+                            'purchase_status_id' => 1 ,
+                            'hint' => 'cash' ,
+                            'purchase_at'  => now()  
+                        ]);
+                        event( new NotifyBookingEvent($booking)) ;
+
+                    } catch (Exception $e) {
+                        Log::error($e->getMessage());
+                    }
+                    
+                    return $this->sendResponse($payment->toArray(), __('lang.saved_successfully', ['operator' => __('lang.payment')]));
+
+                // }
+
+            } else {
+                return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
             }
+
 
         } catch (ValidatorException) {
             return $this->sendError(__('lang.not_found', ['operator' => __('lang.payment')]));
+        } catch (Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError($e->getMessage());
         }
-
-        return $this->sendResponse($payment->toArray(), __('lang.saved_successfully', ['operator' => __('lang.payment')]));
     }
 
     /**

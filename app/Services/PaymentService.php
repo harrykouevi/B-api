@@ -109,7 +109,7 @@ class PaymentService
             }
            
         }
-        return [$payment , $wallet] ; ;
+        return [$payment , $wallet] ; 
     }
 
      /**
