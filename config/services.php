@@ -75,7 +75,7 @@ return [
     'fcm' => [
         // 'key' => 'AIzaSyAfnKLIVDUvDU-6lbXxjGzT4yv_hRBKSNg'  ,
         'service_account' => storage_path('app/fcm/firebase_credentials.json'),
-        'project_id' => 'babershopapp-f7b86', //,
+        'project_id' => 'charmtest-f4b63', //,
 
     ],
     'cinetpay' => [
