@@ -34,6 +34,11 @@ Bienvenue dans la plateforme complète dédiée aux professionnels de la coiffur
 
 ---
 
+## 📌 Historique des versions
+
+- **v1.2.0** : Ajout du double wallet, paiements automatiques, remboursements, notifications avancées  
+- **v1.1.0** : Version initiale avec réservation, gestion des salons 
+
 ## 🧱 Architecture du Projet
 
 Ce projet est divisé en deux parties :
