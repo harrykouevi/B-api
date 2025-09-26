@@ -20,6 +20,20 @@ Bienvenue dans la plateforme complète dédiée aux professionnels de la coiffur
 
 ---
 
+## 🆕 Nouveautés (v1.2.0)
+
+### 🚀 Ajouts
+- 👛 **Double Wallet**  
+  - Wallet principal pour les paiements  
+  - Wallet bonus pour les récompenses/cashback  
+- 💳 **Moyens de recharge et de retrait** intégrés  
+- 🔔 **Rappels de rendez-vous avec Firebase & queues programmables**  
+- ⚡ **Paiement automatique des services** (si le coiffeur accepte la réservation)  
+- 💸 **Processus de remboursement** en cas d’annulation  
+- 📅 **Rappels intelligents** envoyés au **client** et au **coiffeur** 
+
+---
+
 ## 🧱 Architecture du Projet
 
 Ce projet est divisé en deux parties :
@@ -44,15 +58,6 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
 
 ### Premium Partners
 
