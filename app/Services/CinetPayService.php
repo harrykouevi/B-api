@@ -414,7 +414,7 @@ public function addContact(string $prefix, string $phone, string $name, string $
     try {
         // 1. Obtenir le token d'authentification
         $tokenResult = $this->getAuthToken();
-
+        Log::info("Token recupéré", ["token"=>$tokenResult]);
         if (is_array($tokenResult) && !$tokenResult['success']) {
             return $tokenResult;
         }
@@ -449,8 +449,9 @@ public function addContact(string $prefix, string $phone, string $name, string $
         $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact", [
             'token' => $token,
             'lang' => 'fr',
-            'data' => json_encode($transferData) // 🔑 doit être JSON stringifié
+            'data' => json_encode($transferData)
         ]);
+        Log::info("Response transfert",[ "response"=>$response]);
 
         if (!$response->successful()) {
             return [
