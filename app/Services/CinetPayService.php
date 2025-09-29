@@ -446,9 +446,7 @@ public function addContact(string $prefix, string $phone, string $name, string $
         Log::info("Payload transfert", $transferData);
 
         // 3. Exécuter le transfert
-        $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact", [
-            'token' => $token,
-            'lang' => 'fr',
+        $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact&token=$token&lang=fr", [
             'data' => json_encode($transferData)
         ]);
         Log::info("Response transfert",[ "response"=>$response]);
