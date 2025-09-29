@@ -632,6 +632,13 @@ class WalletAPIController extends Controller
             }
             Log::info('Transfert CinetPay exécuté avec succès');
 
+            // Vérifier le statut initial et mettre à jour la transaction si nécessaire
+            $initialTreatmentStatus = $transferResponse['response'][0]['treatment_status'] ?? null;
+            if ($initialTreatmentStatus === 'NEW') {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_PENDING]);
+                Log::info('Statut de la transaction mis à jour à PENDING', ['withdrawal_id' => $withdrawal->id]);
+            }
+
             // Log de l'opération
             Log::info('Retrait initié avec succès', [
                 'user_id' => $userId,

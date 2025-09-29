@@ -180,14 +180,19 @@ class CinetpayAPIController extends Controller
             if ($treatmentStatus === 'VAL' && $sendingStatus === 'CONFIRM') {
                 // Transfert validé et confirmé
                 $updateData['status'] = WalletTransaction::STATUS_COMPLETED;
-
+                
                 // Débiter le wallet si ce n'est pas déjà fait
                 $wallet = $walletTransaction->wallet;
                 if ($wallet) {
                     // Vérifier que le wallet a suffisamment de fonds et que la transaction n'est pas déjà débitée
-                    if ($wallet->balance >= $walletTransaction->amount &&
+                    if ($wallet->balance >= $walletTransaction->amount && 
                         $walletTransaction->status !== WalletTransaction::STATUS_COMPLETED) {
                         $wallet->decrement('balance', $walletTransaction->amount);
+                        Log::info('Wallet débité avec succès', [
+                            'wallet_id' => $wallet->id,
+                            'amount' => $walletTransaction->amount,
+                            'new_balance' => $wallet->balance - $walletTransaction->amount
+                        ]);
                     } else {
                         Log::warning('Impossible de débiter le wallet', [
                             'wallet_id' => $wallet->id,
@@ -206,6 +211,10 @@ class CinetpayAPIController extends Controller
                     $wallet = $walletTransaction->wallet;
                     if ($wallet) {
                         $wallet->increment('balance', $walletTransaction->amount);
+                        Log::info('Wallet recrédité', [
+                            'wallet_id' => $wallet->id,
+                            'amount' => $walletTransaction->amount
+                        ]);
                     }
                 }
             } elseif ($treatmentStatus === 'NEW') {
@@ -215,6 +224,10 @@ class CinetpayAPIController extends Controller
 
             // Mettre à jour la transaction
             $walletTransaction->update($updateData);
+            Log::info('Transaction wallet mise à jour', [
+                'wallet_transaction_id' => $walletTransactionId,
+                'update_data' => $updateData
+            ]);
             
             // Envoyer une notification à l'utilisateur
             try {

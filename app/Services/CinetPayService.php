@@ -448,7 +448,7 @@ public function formatPhoneNumber(string $phoneNumber): string
             'phone' => $formattedPhone,
             'amount' => $withdrawal->amount,
             'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
-            'notify_url' => route('cinetpay.transfer.webhook', ['userId' => $userId], false),
+            'notify_url' => route('cinetpay.transfer.webhook', ['userId' => $userId], true), // URL absolue
         ]];
 
         // Ajouter la méthode de paiement si spécifiée
