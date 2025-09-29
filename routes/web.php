@@ -19,8 +19,8 @@
 
 use App\Http\Controllers\AddressController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route ;
-use Illuminate\Support\Facades\Auth ;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayPalController;
@@ -53,7 +53,7 @@ Route::post('payments/razorpay/pay-success/{bookingId}', 'RazorPayController@pay
 Route::get('payments/razorpay', 'RazorPayController@index');
 
 Route::get('payments/stripe/checkout', 'StripeController@checkout');
-Route::get('payments/stripe/pay-success/{bookingId}/{paymentMethodId}', [StripeController::class ,'paySuccess']);
+Route::get('payments/stripe/pay-success/{bookingId}/{paymentMethodId}', [StripeController::class, 'paySuccess']);
 Route::get('payments/stripe', 'StripeController@index');
 
 Route::get('payments/paymongo/checkout', 'PayMongoController@checkout');
@@ -175,7 +175,7 @@ Route::middleware('auth')->group(function () {
 
 
     Route::resource('salonReviews', SalonReviewController::class);
-   Route::resource('payments', PaymentController::class )->except([
+    Route::resource('payments', PaymentController::class)->except([
         'create', 'store', 'edit', 'update', 'destroy'
     ]);
     Route::post('paymentMethods/remove-media', 'PaymentMethodController@removeMedia');
@@ -223,12 +223,20 @@ Route::middleware('auth')->group(function () {
     Route::resource('wallets', 'WalletController')->except([
         'show'
     ]);
-    Route::resource('walletTransactions',  WalletTransactionController::class)->except([
+    Route::resource('walletTransactions', WalletTransactionController::class)->except([
         'show', 'edit', 'update', 'destroy'
     ]);
 
     Route::get('/test-public', function () {
         return 'Page publique accessible sans auth';
     });
+
+// CinetPay webhook route - déplacée depuis api.php pour éviter les problèmes d'authentification
+    Route::post('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class,
+        'handleTransferNotification'
+    ])->name('cinetpay.transfer.webhook');
+
+// Route pour le ping (GET)
+    Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
 
 });
