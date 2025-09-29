@@ -400,6 +400,17 @@ public function addContact(string $prefix, string $phone, string $name, string $
         ];
     }
 }
+
+
+public function formatPhoneNumber(string $phoneNumber): string
+{
+    $rawNumber = preg_replace('/\D/', '', $phoneNumber);
+
+    if (strpos($rawNumber, '228') === 0) {
+        $rawNumber = substr($rawNumber, 3);
+    }
+    return $rawNumber;
+}
     /**
      * Exécuter un transfert via CinetPay
      *
@@ -432,7 +443,7 @@ public function addContact(string $prefix, string $phone, string $name, string $
         // 2. Préparer les données de transfert
         $transferData = [[
             'prefix' => $countryPrefix,
-            'phone' => $phoneNumber,
+            'phone' => $this->formatPhoneNumber($phoneNumber),
             'amount' => $withdrawal->amount,
             'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
             'notify_url' => route('cinetpay.transfer.webhook', [], false)
