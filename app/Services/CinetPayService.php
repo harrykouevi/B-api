@@ -446,8 +446,8 @@ public function addContact(string $prefix, string $phone, string $name, string $
         Log::info("Payload transfert", $transferData);
 
         // 3. Exécuter le transfert
-        $url = "{$this->transferBaseUrl}/v1/transfer/money/send/contact?token=$token?lang=fr";
-
+        $url = "{$this->transferBaseUrl}/v1/transfer/money/send/contact?token={$token}&lang=fr";
+        
         $payload = [
             'data' => json_encode($transferData)
         ];
