@@ -420,7 +420,7 @@ public function formatPhoneNumber(string $phoneNumber): string
      * @param string|null $paymentMethod Méthode de paiement optionnelle
      * @return array
      */
-   public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, ?string $paymentMethod = null): array
+   public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, int $userId, ?string $paymentMethod = null): array
 {
     try {
         // 1. Obtenir le token d'authentification
@@ -440,15 +440,15 @@ public function formatPhoneNumber(string $phoneNumber): string
             ];
         }
 
-        $phone = $this->formatPhoneNumber($phoneNumber);
-        Log::info("Phone", ["phone"=>$phone]);
+        $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+        Log::info("Phone", ["phone"=>$formattedPhone]);
         // 2. Préparer les données de transfert
         $transferData = [[
             'prefix' => $countryPrefix,
-            'phone' => $this->formatPhoneNumber($phoneNumber),
+            'phone' => $formattedPhone,
             'amount' => $withdrawal->amount,
             'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
-            'notify_url' => route('cinetpay.transfer.webhook', [], false)
+            'notify_url' => route('cinetpay.transfer.webhook', ['userId' => $userId], false),
         ]];
 
         // Ajouter la méthode de paiement si spécifiée

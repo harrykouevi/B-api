@@ -112,10 +112,11 @@ class CinetpayAPIController extends Controller
     }
 
 
-    public function handleTransferNotification(Request $request): JsonResponse
+    public function handleTransferNotification(Request $request, int $userId): JsonResponse
     {
         try {
             Log::info('Webhook CinetPay - Notification de transfert reçue', [
+                'user_id' => $userId,
                 'request_data' => $request->all(),
                 'headers' => $request->headers->all()
             ]);
@@ -172,7 +173,6 @@ class CinetpayAPIController extends Controller
             }
 
             $updateData = [
-                'payment_id' => $transactionId,
                 'description' => $description,
             ];
 
@@ -180,6 +180,23 @@ class CinetpayAPIController extends Controller
             if ($treatmentStatus === 'VAL' && $sendingStatus === 'CONFIRM') {
                 // Transfert validé et confirmé
                 $updateData['status'] = WalletTransaction::STATUS_COMPLETED;
+
+                // Débiter le wallet si ce n'est pas déjà fait
+                $wallet = $walletTransaction->wallet;
+                if ($wallet) {
+                    // Vérifier que le wallet a suffisamment de fonds et que la transaction n'est pas déjà débitée
+                    if ($wallet->balance >= $walletTransaction->amount &&
+                        $walletTransaction->status !== WalletTransaction::STATUS_COMPLETED) {
+                        $wallet->decrement('balance', $walletTransaction->amount);
+                    } else {
+                        Log::warning('Impossible de débiter le wallet', [
+                            'wallet_id' => $wallet->id,
+                            'balance' => $wallet->balance,
+                            'amount' => $walletTransaction->amount,
+                            'transaction_status' => $walletTransaction->status
+                        ]);
+                    }
+                }
             } elseif (in_array($treatmentStatus, ['REJECT', 'CANCEL'])) {
                 // Transfert rejeté ou annulé
                 $updateData['status'] = WalletTransaction::STATUS_REJECTED;
@@ -198,17 +215,20 @@ class CinetpayAPIController extends Controller
 
             // Mettre à jour la transaction
             $walletTransaction->update($updateData);
-            try{
-                // TODO: revoir le parametre envoyé à NewReceivedPayment
-                Notification::send([$wallet->user], new NewReceivedPayment($transactionId, $wallet));
-
-            }catch(\Exception $e){
-                Log::error("Erreur lors de l'envoie de la notification", [
+            
+            // Envoyer une notification à l'utilisateur
+            try {
+                $wallet = $walletTransaction->wallet;
+                if ($wallet) {
+                    // TODO: revoir le parametre envoyé à NewReceivedPayment
+                    Notification::send([$wallet->user], new NewReceivedPayment($transactionId, $wallet));
+                }
+            } catch(\Exception $e) {
+                Log::error("Erreur lors de l'envoi de la notification", [
                     'wallet_transaction_id' => $walletTransactionId,
                     'error' => $e->getMessage()
                 ]);
             }
-
 
             // Log de la mise à jour
             Log::info('Webhook CinetPay - Transaction wallet mise à jour', [
@@ -220,7 +240,7 @@ class CinetpayAPIController extends Controller
 
             // Retourner une réponse de succès
             return response()->json([
-                'message' => 'Notification traitée avec succès',
+                'success' => 'Notification traitée avec succès',
                 'transaction_id' => $transactionId,
                 'client_transaction_id' => $clientTransactionId
             ], 200);
@@ -246,9 +266,10 @@ class CinetpayAPIController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function ping(Request $request): JsonResponse
+    public function ping(Request $request, int $userId): JsonResponse
     {
         Log::info('Webhook CinetPay - Ping reçu', [
+            'user_id' => $userId,
             'method' => $request->method(),
             'ip' => $request->ip()
         ]);

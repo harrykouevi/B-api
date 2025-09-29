@@ -232,11 +232,11 @@ Route::middleware('auth')->group(function () {
     });
 
 // CinetPay webhook route - déplacée depuis api.php pour éviter les problèmes d'authentification
-    Route::post('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class,
+    Route::post('/cinetpay/transfer/webhook/{userId}', [App\Http\Controllers\API\CinetpayAPIController::class,
         'handleTransferNotification'
     ])->name('cinetpay.transfer.webhook');
 
 // Route pour le ping (GET)
-    Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
+    Route::get('/cinetpay/transfer/webhook/{userId}', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
 
 });

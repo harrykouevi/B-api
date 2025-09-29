@@ -604,7 +604,9 @@ class WalletAPIController extends Controller
                 $withdrawal,
                 $phoneNumber,
                 $countryPrefix,
+                $userId,
                 $paymentMethod
+
             );
             Log::info('Réponse de l\'exécution du transfert', ['response' => $transferResponse]);
 
@@ -629,30 +631,6 @@ class WalletAPIController extends Controller
                 ], 500);
             }
             Log::info('Transfert CinetPay exécuté avec succès');
-
-            // Mettre à jour la transaction avec les informations de CinetPay
-            Log::info('Mise à jour de la transaction avec les informations CinetPay', [
-                'withdrawal_id' => $withdrawal->id,
-                'payment_id' => $transferResponse['client_transaction_id'],
-                'transaction_id' => $transferResponse['transaction_id']
-            ]);
-            $withdrawal->update([
-                'payment_id' => $transferResponse['client_transaction_id'],
-                'description' => $withdrawal->description . ' (ID: ' . $transferResponse['transaction_id'] . ')'
-            ]);
-            Log::info('Transaction mise à jour avec succès', ['withdrawal_id' => $withdrawal->id]);
-
-            // Débiter le wallet
-            Log::info('Débit du wallet', [
-                'wallet_id' => $wallet->id,
-                'old_balance' => $wallet->balance,
-                'amount' => $amount,
-                'new_balance' => $wallet->balance - $amount
-            ]);
-            $wallet->update([
-                'balance' => $wallet->balance - $amount
-            ]);
-            Log::info('Wallet débité avec succès', ['wallet_id' => $wallet->id, 'new_balance' => $wallet->balance - $amount]);
 
             // Log de l'opération
             Log::info('Retrait initié avec succès', [
