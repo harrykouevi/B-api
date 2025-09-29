@@ -440,6 +440,8 @@ public function formatPhoneNumber(string $phoneNumber): string
             ];
         }
 
+        $phone = $this->formatPhoneNumber($phoneNumber);
+        Log::info("Phone", ["phone"=>$phone]);
         // 2. Préparer les données de transfert
         $transferData = [[
             'prefix' => $countryPrefix,
