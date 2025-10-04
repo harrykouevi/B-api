@@ -3,7 +3,10 @@
 namespace App\Observers;
 
 use App\Models\Category;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
+use Throwable;
 
 class CategoryObserver
 {
@@ -12,18 +15,35 @@ class CategoryObserver
      */
     public function creating(Category $category): void
     {
-        // 1. Generate slug automatically
+        // 1. Generate slug
         if (empty($category->slug)) {
             $category->slug = $this->generateUniqueSlug($category->name);
         }
 
-        // 2. Set order automatically if not defined
+        // 2. Set order
         if (is_null($category->order)) {
             $category->order = $this->getNextOrder($category->parent_id);
         }
 
-        // 3. Calculate paths
+        // 3. Don't calculate paths yet (no ID)
+    }
+
+    public function created(Category $category): void
+    {
+        // Now ID exists, calculate paths and update
         $this->updatePaths($category);
+
+        // Update directly in DB (no events triggered)
+        DB::table('categories')
+            ->where('id', $category->id)
+            ->update([
+                'path' => $category->path,
+                'path_slugs' => $category->path_slugs,
+                'path_names' => $category->path_names,
+            ]);
+
+        // Refresh model to get updated values
+        $category->refresh();
     }
 
     /**
@@ -56,18 +76,23 @@ class CategoryObserver
 
     /**
      * After updating a category
+     * @throws Throwable
      */
     public function updated(Category $category): void
     {
-        // If paths changed, update all descendants
+        // If paths changed, update all descendants in a transaction
         if (isset($category->oldPath)) {
-            $this->updateDescendants(
-                $category,
-                $category->oldPath,
-                $category->oldPathSlugs,
-                $category->oldPathNames
-            );
+            DB::transaction(function () use ($category) {
+                $this->updateDescendants(
+                    $category,
+                    $category->oldPath,
+                    $category->oldPathSlugs,
+                    $category->oldPathNames
+                );
+            });
         }
+
+        unset($category->oldPath, $category->oldPathSlugs, $category->oldPathNames);
     }
 
     /**
@@ -75,8 +100,8 @@ class CategoryObserver
      */
     public function deleting(Category $category): void
     {
-        // Children will be deleted automatically thanks to "onDelete('cascade')"
-        // But we can reorder remaining categories at the same level
+        // Note: Children will have parent_id set to NULL (onDelete('set null'))
+        // Reorder remaining categories at the same level
         $this->reorderAfterDelete($category);
     }
 
@@ -140,21 +165,28 @@ class CategoryObserver
             // Sub-category: get parent paths
             $parent = Category::find($category->parent_id);
 
-            if ($parent) {
-                $category->path = $parent->path . '/' . $category->id;
-                $category->path_slugs = $parent->path_slugs . '/' . $category->slug;
-                $category->path_names = $parent->path_names . '/' . $category->name;
-            } else {
-                // Parent not found → treat as root
-                $category->path = (string) $category->id;
-                $category->path_slugs = $category->slug;
-                $category->path_names = $category->name;
+            if (!$parent) {
+                throw new InvalidArgumentException(
+                    "Parent category with ID $category->parent_id not found"
+                );
             }
+
+            // Validate that parent has paths calculated
+            if (empty($parent->path) || empty($parent->path_slugs) || empty($parent->path_names)) {
+                throw new InvalidArgumentException(
+                    "Parent category {$parent->id} has incomplete paths. Cannot create sub-category."
+                );
+            }
+
+            $category->path = $parent->path . '/' . $category->id;
+            $category->path_slugs = $parent->path_slugs . '/' . $category->slug;
+            $category->path_names = $parent->path_names . '/' . $category->name;
         }
     }
 
     /**
      * Update paths of all descendants
+     * Optimized for large hierarchies using direct SQL updates
      */
     private function updateDescendants(
         Category $category,
@@ -166,31 +198,58 @@ class CategoryObserver
             return;
         }
 
-        // Find all descendants (those starting with old path)
-        $descendants = Category::where('path', 'like', $oldPath . '/%')->get();
+        // Count descendants to choose the best strategy
+        $descendantsCount = Category::where('path', 'like', $oldPath . '/%')->count();
 
-        foreach ($descendants as $descendant) {
-            // Replace old path with new in each descendant
-            $descendant->path = str_replace(
-                $oldPath,
-                $category->path,
-                $descendant->path
-            );
+        if ($descendantsCount === 0) {
+            return;
+        }
 
-            $descendant->path_slugs = str_replace(
-                $oldPathSlugs,
-                $category->path_slugs,
-                $descendant->path_slugs
-            );
+        // For large hierarchies (100+), use direct SQL for better performance
+        if ($descendantsCount > 100) {
+            // Escape values for SQL safety
+            $oldPathEscaped = addslashes($oldPath);
+            $newPathEscaped = addslashes($category->path);
+            $oldPathSlugsEscaped = addslashes($oldPathSlugs);
+            $newPathSlugsEscaped = addslashes($category->path_slugs);
+            $oldPathNamesEscaped = addslashes($oldPathNames);
+            $newPathNamesEscaped = addslashes($category->path_names);
 
-            $descendant->path_names = str_replace(
-                $oldPathNames,
-                $category->path_names,
-                $descendant->path_names
-            );
+            DB::table('categories')
+                ->where('path', 'like', $oldPath . '/%')
+                ->update([
+                    'path' => DB::raw("REPLACE(path, '{$oldPathEscaped}', '{$newPathEscaped}')"),
+                    'path_slugs' => DB::raw("REPLACE(path_slugs, '{$oldPathSlugsEscaped}', '{$newPathSlugsEscaped}')"),
+                    'path_names' => DB::raw("REPLACE(path_names, '{$oldPathNamesEscaped}', '{$newPathNamesEscaped}')"),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            // For smaller hierarchies, use Eloquent for better event handling
+            $descendants = Category::where('path', 'like', $oldPath . '/%')->get();
 
-            // Save without triggering events (avoid recursion)
-            $descendant->saveQuietly();
+            foreach ($descendants as $descendant) {
+                // Replace old path with new in each descendant
+                $descendant->path = str_replace(
+                    $oldPath,
+                    $category->path,
+                    $descendant->path
+                );
+
+                $descendant->path_slugs = str_replace(
+                    $oldPathSlugs,
+                    $category->path_slugs,
+                    $descendant->path_slugs
+                );
+
+                $descendant->path_names = str_replace(
+                    $oldPathNames,
+                    $category->path_names,
+                    $descendant->path_names
+                );
+
+                // Save without triggering events (avoid recursion)
+                $descendant->saveQuietly();
+            }
         }
     }
 

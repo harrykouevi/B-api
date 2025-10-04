@@ -74,7 +74,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
 
-        Category::Observe(CategoryObserver::class);
+        //Category::Observe(CategoryObserver::class);
 
         Schema::defaultStringLength(191);
         try {
