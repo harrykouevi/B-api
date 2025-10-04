@@ -8,6 +8,8 @@
 
 namespace App\Providers;
 
+use App\Models\Category;
+use App\Observers\CategoryObserver;
 use Exception;
 use Stripe\Stripe;
 use Illuminate\Support\Str;
@@ -32,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->app->singleton(BookingReportService::class, function ($app) {
             return new BookingReportService(
@@ -71,6 +73,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        Category::Observe(CategoryObserver::class);
+
         Schema::defaultStringLength(191);
         try {
             config(['mail.driver' => setting('mail_driver', 'smtp')]);
