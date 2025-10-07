@@ -88,6 +88,18 @@ Route::resource('faq_categories', 'API\FaqCategoryAPIController');
 Route::resource('faqs', 'API\FaqAPIController');
 Route::resource('custom_pages', 'API\CustomPageAPIController');
 
+// Routes spécifiques pour les catégories (AVANT la resource route)
+Route::get('categories/tree', 'API\CategoryAPIController@tree');
+Route::get('categories/roots', 'API\CategoryAPIController@roots');
+Route::get('categories/featured', 'API\CategoryAPIController@featured');
+Route::get('categories/search', 'API\CategoryAPIController@search');
+Route::get('categories/all-with-descendants', 'API\CategoryAPIController@allWithDescendants');
+Route::get('categories/{id}/children', 'API\CategoryAPIController@children');
+Route::get('categories/{id}/tree-with-services', 'API\CategoryAPIController@treeWithServices');
+Route::get('categories/{id}/services', 'API\CategoryAPIController@services');
+Route::get('categories/{id}/breadcrumb', 'API\CategoryAPIController@breadcrumb');
+
+// Route resource standard pour les catégories
 Route::resource('categories', 'API\CategoryAPIController');
 
 Route::resource('e_services', 'API\EServiceAPIController');
