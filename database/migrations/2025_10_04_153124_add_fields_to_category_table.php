@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::table('categories', function (Blueprint $table) {
             $table->string('slug')->unique()->after('name');
-            $table->text('path')->nullable()->after('parent_id');
-            $table->text('path_slugs')->nullable()->after('path');
-            $table->text('path_names')->nullable()->after('path_slugs');
+            $table->longText('path')->nullable()->after('parent_id');
+            $table->longText('path_slugs')->nullable()->after('path');
+            $table->longText('path_names')->nullable()->after('path_slugs');
 
             // Index pour performance
             $table->index('slug');
