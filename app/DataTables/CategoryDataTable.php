@@ -134,7 +134,7 @@ class CategoryDataTable extends DataTable
      */
     public function query(Category $model): \Illuminate\Database\Eloquent\Builder
     {
-        return $model->newQuery()->with("parentCategory")->select("categories.*");
+        return $model->newQuery()->with("parent")->select("categories.*");
     }
 
     /**

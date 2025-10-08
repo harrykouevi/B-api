@@ -18,6 +18,7 @@ use App\Repositories\CustomFieldRepository;
 
 use App\Models\Category;
 use App\Repositories\CategoryRepository;
+use App\Services\CategoryService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,13 +40,19 @@ class CategoryAPIController extends Controller
      */
     private UploadRepository $uploadRepository;
     private CustomFieldRepository $customFieldRepository;
+    private CategoryService $categoryService;
 
-    public function __construct(CategoryRepository $categoryRepo , CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo)
+    public function __construct(
+        CategoryRepository $categoryRepo,
+        CustomFieldRepository $customFieldRepo,
+        UploadRepository $uploadRepo,
+        CategoryService $categoryService
+    )
     {
-        
         $this->categoryRepository = $categoryRepo;
-        $this->uploadRepository = $uploadRepo ;
-        $this->customFieldRepository = $customFieldRepo ;
+        $this->uploadRepository = $uploadRepo;
+        $this->customFieldRepository = $customFieldRepo;
+        $this->categoryService = $categoryService;
         parent::__construct();
     }
 
@@ -119,6 +126,188 @@ class CategoryAPIController extends Controller
         }
 
         return $this->sendResponse($category->toArray(), __('lang.saved_successfully', ['operator' => __('lang.e_service')]));
+    }
 
+    // ========================================
+    // NOUVELLES MÉTHODES AVEC CategoryService
+    // ========================================
+
+    /**
+     * Arbre complet des catégories (toutes les racines avec descendants)
+     * GET /categories/tree
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function tree(Request $request): JsonResponse
+    {
+        try {
+            $withServices = $request->boolean('with_services', false);
+            $onlyFeatured = $request->boolean('featured', false);
+
+            $tree = $this->categoryService->getCategoryTree($withServices, $onlyFeatured);
+
+            return $this->sendResponse($tree, 'Category tree retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Toutes les catégories racines avec leurs enfants directs
+     * GET /categories/roots
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function roots(Request $request): JsonResponse
+    {
+        try {
+            $withServices = $request->boolean('with_services', false);
+
+            $roots = $this->categoryService->getRootCategoriesWithChildren($withServices);
+
+            return $this->sendResponse($roots, 'Root categories retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Catégories featured avec leurs services featured
+     * GET /categories/featured
+     *
+     * @return JsonResponse
+     */
+    public function featured(): JsonResponse
+    {
+        try {
+            $featured = $this->categoryService->getFeaturedCategoriesWithServices();
+
+            return $this->sendResponse($featured, 'Featured categories retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Recherche de catégories
+     * GET /categories/search
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function search(Request $request): JsonResponse
+    {
+        try {
+            $searchTerm = $request->input('q', '');
+
+            if (empty($searchTerm)) {
+                return $this->sendError('Search term is required');
+            }
+
+            $includeServices = $request->boolean('with_services', true);
+
+            $results = $this->categoryService->searchCategories($searchTerm, $includeServices);
+
+            return $this->sendResponse($results, 'Search results retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * UNE catégorie spécifique avec ses enfants directs uniquement
+     * GET /categories/{id}/children
+     *
+     * @param int $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function children(int $id, Request $request): JsonResponse
+    {
+        try {
+            $withServices = $request->boolean('with_services', false);
+
+            $category = $this->categoryService->getCategoryWithChildren($id, $withServices);
+
+            return $this->sendResponse($category, 'Category with children retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * UNE catégorie avec TOUS ses descendants et services (récursif)
+     * GET /categories/{id}/tree-with-services
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function treeWithServices(int $id): JsonResponse
+    {
+        try {
+            $tree = $this->categoryService->getCategoryTreeWithServices($id);
+
+            return $this->sendResponse($tree, 'Category tree with services retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * UNE catégorie avec TOUS ses services (plat - sans hiérarchie)
+     * GET /categories/{id}/services
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function services(int $id): JsonResponse
+    {
+        try {
+            $data = $this->categoryService->getCategoryWithServicesFlat($id);
+
+            return $this->sendResponse($data, 'Category services retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Fil d'Ariane avec services à chaque niveau
+     * GET /categories/{id}/breadcrumb
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function breadcrumb(int $id): JsonResponse
+    {
+        try {
+            $breadcrumb = $this->categoryService->getCategoryBreadcrumbWithServices($id);
+
+            return $this->sendResponse($breadcrumb, 'Category breadcrumb retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Toutes les catégories (tous niveaux) avec leurs descendants sous forme d'arbre
+     * GET /categories/all-with-descendants
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function allWithDescendants(Request $request): JsonResponse
+    {
+        try {
+            $withServices = $request->boolean('with_services', false);
+
+            $categories = $this->categoryService->getAllCategoriesWithDescendants($withServices);
+
+            return $this->sendResponse($categories, 'All categories with descendants retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
     }
 }

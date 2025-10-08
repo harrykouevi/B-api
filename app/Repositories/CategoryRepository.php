@@ -27,11 +27,15 @@ class CategoryRepository extends BaseRepository
      */
     protected $fieldSearchable = [
         'name',
+        'slug',
         'color',
         'description',
         'featured',
         'order',
-        'parent_id'
+        'parent_id',
+        'path',
+        'path_slugs',
+        'path_names',
     ];
 
     /**

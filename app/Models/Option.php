@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Models\CustomFieldValue;
 
 /**
  * Class Option
@@ -97,12 +98,12 @@ class Option extends Model implements HasMedia
      * @param string $conversion
      * @return string url
      */
-    public function getFirstMediaUrl($collectionName = 'default', string $conversion = ''): string
+    public function getFirstMediaUrl(string $collectionName = 'default', string $conversion = ''): string
     {
         $url = $this->getFirstMediaUrlTrait($collectionName);
         $array = explode('.', $url);
         $extension = strtolower(end($array));
-        if (in_array($extension, config('media-library.extensions_has_thumb'))) {
+        if (in_array($extension, config('media-library.extensions_has_thumb'), true)) {
             return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
         } else {
             return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
@@ -125,7 +126,7 @@ class Option extends Model implements HasMedia
 
     public function customFieldsValues(): MorphMany
     {
-        return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
+        return $this->morphMany(CustomFieldValue::class, 'customizable');
     }
 
     /**

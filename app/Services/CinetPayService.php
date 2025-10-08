@@ -400,6 +400,17 @@ public function addContact(string $prefix, string $phone, string $name, string $
         ];
     }
 }
+
+
+public function formatPhoneNumber(string $phoneNumber): string
+{
+    $rawNumber = preg_replace('/\D/', '', $phoneNumber);
+
+    if (strpos($rawNumber, '228') === 0) {
+        $rawNumber = substr($rawNumber, 3);
+    }
+    return $rawNumber;
+}
     /**
      * Exécuter un transfert via CinetPay
      *
@@ -409,12 +420,12 @@ public function addContact(string $prefix, string $phone, string $name, string $
      * @param string|null $paymentMethod Méthode de paiement optionnelle
      * @return array
      */
-   public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, ?string $paymentMethod = null): array
+   public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, int $userId, ?string $paymentMethod = null): array
 {
     try {
         // 1. Obtenir le token d'authentification
         $tokenResult = $this->getAuthToken();
-
+        Log::info("Token recupéré", ["token"=>$tokenResult]);
         if (is_array($tokenResult) && !$tokenResult['success']) {
             return $tokenResult;
         }
@@ -429,13 +440,15 @@ public function addContact(string $prefix, string $phone, string $name, string $
             ];
         }
 
+        $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+        Log::info("Phone", ["phone"=>$formattedPhone]);
         // 2. Préparer les données de transfert
         $transferData = [[
             'prefix' => $countryPrefix,
-            'phone' => $phoneNumber,
+            'phone' => $formattedPhone,
             'amount' => $withdrawal->amount,
             'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
-            'notify_url' => route('cinetpay.transfer.webhook', [], false)
+            'notify_url' => route('cinetpay.transfer.webhook', ['userId' => $userId], true), // URL absolue
         ]];
 
         // Ajouter la méthode de paiement si spécifiée
@@ -446,11 +459,22 @@ public function addContact(string $prefix, string $phone, string $name, string $
         Log::info("Payload transfert", $transferData);
 
         // 3. Exécuter le transfert
-        $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact", [
-            'token' => $token,
-            'lang' => 'fr',
-            'data' => json_encode($transferData) // 🔑 doit être JSON stringifié
+        $url = "{$this->transferBaseUrl}/v1/transfer/money/send/contact?token={$token}&lang=fr";
+        
+        $payload = [
+            'data' => json_encode($transferData)
+        ];
+
+        Log::info('CinetPay login request POST', [
+            'url' => $url,
+            'payload' => $payload
         ]);
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/x-www-form-urlencoded'
+        ])->asForm()->post($url, $payload);
+
+        Log::info("Response transfert",[ "response"=>$response]);
 
         if (!$response->successful()) {
             return [
