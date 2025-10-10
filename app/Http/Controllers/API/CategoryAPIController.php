@@ -19,6 +19,7 @@ use App\Repositories\CustomFieldRepository;
 use App\Models\Category;
 use App\Repositories\CategoryRepository;
 use App\Services\CategoryService;
+use App\Services\CategoryTemplateService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,18 +42,21 @@ class CategoryAPIController extends Controller
     private UploadRepository $uploadRepository;
     private CustomFieldRepository $customFieldRepository;
     private CategoryService $categoryService;
+    private CategoryTemplateService $categoryTemplateService;
 
     public function __construct(
         CategoryRepository $categoryRepo,
         CustomFieldRepository $customFieldRepo,
         UploadRepository $uploadRepo,
-        CategoryService $categoryService
+        CategoryService $categoryService,
+        CategoryTemplateService $categoryTemplateService
     )
     {
         $this->categoryRepository = $categoryRepo;
         $this->uploadRepository = $uploadRepo;
         $this->customFieldRepository = $customFieldRepo;
         $this->categoryService = $categoryService;
+        $this->categoryTemplateService = $categoryTemplateService;
         parent::__construct();
     }
 
@@ -306,6 +310,189 @@ class CategoryAPIController extends Controller
             $categories = $this->categoryService->getAllCategoriesWithDescendants($withServices);
 
             return $this->sendResponse($categories, 'All categories with descendants retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    // ========================================
+    // ENDPOINTS POUR LES TEMPLATES DE SERVICE
+    // ========================================
+
+    /**
+     * Arbre complet des catégories avec templates (toutes les racines avec descendants)
+     * GET /categories/templates/tree
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function templatesTree(Request $request): JsonResponse
+    {
+        try {
+            $withTemplates = $request->boolean('with_templates', false);
+            $onlyFeatured = $request->boolean('featured', false);
+
+            $tree = $this->categoryTemplateService->getCategoryTree($withTemplates, $onlyFeatured);
+
+            return $this->sendResponse($tree, 'Category tree with templates retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Toutes les catégories racines avec leurs enfants directs et templates
+     * GET /categories/templates/roots
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function templatesRoots(Request $request): JsonResponse
+    {
+        try {
+            $withTemplates = $request->boolean('with_templates', false);
+
+            $roots = $this->categoryTemplateService->getRootCategoriesWithChildren($withTemplates);
+
+            return $this->sendResponse($roots, 'Root categories with templates retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Catégories featured avec leurs templates
+     * GET /categories/templates/featured
+     *
+     * @return JsonResponse
+     */
+    public function templatesFeatured(): JsonResponse
+    {
+        try {
+            $featured = $this->categoryTemplateService->getFeaturedCategoriesWithTemplates();
+
+            return $this->sendResponse($featured, 'Featured categories with templates retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Recherche de catégories avec templates
+     * GET /categories/templates/search
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function templatesSearch(Request $request): JsonResponse
+    {
+        try {
+            $searchTerm = $request->input('q', '');
+
+            if (empty($searchTerm)) {
+                return $this->sendError('Search term is required');
+            }
+
+            $includeTemplates = $request->boolean('with_templates', true);
+
+            $results = $this->categoryTemplateService->searchCategories($searchTerm, $includeTemplates);
+
+            return $this->sendResponse($results, 'Template search results retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * UNE catégorie spécifique avec ses enfants directs et templates
+     * GET /categories/{id}/templates/children
+     *
+     * @param int $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function templatesChildren(int $id, Request $request): JsonResponse
+    {
+        try {
+            $withTemplates = $request->boolean('with_templates', false);
+
+            $category = $this->categoryTemplateService->getCategoryWithChildren($id, $withTemplates);
+
+            return $this->sendResponse($category, 'Category with children and templates retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * UNE catégorie avec TOUS ses descendants et templates (récursif)
+     * GET /categories/{id}/templates/tree
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function templatesTreeWithTemplates(int $id): JsonResponse
+    {
+        try {
+            $tree = $this->categoryTemplateService->getCategoryTreeWithTemplates($id);
+
+            return $this->sendResponse($tree, 'Category tree with templates retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * UNE catégorie avec TOUS ses templates (plat - sans hiérarchie)
+     * GET /categories/{id}/templates
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function templates(int $id): JsonResponse
+    {
+        try {
+            $data = $this->categoryTemplateService->getCategoryWithTemplatesFlat($id);
+
+            return $this->sendResponse($data, 'Category templates retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Fil d'Ariane avec templates à chaque niveau
+     * GET /categories/{id}/templates/breadcrumb
+     *
+     * @param int $id
+     * @return JsonResponse
+     */
+    public function templatesBreadcrumb(int $id): JsonResponse
+    {
+        try {
+            $breadcrumb = $this->categoryTemplateService->getCategoryBreadcrumbWithTemplates($id);
+
+            return $this->sendResponse($breadcrumb, 'Category breadcrumb with templates retrieved successfully');
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Toutes les catégories (tous niveaux) avec leurs descendants et templates sous forme d'arbre
+     * GET /categories/templates/all-with-descendants
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function templatesAllWithDescendants(Request $request): JsonResponse
+    {
+        try {
+            $withTemplates = $request->boolean('with_templates', false);
+
+            $categories = $this->categoryTemplateService->getAllCategoriesWithDescendants($withTemplates);
+
+            return $this->sendResponse($categories, 'All categories with descendants and templates retrieved successfully');
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
