@@ -18,16 +18,16 @@ class AdminUserSeeder extends Seeder
     {
       
         $user = User::create([
-                'name' => 'admin 1',
-                'email' => 'admin@example.com',
-                'phone_number' => '+0022890365486',
-                'phone_verified_at' => now(),
-                'email_verified_at' => now(),
-                'password' => Hash::make('password125'),
-                'api_token' => Str::random(60),
-                'device_token' => '',
-                'created_at' => now(),
-                'updated_at' => now(),
+            'name' => 'admin 1',
+            'email' => 'admin@example.com',
+            'phone_number' => '+0022890365486',
+            'phone_verified_at' => now(),
+            'email_verified_at' => now(),
+            'password' => Hash::make('password125'),
+            'api_token' => Str::random(60),
+            'device_token' => '',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $user->assignRole(1); // avec Spatie

@@ -138,6 +138,39 @@
     </li>
 @endcan
 
+
+@can('eServices.index')
+    <li class="nav-item has-treeview {{ Request::is('eServices*') || Request::is('options*') || Request::is('optionGroups*') || Request::is('nutrition*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{  Request::is('eServices*') || Request::is('options*') || Request::is('optionGroups*') || Request::is('nutrition*') ? 'active' : '' }}"> @if($icons)
+                <i class="nav-icon fas fa-pencil-ruler"></i>@endif
+            <p  class="text-xs" >{{trans('lang.model_service_plural')}} <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            @can('eServices.index')
+                <li class="nav-item">
+                    <a class="nav-link {{ Request::is('eServices*') ? 'active' : '' }}" href="{!! route('model-services.index') !!}">@if($icons)
+                            <i class="nav-icon fas fa-list"></i>@endif
+                        <p  class="text-xs" >{{trans('lang.model_service_table')}}</p></a>
+                </li>
+            @endcan
+            {{-- @can('optionGroups.index')
+                <li class="nav-item">
+                    <a class="nav-link {{ Request::is('optionGroups*') ? 'active' : '' }}" href="{!! route('optionGroups.index') !!}">@if($icons)
+                            <i class="nav-icon fas fa-plus-square"></i>@endif<p  class="text-xs" >{{trans('lang.option_group_plural')}}</p></a>
+                </li>
+            @endcan --}}
+            {{-- @can('options.index')
+                <li class="nav-item">
+                    <a class="nav-link {{ Request::is('options*') ? 'active' : '' }}" href="{!! route('options.index') !!}">@if($icons)
+                            <i class="nav-icon far fa-plus-square"></i>@endif<p  class="text-xs" >{{trans('lang.option_plural')}}</p></a>
+                </li>
+            @endcan --}}
+
+        </ul>
+    </li>
+@endcan
+
 {{--@can('bookings.index')--}}
 <li class="nav-item has-treeview {{ Request::is('bookings*') || Request::is('bookingStatuses*') || Request::is('deliveryAddresses*')? 'menu-open' : '' }}">
     <a href="#" class="nav-link {{ Request::is('bookings*') || Request::is('bookingStatuses*') || Request::is('deliveryAddresses*')? 'active' : '' }}"> @if($icons)

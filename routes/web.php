@@ -158,6 +158,13 @@ Route::middleware('auth')->group(function () {
     Route::resource('eServices', 'EServiceController')->except([
         'show'
     ]);
+
+
+    // Route::post('model-services/remove-media', 'ModelServiceController@removeMedia');
+    Route::resource('model-services', 'ModelServiceController')->except([
+        'show'
+    ]);
+
     Route::resource('faqCategories', 'FaqCategoryController')->except([
         'show'
     ]);

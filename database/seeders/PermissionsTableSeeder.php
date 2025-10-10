@@ -23,9 +23,14 @@ class PermissionsTableSeeder extends Seeder
     public function run(): void
     {
 
+        // Désactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         DB::table('role_has_permissions')->truncate();
         DB::table('permissions')->truncate();
+
+        // Réactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         DB::table('permissions')->insert(array(
             array(
@@ -1539,6 +1544,49 @@ class PermissionsTableSeeder extends Seeder
                 'guard_name' => 'web',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
+            ),
+            
+            array(
+                'id' => 225,
+                'name' => 'model-services.index',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 226,
+                'name' => 'model-services.create',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 227,
+                'name' => 'model-services.store',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 228,
+                'name' => 'model-services.edit',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 229,
+                'name' => 'model-services.update',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 230,
+                'name' => 'model-services.destroy',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
             ),
         ));
 
