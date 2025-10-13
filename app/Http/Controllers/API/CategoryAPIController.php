@@ -331,8 +331,9 @@ class CategoryAPIController extends Controller
         try {
             $withTemplates = $request->boolean('with_templates', false);
             $onlyFeatured = $request->boolean('featured', false);
+            $withOptions = $request->boolean('with_options', false);
 
-            $tree = $this->categoryTemplateService->getCategoryTree($withTemplates, $onlyFeatured);
+            $tree = $this->categoryTemplateService->getCategoryTree($withTemplates, $onlyFeatured, $withOptions);
 
             return $this->sendResponse($tree, 'Category tree with templates retrieved successfully');
         } catch (Exception $e) {
@@ -351,8 +352,9 @@ class CategoryAPIController extends Controller
     {
         try {
             $withTemplates = $request->boolean('with_templates', false);
+            $withOptions = $request->boolean('with_options', false);
 
-            $roots = $this->categoryTemplateService->getRootCategoriesWithChildren($withTemplates);
+            $roots = $this->categoryTemplateService->getRootCategoriesWithChildren($withTemplates, $withOptions);
 
             return $this->sendResponse($roots, 'Root categories with templates retrieved successfully');
         } catch (Exception $e) {
@@ -364,12 +366,15 @@ class CategoryAPIController extends Controller
      * Catégories featured avec leurs templates
      * GET /categories/templates/featured
      *
+     * @param Request $request
      * @return JsonResponse
      */
-    public function templatesFeatured(): JsonResponse
+    public function templatesFeatured(Request $request): JsonResponse
     {
         try {
-            $featured = $this->categoryTemplateService->getFeaturedCategoriesWithTemplates();
+            $withOptions = $request->boolean('with_options', false);
+            
+            $featured = $this->categoryTemplateService->getFeaturedCategoriesWithTemplates($withOptions);
 
             return $this->sendResponse($featured, 'Featured categories with templates retrieved successfully');
         } catch (Exception $e) {
@@ -394,8 +399,9 @@ class CategoryAPIController extends Controller
             }
 
             $includeTemplates = $request->boolean('with_templates', true);
+            $withOptions = $request->boolean('with_options', false);
 
-            $results = $this->categoryTemplateService->searchCategories($searchTerm, $includeTemplates);
+            $results = $this->categoryTemplateService->searchCategories($searchTerm, $includeTemplates, $withOptions);
 
             return $this->sendResponse($results, 'Template search results retrieved successfully');
         } catch (Exception $e) {
@@ -415,8 +421,9 @@ class CategoryAPIController extends Controller
     {
         try {
             $withTemplates = $request->boolean('with_templates', false);
+            $withOptions = $request->boolean('with_options', false);
 
-            $category = $this->categoryTemplateService->getCategoryWithChildren($id, $withTemplates);
+            $category = $this->categoryTemplateService->getCategoryWithChildren($id, $withTemplates, $withOptions);
 
             return $this->sendResponse($category, 'Category with children and templates retrieved successfully');
         } catch (Exception $e) {
@@ -429,12 +436,15 @@ class CategoryAPIController extends Controller
      * GET /categories/{id}/templates/tree
      *
      * @param int $id
+     * @param Request $request
      * @return JsonResponse
      */
-    public function templatesTreeWithTemplates(int $id): JsonResponse
+    public function templatesTreeWithTemplates(int $id, Request $request): JsonResponse
     {
         try {
-            $tree = $this->categoryTemplateService->getCategoryTreeWithTemplates($id);
+            $withOptions = $request->boolean('with_options', false);
+            
+            $tree = $this->categoryTemplateService->getCategoryTreeWithTemplates($id, $withOptions);
 
             return $this->sendResponse($tree, 'Category tree with templates retrieved successfully');
         } catch (Exception $e) {
@@ -447,12 +457,15 @@ class CategoryAPIController extends Controller
      * GET /categories/{id}/templates
      *
      * @param int $id
+     * @param Request $request
      * @return JsonResponse
      */
-    public function templates(int $id): JsonResponse
+    public function templates(int $id, Request $request): JsonResponse
     {
         try {
-            $data = $this->categoryTemplateService->getCategoryWithTemplatesFlat($id);
+            $withOptions = $request->boolean('with_options', false);
+            
+            $data = $this->categoryTemplateService->getCategoryWithTemplatesFlat($id, $withOptions);
 
             return $this->sendResponse($data, 'Category templates retrieved successfully');
         } catch (Exception $e) {
@@ -465,12 +478,15 @@ class CategoryAPIController extends Controller
      * GET /categories/{id}/templates/breadcrumb
      *
      * @param int $id
+     * @param Request $request
      * @return JsonResponse
      */
-    public function templatesBreadcrumb(int $id): JsonResponse
+    public function templatesBreadcrumb(int $id, Request $request): JsonResponse
     {
         try {
-            $breadcrumb = $this->categoryTemplateService->getCategoryBreadcrumbWithTemplates($id);
+            $withOptions = $request->boolean('with_options', false);
+            
+            $breadcrumb = $this->categoryTemplateService->getCategoryBreadcrumbWithTemplates($id, $withOptions);
 
             return $this->sendResponse($breadcrumb, 'Category breadcrumb with templates retrieved successfully');
         } catch (Exception $e) {
@@ -489,8 +505,9 @@ class CategoryAPIController extends Controller
     {
         try {
             $withTemplates = $request->boolean('with_templates', false);
+            $withOptions = $request->boolean('with_options', false);
 
-            $categories = $this->categoryTemplateService->getAllCategoriesWithDescendants($withTemplates);
+            $categories = $this->categoryTemplateService->getAllCategoriesWithDescendants($withTemplates, $withOptions);
 
             return $this->sendResponse($categories, 'All categories with descendants and templates retrieved successfully');
         } catch (Exception $e) {

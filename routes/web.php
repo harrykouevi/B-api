@@ -165,6 +165,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('categories', 'CategoryController')->except([
         'show'
     ]);
+    Route::resource('serviceTemplates', 'ServiceTemplateController')->except([
+        'show'
+    ]);
+    Route::resource('optionTemplates', 'OptionTemplateController')->except([
+        'show'
+    ]);
     Route::resource('bookingStatuses', 'BookingStatusController')->except([
         'show',
     ]);
