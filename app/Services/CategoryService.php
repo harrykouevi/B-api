@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\EService;
 use App\Repositories\CategoryRepository;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
@@ -289,6 +290,54 @@ class CategoryService
         });
     }
 
+
+    /**
+     * Cette methode recois tout les catégories en paramètre et y rajoute  leurs descendants sous forme d'arbre
+     * Retourne une structure plate avec chaque catégorie et son arbre de descendants
+     *
+     * @param Illuminate\Support\Collection $allCategories Inclure les services
+     * @param bool $withServices Inclure les services
+     * @return array
+     */
+    public function getWithDescendants(Collection $allCategories, bool $withServices = false): array
+    {
+        $cacheKey = "category.all.descendants.{$withServices}";
+
+        return Cache::remember($cacheKey, 3600, function () use ($allCategories ,$withServices) {
+            
+            // Pour chaque catégorie, construire son arbre de descendants
+            return $allCategories->map(function ($category) use ($allCategories, $withServices) {
+                // Trouver tous les descendants de cette catégorie
+                $descendants = $allCategories->filter(function ($cat) use ($category) {
+                    return str_starts_with($cat->path, $category->path . '/');
+                });
+
+                $node = $category->toTreeNode($withServices, true);
+
+                // Si la catégorie a des descendants, construire l'arbre
+                if ($descendants->isNotEmpty()) {
+                    $node['descendants_count'] = $descendants->count();
+                    $node['descendants_tree'] = $this->buildTreeFromCollection(
+                        collect([$category])->merge($descendants),
+                        $category->id,
+                        $withServices
+                    )['children'] ?? [];
+                } else {
+                    $node['descendants_count'] = 0;
+                    $node['descendants_tree'] = [];
+                }
+
+                // Ajouter des infos supplémentaires
+                $node['breadcrumb'] = $category->breadcrumb;
+                $node['is_root'] = $category->isRoot();
+                $node['parent_id'] = $category->parent_id;
+
+                return $node;
+            })->toArray();
+        });
+    }
+
+    
     // ========================================
     // MÉTHODES PRIVÉES (HELPERS)
     // ========================================
