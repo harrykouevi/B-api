@@ -16,6 +16,7 @@ use App\Http\Controllers\API\BookingAPIController;
 use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
+use App\Http\Controllers\API\ServiceTemplateAPIController;
 use App\Http\Controllers\API\UserAPIController;
 use App\Http\Controllers\API\WithdrawalPhoneController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
@@ -99,9 +100,21 @@ Route::get('categories/{id}/tree-with-services', 'API\CategoryAPIController@tree
 Route::get('categories/{id}/services', 'API\CategoryAPIController@services');
 Route::get('categories/{id}/breadcrumb', 'API\CategoryAPIController@breadcrumb');
 
+// Routes spécifiques pour les catégories avec templates
+Route::get('categories/templates/tree', 'API\CategoryAPIController@templatesTree');
+Route::get('categories/templates/roots', 'API\CategoryAPIController@templatesRoots');
+Route::get('categories/templates/featured', 'API\CategoryAPIController@templatesFeatured');
+Route::get('categories/templates/search', 'API\CategoryAPIController@templatesSearch');
+Route::get('categories/templates/all-with-descendants', 'API\CategoryAPIController@templatesAllWithDescendants');
+Route::get('categories/{id}/templates/children', 'API\CategoryAPIController@templatesChildren');
+Route::get('categories/{id}/templates/tree', 'API\CategoryAPIController@templatesTreeWithTemplates');
+Route::get('categories/{id}/templates', 'API\CategoryAPIController@templates');
+Route::get('categories/{id}/templates/breadcrumb', 'API\CategoryAPIController@templatesBreadcrumb');
+
 // Route resource standard pour les catégories
 Route::resource('categories', 'API\CategoryAPIController');
 
+Route::resource('service_templates', ServiceTemplateAPIController::class);
 Route::resource('e_services', 'API\EServiceAPIController');
 Route::resource('galleries', 'API\GalleryAPIController');
 Route::get('salon_reviews/{id}', 'API\SalonReviewAPIController@show');

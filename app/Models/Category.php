@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -43,6 +44,7 @@ use App\Models\Discountable;
  *
  * @method static Builder|Category roots()
  * @method static Builder|Category featured()
+ * @method static factory()
  */
 #[ObservedBy([CategoryObserver::class])]
 class Category extends Model implements HasMedia
@@ -153,6 +155,11 @@ class Category extends Model implements HasMedia
     public function discountables(): MorphMany
     {
         return $this->morphMany(Discountable::class, 'discountable');
+    }
+
+    public function serviceTemplates(): HasMany
+    {
+        return $this->hasMany(ServiceTemplate::class);
     }
 
     public function customFieldsValues(): MorphMany
