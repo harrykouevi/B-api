@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
 use App\Http\Controllers\API\BookingAPIController;
+use App\Http\Controllers\API\CategoryAPIController;
 use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
@@ -112,7 +113,7 @@ Route::get('categories/{id}/templates', 'API\CategoryAPIController@templates');
 Route::get('categories/{id}/templates/breadcrumb', 'API\CategoryAPIController@templatesBreadcrumb');
 
 // Route resource standard pour les catégories
-Route::resource('categories', 'API\CategoryAPIController');
+Route::resource('categories', CategoryAPIController::class);
 
 Route::resource('service_templates', ServiceTemplateAPIController::class);
 Route::resource('e_services', 'API\EServiceAPIController');

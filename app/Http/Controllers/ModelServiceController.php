@@ -8,6 +8,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Criteria\Categories\CategoriesDescendantsCriteria;
 use App\Criteria\EServices\EServicesOfUserCriteria;
 use App\Criteria\Salons\SalonsOfUserCriteria;
 use App\DataTables\ModelServiceDataTable;
@@ -18,6 +19,7 @@ use App\Repositories\CustomFieldRepository;
 use App\Repositories\EServiceRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\UploadRepository;
+use App\Services\CategoryService;
 use Exception;
 use Flash;
 use Illuminate\Http\RedirectResponse;
@@ -51,8 +53,15 @@ class ModelServiceController extends Controller
      */
     private SalonRepository $salonRepository;
 
+    /**
+     * @var CategoryService
+     */
+    private CategoryService $categoryService;
+
+
     public function __construct(EServiceRepository $eServiceRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo
         , CategoryRepository                       $categoryRepo
+        , CategoryService $categoryService
         , SalonRepository                          $salonRepo)
     {
         parent::__construct();
@@ -61,6 +70,11 @@ class ModelServiceController extends Controller
         $this->uploadRepository = $uploadRepo;
         $this->categoryRepository = $categoryRepo;
         $this->salonRepository = $salonRepo;
+
+        
+    
+
+        $this->categoryService = $categoryService;
     }
 
     /**
@@ -111,7 +125,14 @@ class ModelServiceController extends Controller
      */
     public function create(): View
     {
-        $category = $this->categoryRepository->pluck('name', 'id');
+        // Appliquer les critères et récupérer les catégories
+        $allCategories = $this->categoryRepository->all();
+        // Construire l'arbre
+        $category = $this->categoryService->getWithDescendants($allCategories , true ) ;
+        
+        dd( $category) ;
+        // $category = $this->categoryRepository->pluck('name', 'id');
+        
         $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
         $categoriesSelected = [];
         $hasCustomField = in_array($this->eServiceRepository->model(), setting('custom_field_models', []));
