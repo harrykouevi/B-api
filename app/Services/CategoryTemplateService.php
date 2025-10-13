@@ -26,18 +26,23 @@ class CategoryTemplateService
      *
      * @param bool $withTemplates Inclure les templates de service
      * @param bool $onlyFeatured Uniquement les catégories featured
+     * @param bool $withOptions Inclure les options des templates
      * @return array
      */
-    public function getCategoryTree(bool $withTemplates = false, bool $onlyFeatured = false): array
+    public function getCategoryTree(bool $withTemplates = false, bool $onlyFeatured = false, bool $withOptions = false): array
     {
-        $cacheKey = "category.template.tree.{$withTemplates}.{$onlyFeatured}";
+        $cacheKey = "category.template.tree.{$withTemplates}.{$onlyFeatured}.{$withOptions}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($withTemplates, $onlyFeatured) {
+        return Cache::remember($cacheKey, 3600, function () use ($withTemplates, $onlyFeatured, $withOptions) {
             // Charger toutes les catégories en une seule requête
             $query = Category::with('media');
 
             if ($withTemplates) {
-                $query->with('serviceTemplates');
+                if ($withOptions) {
+                    $query->with('serviceTemplates.optionTemplates');
+                } else {
+                    $query->with('serviceTemplates');
+                }
             }
 
             if ($onlyFeatured) {
@@ -47,7 +52,7 @@ class CategoryTemplateService
             $allCategories = $query->orderBy('order')->get();
 
             // Construire l'arbre en mémoire
-            return $this->buildTree($allCategories, null, $withTemplates);
+            return $this->buildTree($allCategories, null, $withTemplates, $withOptions);
         });
     }
 
@@ -56,24 +61,29 @@ class CategoryTemplateService
      *
      * @param int $categoryId
      * @param bool $withTemplates
+     * @param bool $withOptions
      * @return array
      */
-    public function getCategoryWithChildren(int $categoryId, bool $withTemplates = false): array
+    public function getCategoryWithChildren(int $categoryId, bool $withTemplates = false, bool $withOptions = false): array
     {
         $category = $this->findCategoryOrFail($categoryId);
 
         $category->load(['media', 'children.media']);
 
         if ($withTemplates) {
-            $category->load(['serviceTemplates', 'children.serviceTemplates']);
+            if ($withOptions) {
+                $category->load(['serviceTemplates.optionTemplates', 'children.serviceTemplates.optionTemplates']);
+            } else {
+                $category->load(['serviceTemplates', 'children.serviceTemplates']);
+            }
         }
 
-        $node = $this->categoryToTreeNode($category, $withTemplates, true);
+        $node = $this->categoryToTreeNode($category, $withTemplates, true, $withOptions);
 
         // Ajouter les enfants directs
         if ($category->relationLoaded('children')) {
-            $node['children'] = $category->children->map(function ($child) use ($withTemplates) {
-                return $this->categoryToTreeNode($child, $withTemplates, true);
+            $node['children'] = $category->children->map(function ($child) use ($withTemplates, $withOptions) {
+                return $this->categoryToTreeNode($child, $withTemplates, true, $withOptions);
             })->toArray();
         }
 
@@ -84,29 +94,39 @@ class CategoryTemplateService
      * UNE catégorie avec TOUS ses descendants et templates (récursif)
      *
      * @param int $categoryId
+     * @param bool $withOptions
      * @return array
      */
-    public function getCategoryTreeWithTemplates(int $categoryId): array
+    public function getCategoryTreeWithTemplates(int $categoryId, bool $withOptions = false): array
     {
-        $cacheKey = "category.{$categoryId}.tree.templates";
+        $cacheKey = "category.{$categoryId}.tree.templates.{$withOptions}";
 
-        return Cache::remember($cacheKey, 1800, function () use ($categoryId) {
+        return Cache::remember($cacheKey, 1800, function () use ($categoryId, $withOptions) {
             $category = $this->findCategoryOrFail($categoryId);
 
             // Charger la catégorie avec ses templates
-            $category->load(['media', 'serviceTemplates']);
+            if ($withOptions) {
+                $category->load(['media', 'serviceTemplates.optionTemplates']);
+            } else {
+                $category->load(['media', 'serviceTemplates']);
+            }
 
             // Récupérer tous les descendants avec leurs templates
-            $descendants = Category::where('path', 'like', $category->path . '/%')
-                ->with(['media', 'serviceTemplates'])
-                ->orderBy('path')
-                ->get();
+            $descendantsQuery = Category::where('path', 'like', $category->path . '/%');
+            
+            if ($withOptions) {
+                $descendantsQuery->with(['media', 'serviceTemplates.optionTemplates']);
+            } else {
+                $descendantsQuery->with(['media', 'serviceTemplates']);
+            }
+            
+            $descendants = $descendantsQuery->orderBy('path')->get();
 
             // Combiner la catégorie et ses descendants
             $allCategories = collect([$category])->merge($descendants);
 
             // Construire l'arbre récursivement
-            return $this->buildTreeFromCollection($allCategories, $category->id, true);
+            return $this->buildTreeFromCollection($allCategories, $category->id, true, $withOptions);
         });
     }
 
@@ -114,13 +134,14 @@ class CategoryTemplateService
      * UNE catégorie avec TOUS ses templates (plat - sans hiérarchie)
      *
      * @param int $categoryId
+     * @param bool $withOptions
      * @return array
      */
-    public function getCategoryWithTemplatesFlat(int $categoryId): array
+    public function getCategoryWithTemplatesFlat(int $categoryId, bool $withOptions = false): array
     {
-        $cacheKey = "category.{$categoryId}.templates.flat";
+        $cacheKey = "category.{$categoryId}.templates.flat.{$withOptions}";
 
-        return Cache::remember($cacheKey, 1800, function () use ($categoryId) {
+        return Cache::remember($cacheKey, 1800, function () use ($categoryId, $withOptions) {
             $category = $this->findCategoryOrFail($categoryId);
 
             // Utiliser le path pour trouver tous les descendants
@@ -129,8 +150,13 @@ class CategoryTemplateService
                 ->pluck('id');
 
             // Récupérer tous les templates
-            $templates = ServiceTemplate::whereIn('category_id', $allCategories)
-                ->get();
+            $templatesQuery = ServiceTemplate::whereIn('category_id', $allCategories);
+            
+            if ($withOptions) {
+                $templatesQuery->with('optionTemplates');
+            }
+            
+            $templates = $templatesQuery->get();
 
             return [
                 'id' => $category->id,
@@ -146,7 +172,7 @@ class CategoryTemplateService
                 'has_children' => $category->hasChildren(),
                 'children_count' => $allCategories->count() - 1,
                 'templates_count' => $templates->count(),
-                'templates' => $templates->map(fn($t) => $this->formatTemplate($t))->toArray(),
+                'templates' => $templates->map(fn($t) => $this->formatTemplate($t, $withOptions))->toArray(),
             ];
         });
     }
@@ -155,21 +181,26 @@ class CategoryTemplateService
      * Toutes les catégories racines avec leurs enfants directs
      *
      * @param bool $withTemplates
+     * @param bool $withOptions
      * @return array
      */
-    public function getRootCategoriesWithChildren(bool $withTemplates = false): array
+    public function getRootCategoriesWithChildren(bool $withTemplates = false, bool $withOptions = false): array
     {
-        $cacheKey = "category.template.roots.children.{$withTemplates}";
+        $cacheKey = "category.template.roots.children.{$withTemplates}.{$withOptions}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($withTemplates) {
+        return Cache::remember($cacheKey, 3600, function () use ($withTemplates, $withOptions) {
             $query = Category::roots()->with(['media', 'children.media']);
 
             if ($withTemplates) {
-                $query->with(['serviceTemplates', 'children.serviceTemplates']);
+                if ($withOptions) {
+                    $query->with(['serviceTemplates.optionTemplates', 'children.serviceTemplates.optionTemplates']);
+                } else {
+                    $query->with(['serviceTemplates', 'children.serviceTemplates']);
+                }
             }
 
-            return $query->get()->map(function($category) use ($withTemplates) {
-                return $this->categoryToTreeNode($category, $withTemplates, false);
+            return $query->get()->map(function($category) use ($withTemplates, $withOptions) {
+                return $this->categoryToTreeNode($category, $withTemplates, false, $withOptions);
             })->toArray();
         });
     }
@@ -178,19 +209,26 @@ class CategoryTemplateService
      * Fil d'Ariane avec templates à chaque niveau
      *
      * @param int $categoryId
+     * @param bool $withOptions
      * @return array
      */
-    public function getCategoryBreadcrumbWithTemplates(int $categoryId): array
+    public function getCategoryBreadcrumbWithTemplates(int $categoryId, bool $withOptions = false): array
     {
         $category = $this->findCategoryOrFail($categoryId);
 
         $pathIds = explode('/', $category->path);
 
-        return Category::whereIn('id', $pathIds)
-            ->with(['media', 'serviceTemplates'])
-            ->get()
+        $query = Category::whereIn('id', $pathIds)->with('media');
+        
+        if ($withOptions) {
+            $query->with('serviceTemplates.optionTemplates');
+        } else {
+            $query->with('serviceTemplates');
+        }
+
+        return $query->get()
             ->sortBy('path')
-            ->map(function ($cat) {
+            ->map(function ($cat) use ($withOptions) {
                 return [
                     'id' => $cat->id,
                     'name' => $cat->name,
@@ -200,7 +238,7 @@ class CategoryTemplateService
                     'level' => $cat->level,
                     'url' => $cat->url,
                     'templates_count' => $cat->serviceTemplates->count(),
-                    'templates' => $cat->serviceTemplates->map(fn($t) => $this->formatTemplate($t))->toArray(),
+                    'templates' => $cat->serviceTemplates->map(fn($t) => $this->formatTemplate($t, $withOptions))->toArray(),
                 ];
             })
             ->values()
@@ -210,19 +248,28 @@ class CategoryTemplateService
     /**
      * Catégories featured avec leurs templates
      *
+     * @param bool $withOptions
      * @return array
      */
-    public function getFeaturedCategoriesWithTemplates(): array
+    public function getFeaturedCategoriesWithTemplates(bool $withOptions = false): array
     {
-        return Cache::remember('categories.featured.templates', 3600, function () {
-            return Category::featured()
-                ->with(['media', 'serviceTemplates'])
-                ->get()
-                ->map(function ($category) {
-                    $node = $this->categoryToTreeNode($category, false, false);
+        $cacheKey = "categories.featured.templates.{$withOptions}";
+        
+        return Cache::remember($cacheKey, 3600, function () use ($withOptions) {
+            $query = Category::featured()->with('media');
+            
+            if ($withOptions) {
+                $query->with('serviceTemplates.optionTemplates');
+            } else {
+                $query->with('serviceTemplates');
+            }
+            
+            return $query->get()
+                ->map(function ($category) use ($withOptions) {
+                    $node = $this->categoryToTreeNode($category, false, false, $withOptions);
                     $node['templates_count'] = $category->serviceTemplates->count();
                     $node['templates'] = $category->serviceTemplates
-                        ->map(fn($t) => $this->formatTemplate($t))
+                        ->map(fn($t) => $this->formatTemplate($t, $withOptions))
                         ->toArray();
                     return $node;
                 })
@@ -235,20 +282,25 @@ class CategoryTemplateService
      *
      * @param string $searchTerm
      * @param bool $includeTemplates
+     * @param bool $withOptions
      * @return array
      */
-    public function searchCategories(string $searchTerm, bool $includeTemplates = true): array
+    public function searchCategories(string $searchTerm, bool $includeTemplates = true, bool $withOptions = false): array
     {
         $query = Category::where('name', 'like', "%{$searchTerm}%")
             ->orWhere('description', 'like', "%{$searchTerm}%")
             ->with('media');
 
         if ($includeTemplates) {
-            $query->with('serviceTemplates');
+            if ($withOptions) {
+                $query->with('serviceTemplates.optionTemplates');
+            } else {
+                $query->with('serviceTemplates');
+            }
         }
 
-        return $query->get()->map(function ($category) use ($includeTemplates) {
-            $data = $this->categoryToTreeNode($category, $includeTemplates, true);
+        return $query->get()->map(function ($category) use ($includeTemplates, $withOptions) {
+            $data = $this->categoryToTreeNode($category, $includeTemplates, true, $withOptions);
             $data['breadcrumb'] = $category->breadcrumb;
             $data['is_root'] = $category->isRoot();
             return $data;
@@ -260,30 +312,35 @@ class CategoryTemplateService
      * Retourne une structure plate avec chaque catégorie et son arbre de descendants
      *
      * @param bool $withTemplates Inclure les templates
+     * @param bool $withOptions Inclure les options des templates
      * @return array
      */
-    public function getAllCategoriesWithDescendants(bool $withTemplates = false): array
+    public function getAllCategoriesWithDescendants(bool $withTemplates = false, bool $withOptions = false): array
     {
-        $cacheKey = "category.template.all.descendants.{$withTemplates}";
+        $cacheKey = "category.template.all.descendants.{$withTemplates}.{$withOptions}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($withTemplates) {
+        return Cache::remember($cacheKey, 3600, function () use ($withTemplates, $withOptions) {
             // Charger toutes les catégories
             $query = Category::with('media')->orderBy('path');
 
             if ($withTemplates) {
-                $query->with('serviceTemplates');
+                if ($withOptions) {
+                    $query->with('serviceTemplates.optionTemplates');
+                } else {
+                    $query->with('serviceTemplates');
+                }
             }
 
             $allCategories = $query->get();
 
             // Pour chaque catégorie, construire son arbre de descendants
-            return $allCategories->map(function ($category) use ($allCategories, $withTemplates) {
+            return $allCategories->map(function ($category) use ($allCategories, $withTemplates, $withOptions) {
                 // Trouver tous les descendants de cette catégorie
                 $descendants = $allCategories->filter(function ($cat) use ($category) {
                     return str_starts_with($cat->path, $category->path . '/');
                 });
 
-                $node = $this->categoryToTreeNode($category, $withTemplates, true);
+                $node = $this->categoryToTreeNode($category, $withTemplates, true, $withOptions);
 
                 // Si la catégorie a des descendants, construire l'arbre
                 if ($descendants->isNotEmpty()) {
@@ -291,7 +348,8 @@ class CategoryTemplateService
                     $node['descendants_tree'] = $this->buildTreeFromCollection(
                         collect([$category])->merge($descendants),
                         $category->id,
-                        $withTemplates
+                        $withTemplates,
+                        $withOptions
                     )['children'] ?? [];
                 } else {
                     $node['descendants_count'] = 0;
@@ -318,18 +376,19 @@ class CategoryTemplateService
      * @param Collection $categories
      * @param int|null $parentId
      * @param bool $withTemplates
+     * @param bool $withOptions
      * @return array
      */
-    private function buildTree($categories, ?int $parentId = null, bool $withTemplates = false): array
+    private function buildTree($categories, ?int $parentId = null, bool $withTemplates = false, bool $withOptions = false): array
     {
         $branch = [];
 
         foreach ($categories as $category) {
             if ($category->parent_id === $parentId) {
-                $node = $this->categoryToTreeNode($category, $withTemplates, true);
+                $node = $this->categoryToTreeNode($category, $withTemplates, true, $withOptions);
 
                 // Récursion : chercher les enfants
-                $children = $this->buildTree($categories, $category->id, $withTemplates);
+                $children = $this->buildTree($categories, $category->id, $withTemplates, $withOptions);
                 $node['children'] = $children;
 
                 $branch[] = $node;
@@ -345,9 +404,10 @@ class CategoryTemplateService
      * @param Collection $categories
      * @param int $categoryId
      * @param bool $withTemplates
+     * @param bool $withOptions
      * @return array
      */
-    private function buildTreeFromCollection(Collection $categories, int $categoryId, bool $withTemplates = false): array
+    private function buildTreeFromCollection(Collection $categories, int $categoryId, bool $withTemplates = false, bool $withOptions = false): array
     {
         $category = $categories->firstWhere('id', $categoryId);
 
@@ -355,14 +415,14 @@ class CategoryTemplateService
             return [];
         }
 
-        $node = $this->categoryToTreeNode($category, $withTemplates, false);
+        $node = $this->categoryToTreeNode($category, $withTemplates, false, $withOptions);
 
         // Trouver les enfants directs
         $children = $categories->where('parent_id', $categoryId);
 
         if ($children->isNotEmpty()) {
-            $node['children'] = $children->map(function ($child) use ($categories, $withTemplates) {
-                return $this->buildTreeFromCollection($categories, $child->id, $withTemplates);
+            $node['children'] = $children->map(function ($child) use ($categories, $withTemplates, $withOptions) {
+                return $this->buildTreeFromCollection($categories, $child->id, $withTemplates, $withOptions);
             })->values()->toArray();
         } else {
             $node['children'] = [];
@@ -377,9 +437,10 @@ class CategoryTemplateService
      * @param Category $category
      * @param bool $withTemplates
      * @param bool $checkChildren Vérifier si a des enfants
+     * @param bool $withOptions Inclure les options des templates
      * @return array
      */
-    private function categoryToTreeNode(Category $category, bool $withTemplates = false, bool $checkChildren = true): array
+    private function categoryToTreeNode(Category $category, bool $withTemplates = false, bool $checkChildren = true, bool $withOptions = false): array
     {
         $node = [
             'id' => $category->id,
@@ -400,8 +461,8 @@ class CategoryTemplateService
 
         if ($withTemplates && $category->relationLoaded('serviceTemplates')) {
             $node['templates_count'] = $category->serviceTemplates->count();
-            $node['templates'] = $category->serviceTemplates->map(function($template) {
-                return $this->formatTemplate($template);
+            $node['templates'] = $category->serviceTemplates->map(function($template) use ($withOptions) {
+                return $this->formatTemplate($template, $withOptions);
             })->toArray();
         }
 
@@ -412,17 +473,45 @@ class CategoryTemplateService
      * Formate un template pour l'API
      *
      * @param ServiceTemplate $template
+     * @param bool $withOptions Inclure les options du template
      * @return array
      */
-    private function formatTemplate(ServiceTemplate $template): array
+    private function formatTemplate(ServiceTemplate $template, bool $withOptions = false): array
     {
-        return [
+        $data = [
             'id' => $template->id,
             'name' => $template->name,
             'description' => $template->description,
             'category_id' => $template->category_id,
             'created_at' => $template->created_at,
             'updated_at' => $template->updated_at,
+        ];
+
+        if ($withOptions && $template->relationLoaded('optionTemplates')) {
+            $data['options_count'] = $template->optionTemplates->count();
+            $data['options'] = $template->optionTemplates->map(function($option) {
+                return $this->formatOption($option);
+            })->toArray();
+        }
+
+        return $data;
+    }
+
+    /**
+     * Formate une option pour l'API
+     *
+     * @param \App\Models\OptionTemplate $option
+     * @return array
+     */
+    private function formatOption($option): array
+    {
+        return [
+            'id' => $option->id,
+            'name' => $option->name,
+            'description' => $option->description,
+            'service_template_id' => $option->service_template_id,
+            'created_at' => $option->created_at,
+            'updated_at' => $option->updated_at,
         ];
     }
 
