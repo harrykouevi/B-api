@@ -173,9 +173,11 @@ class CategoryObserver
 
             // Validate that parent has paths calculated
             if (empty($parent->path) || empty($parent->path_slugs) || empty($parent->path_names)) {
-                throw new InvalidArgumentException(
-                    "Parent category {$parent->id} has incomplete paths. Cannot create sub-category."
-                );
+                // throw new InvalidArgumentException(
+                //     "Parent category {$parent->id} has incomplete paths. Cannot create sub-category."
+                // );
+                $this->updatePaths($parent); // recursively ensure parent has paths
+                $parent->save();
             }
 
             $category->path = $parent->path . '/' . $category->id;

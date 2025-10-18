@@ -6,6 +6,15 @@
     <link rel="stylesheet" href="{{asset('vendor/summernote/summernote-bs4.min.css')}}">
     <link rel="stylesheet" href="{{asset('vendor/dropzone/min/dropzone.min.css')}}">
     <link rel="stylesheet" href="{{asset('vendor/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css')}}">
+    <style>
+
+   
+    /* Désactivées */
+    .select2-results__option[aria-disabled="true"] {
+        color: #bbb;
+        font-style: italic;
+    }
+</style>
 @endpush
 @section('content')
     <!-- Content Header (Page header) -->
@@ -50,7 +59,7 @@
             <div class="card-body">
                 {!! Form::open(['route' => 'model-services.store']) !!}
                 <div class="row">
-                    @include('model_services.fields')
+                    @include('service_templates.fields')
                 </div>
                 {!! Form::close() !!}
                 <div class="clearfix"></div>

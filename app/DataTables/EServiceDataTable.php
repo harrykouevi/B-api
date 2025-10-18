@@ -58,7 +58,7 @@ class EServiceDataTable extends DataTable
                 return getDateColumn($eService, 'updated_at');
             })
             ->editColumn('categories', function ($eService) {
-                return getLinksColumnByRouteName($eService->categories, 'categories.edit', 'id', 'name');
+                return getLinksColumnByRouteName($eService->categories, 'categories.edit', 'id', 'path_names');
             })
             ->editColumn('salon.name', function ($eService) {
                 return getLinksColumnByRouteName([$eService->salon], 'salons.edit', 'id', 'name');

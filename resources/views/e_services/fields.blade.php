@@ -2,8 +2,45 @@
     <h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
 @endif
 <div class="d-flex flex-column col-sm-12 col-md-4 px-4">
-    <!-- Name Field -->
+    <!-- Use Template Checkbox -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('use_template', trans("lang.e_service_use_template"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9 d-flex align-items-center">
+            <span class="icheck-{{ setting('theme_color') }}">
+                {!! Form::checkbox('use_template', 1, null, ['id' => 'use_template']) !!}
+                <label for="use_template">{{ trans("lang.e_service_use_template_label") }}</label>
+            </span>
+        </div>
+    </div>
+    <!-- Template Service Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row" id="template_field">
+        {!! Form::label('template_service_id', trans("lang.e_service_template_service"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {{-- {!! Form::select('template_service_id', 
+                ["" => trans("lang.e_service_template_service_placeholder")] , 
+                null, 
+                ['class' => 'select2 form-control not-required', 'id' => 'template_service_id']
+            ) !!} --}}
+            
+            <select name="template_service_id"  class="select2 form-control not-required" id="template_service_id">
+                
+                @foreach($category_services as $id => $service)
+                    <option value="{{ $id }}"  
+                        
+                        @if(array_key_exists("level" ,$service)) disabled  @endif
+                        @if(in_array($id, $serviceegoriesSelected ?? [])) selected @endif>
+                        {{ $service['label'] }}
+                    </option>
+                   
+                @endforeach
+            </select>
+            <div class="form-text text-muted">
+                {{ trans("lang.e_service_template_service_help") }}
+            </div>
+        </div>
+    </div>
+    <!-- Name Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row" id="name_field">
         {!! Form::label('name', trans("lang.e_service_name"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
             {!! Form::text('name', null,  ['class' => 'form-control','placeholder'=>  trans("lang.e_service_name_placeholder")]) !!}
@@ -14,10 +51,20 @@
     </div>
 
     <!-- Categories Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row " id="category_field">
         {!! Form::label('categories[]', trans("lang.e_service_categories"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::select('categories[]', $category, $categoriesSelected, ['class' => 'select2 form-control not-required' , 'data-empty'=>trans('lang.e_service_categories_placeholder'),'multiple'=>'multiple']) !!}
+            {{-- {!! Form::select('categories[]', $category, $categoriesSelected, ['class' => 'select2 form-control not-required' , 'data-empty'=>trans('lang.e_service_categories_placeholder'),'multiple'=>'multiple']) !!} --}}
+            <select name="category_id"  class="select2 form-control not-required" >
+                @foreach($category as $id => $cat)
+                    <option value="{{ $id }}"  
+                        data-level="{{ $cat['level'] }}"
+                        @if($cat['level'] < 2) disabled  @endif
+                        @if(in_array($id, $categoriesSelected ?? [])) selected @endif>
+                        {{ $cat['label'] }}
+                    </option>
+                @endforeach
+            </select>
             <div class="form-text text-muted">{{ trans("lang.e_service_categories_help") }}</div>
         </div>
     </div>
@@ -94,53 +141,7 @@
             </div>
         </div>
     </div>
-    @prepend('scripts')
-        <script type="text/javascript">
-            var var16110647911349350349ble = [];
-            @if(isset($eService) && $eService->hasMedia('image'))
-            @forEach($eService->getMedia('image') as $media)
-            var16110647911349350349ble.push({
-                name: "{!! $media->name !!}",
-                size: "{!! $media->size !!}",
-                type: "{!! $media->mime_type !!}",
-                uuid: "{!! $media->getCustomProperty('uuid'); !!}",
-                thumb: "{!! $media->getUrl('thumb'); !!}",
-                collection_name: "{!! $media->collection_name !!}"
-            });
-            @endforeach
-            @endif
-            var dz_var16110647911349350349ble = $(".dropzone.image").dropzone({
-                url: "{!!url('uploads/store')!!}",
-                addRemoveLinks: true,
-                maxFiles: 5 - var16110647911349350349ble.length,
-                init: function () {
-                    @if(isset($eService) && $eService->hasMedia('image'))
-                    var16110647911349350349ble.forEach(media => {
-                        dzInit(this, media, media.thumb);
-                    });
-                    @endif
-                },
-                accept: function (file, done) {
-                    dzAccept(file, done, this.element, "{!!config('media-library.icons_folder')!!}");
-                },
-                sending: function (file, xhr, formData) {
-                    dzSendingMultiple(this, file, formData, '{!! csrf_token() !!}');
-                },
-                complete: function (file) {
-                    dzCompleteMultiple(this, file);
-                    dz_var16110647911349350349ble[0].mockFile = file;
-                },
-                removedfile: function (file) {
-                    dzRemoveFileMultiple(
-                        file, var16110647911349350349ble, '{!! url("eServices/remove-media") !!}',
-                        'image', '{!! isset($eService) ? $eService->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}'
-                    );
-                }
-            });
-            dz_var16110647911349350349ble[0].mockFile = var16110647911349350349ble;
-            dropzoneFields['image'] = dz_var16110647911349350349ble;
-        </script>
-@endprepend
+    
 <!-- Description Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
         {!! Form::label('description', trans("lang.e_service_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -192,3 +193,77 @@
         <i class="fa fa-save"></i> {{trans('lang.save')}} {{trans('lang.e_service')}}</button>
     <a href="{!! route('eServices.index') !!}" class="btn btn-default"><i class="fa fa-undo"></i> {{trans('lang.cancel')}}</a>
 </div>
+
+
+@prepend('scripts')
+    <script type="text/javascript">
+        var var16110647911349350349ble = [];
+        @if(isset($eService) && $eService->hasMedia('image'))
+        @forEach($eService->getMedia('image') as $media)
+        var16110647911349350349ble.push({
+            name: "{!! $media->name !!}",
+            size: "{!! $media->size !!}",
+            type: "{!! $media->mime_type !!}",
+            uuid: "{!! $media->getCustomProperty('uuid'); !!}",
+            thumb: "{!! $media->getUrl('thumb'); !!}",
+            collection_name: "{!! $media->collection_name !!}"
+        });
+        @endforeach
+        @endif
+        var dz_var16110647911349350349ble = $(".dropzone.image").dropzone({
+            url: "{!!url('uploads/store')!!}",
+            addRemoveLinks: true,
+            maxFiles: 5 - var16110647911349350349ble.length,
+            init: function () {
+                @if(isset($eService) && $eService->hasMedia('image'))
+                var16110647911349350349ble.forEach(media => {
+                    dzInit(this, media, media.thumb);
+                });
+                @endif
+            },
+            accept: function (file, done) {
+                dzAccept(file, done, this.element, "{!!config('media-library.icons_folder')!!}");
+            },
+            sending: function (file, xhr, formData) {
+                dzSendingMultiple(this, file, formData, '{!! csrf_token() !!}');
+            },
+            complete: function (file) {
+                dzCompleteMultiple(this, file);
+                dz_var16110647911349350349ble[0].mockFile = file;
+            },
+            removedfile: function (file) {
+                dzRemoveFileMultiple(
+                    file, var16110647911349350349ble, '{!! url("eServices/remove-media") !!}',
+                    'image', '{!! isset($eService) ? $eService->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}'
+                );
+            }
+        });
+        dz_var16110647911349350349ble[0].mockFile = var16110647911349350349ble;
+        dropzoneFields['image'] = dz_var16110647911349350349ble;
+   
+    
+        function toggleTemplateMode() {
+           
+            const useTemplate = $('#use_template').is(':checked');
+
+             if (useTemplate) {
+                // afficher le champ template
+                $('#template_field').css('display', 'flex'); // pour conserver la mise en forme flex
+                // masquer les champs name + category
+                $('#name_field').attr('style', 'display: none !important');
+                $('#category_field').attr('style', 'display: none !important');
+            } else {
+                // masquer le champ template
+                $('#template_field').attr('style', 'display: none !important');
+                // réafficher les champs normaux
+                $('#name_field').css('display', 'flex'); // ton form-group est en flex
+                $('#category_field').css('display', 'flex');
+            }
+        }
+
+        // Exécuter au changement et au chargement initial
+        $('#use_template').on('change', toggleTemplateMode);
+        toggleTemplateMode();
+
+</script>
+@endpush

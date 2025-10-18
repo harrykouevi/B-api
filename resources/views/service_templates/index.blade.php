@@ -44,7 +44,7 @@
                 </ul>
             </div>
             <div class="card-body">
-                @include('e_services.table')
+                @include('service_templates.table')
                 <div class="clearfix"></div>
             </div>
         </div>

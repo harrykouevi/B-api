@@ -109,7 +109,19 @@
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('parent_id', trans("lang.category_parent_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::select('parent_id', $parentCategory, null, ['data-empty'=>trans("lang.category_parent_id_placeholder"), 'class' => 'select2 not-required form-control']) !!}
+       
+            {{-- {!! Form::select('parent_id', $parentCategory, null, ['data-empty'=>trans("lang.category_parent_id_placeholder"), 'class' => 'select2 not-required form-control']) !!} --}}
+            <select name="parent_id"  class="select2 form-control not-required" >
+                @foreach($parentCategory as $id => $cat)
+                    
+                    <option value="{{ $id }}"  
+                        data-level="{{ $cat['level'] }}"
+                        @if($cat['level'] < 2) disabled  @endif
+                        @if(in_array($id, $parentSelected ?? [])) selected @endif>
+                        {{ $cat['label'] }}
+                    </option>
+                @endforeach
+            </select>
             <div class="form-text text-muted">{{ trans("lang.category_parent_id_help") }}</div>
         </div>
     </div>

@@ -1,3 +1,5 @@
+
+
 @if($customFields)
     <h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
 @endif
@@ -17,7 +19,17 @@
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
         {!! Form::label('categories[]', trans("lang.e_service_categories"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::select('categories[]', $category, $categoriesSelected, ['class' => 'select2 form-control not-required' , 'data-empty'=>trans('lang.e_service_categories_placeholder'),'multiple'=>'multiple']) !!}
+            {{-- {!! Form::select('categories[]', $category, $categoriesSelected, ['class' => 'select2 form-control not-required' , 'data-empty'=>trans('lang.e_service_categories_placeholder'),'multiple'=>'multiple']) !!} --}}
+            {{-- <select name="category_id"  class="select2 form-control not-required" >
+                @foreach($category as $id => $cat)
+                    <option value="{{ $id }}"  
+                        data-level="{{ $cat['level'] }}"
+                        @if($cat['level'] < 2) disabled  @endif
+                        @if(in_array($id, $categoriesSelected ?? [])) selected @endif>
+                        {{ $cat['label'] }}
+                    </option>
+                @endforeach
+            </select> --}}
             <div class="form-text text-muted">{{ trans("lang.e_service_categories_help") }}</div>
         </div>
     </div>
@@ -139,6 +151,9 @@
             });
             dz_var16110647911349350349ble[0].mockFile = var16110647911349350349ble;
             dropzoneFields['image'] = dz_var16110647911349350349ble;
+
+
+            
         </script>
 @endprepend
 <!-- Description Field -->

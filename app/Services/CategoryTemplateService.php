@@ -110,6 +110,69 @@ class CategoryTemplateService
         });
     }
 
+
+    /**
+     * Retourne toutes les catégorie mise à plat - sans hiérarchie
+     *
+     * @param  $categories
+     * @return array
+     */
+    function flattenCategoriesForAdminFront($categories, $prefix = '', $level = 0) : array
+    {
+        $list = [];
+        foreach ($categories as $category) {
+            $label = str_repeat('— ', $level) . $category['name'];
+            // on ajoute la catégorie courante avec indentation
+            $list[$category['id']] = [
+                'label' => $label,
+                'level' => $level,
+            ];
+            // s’il y a des enfants, on les parcourt récursivement
+            if (count($category['children']) > 0) {
+                $list += $this->flattenCategoriesForAdminFront($category['children'], $prefix . '— ' , $level + 1);
+            }
+        }
+
+        return $list;
+    }
+
+    /**
+     * Retourne toutes les catégorie mise à plat - sans hiérarchie
+     *
+     * @param  $categories
+     * @return array
+     */
+    function flattenTemplatesForAdminFront($categories, $prefix = '', $level = 0) : array
+    {
+        $list = [];
+        // dd($categories) ;
+        foreach ($categories as $category) {
+            $label = str_repeat('— ', $level) . $category['name'];
+            // on ajoute la catégorie courante avec indentation
+            $list[$category['id'].'*'] = [
+                'label' => $label,
+                'level' => $level,
+            ];
+            if(array_key_exists('templates' ,$category ) && count($category['templates']) > 0 ){
+                foreach ($category['templates'] as $t) {
+                    // on ajoute la catégorie courante avec indentation
+                    $list[$t['id']] = [
+                        'label' => str_repeat('* ', $level) .$t['name'],
+                        
+                    ];
+                }
+            }
+
+
+            // s’il y a des enfants, on les parcourt récursivement
+            if (count($category['children']) > 0) {
+                $list += $this->flattenTemplatesForAdminFront($category['children'], $prefix . '— ' , $level + 1);
+            }
+        }
+
+        return $list;
+    }
+
     /**
      * UNE catégorie avec TOUS ses templates (plat - sans hiérarchie)
      *
@@ -161,7 +224,7 @@ class CategoryTemplateService
     {
         $cacheKey = "category.template.roots.children.{$withTemplates}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($withTemplates) {
+        // return Cache::remember($cacheKey, 300, function () use ($withTemplates) {
             $query = Category::roots()->with(['media', 'children.media']);
 
             if ($withTemplates) {
@@ -169,9 +232,9 @@ class CategoryTemplateService
             }
 
             return $query->get()->map(function($category) use ($withTemplates) {
-                return $this->categoryToTreeNode($category, $withTemplates, false);
+                return $this->categoryToTreeNode($category, $withTemplates, true);
             })->toArray();
-        });
+        // });
     }
 
     /**
@@ -396,6 +459,9 @@ class CategoryTemplateService
 
         if ($checkChildren) {
             $node['has_children'] = $category->hasChildren();
+            $node['children'] = $category->children->map(function($category) use ($withTemplates) {
+                return $this->categoryToTreeNode($category, $withTemplates, true);
+            })->toArray();
         }
 
         if ($withTemplates && $category->relationLoaded('serviceTemplates')) {

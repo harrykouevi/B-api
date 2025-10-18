@@ -1,6 +1,6 @@
 <?php
 /*
- * File name: EServiceDataTable.php
+ * File name: ServiceTemplateDataTable.php
  * Last modified: 2024.04.18 at 17:53:30
  * Author: SmarterVision - https://codecanyon.net/user/smartervision
  * Copyright (c) 2024
@@ -9,7 +9,7 @@
 namespace App\DataTables;
 
 use App\Models\CustomField;
-use App\Models\EService;
+use App\Models\ServiceTemplate;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Yajra\DataTables\DataTableAbstract;
 use Yajra\DataTables\EloquentDataTable;
@@ -33,43 +33,50 @@ class ModelServiceDataTable extends DataTable
     public function dataTable(mixed $query): DataTableAbstract
     {
         $dataTable = new EloquentDataTable($query);
+        $dataTable->filter(function ($query) {
+
+            // Filtre par type de transaction
+            if (request()->has('action_search') && !is_null(request('action_search'))) {
+                $query->where('action', request('action_search'));
+            }
+
+        });
         $columns = array_column($this->getColumns(), 'data');
-        $dataTable = $dataTable
+        return $dataTable
             ->editColumn('image', function ($eService) {
                 return getMediaColumn($eService, 'image');
             })
             ->editColumn('name', function ($eService) {
-                if ($eService['featured']) {
-                    return $eService['name'] . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.e_service_featured') . "</span>";
-                }
-                return $eService['name'];
+                return $eService['name']  ;
             })
-            ->editColumn('price', function ($eService) {
-                return getPriceColumn($eService);
-            })
-            ->editColumn('discount_price', function ($eService) {
-                if (empty($eService['discount_price'])) {
-                    return '-';
-                } else {
-                    return getPriceColumn($eService, 'discount_price');
-                }
-            })
+            // ->editColumn('price', function ($eService) {
+            //     return getPriceColumn($eService);
+            // })
+            // ->editColumn('discount_price', function ($eService) {
+            //     if (empty($eService['discount_price'])) {
+            //         return '-';
+            //     } else {
+            //         return getPriceColumn($eService, 'discount_price');
+            //     }
+            // })
             ->editColumn('updated_at', function ($eService) {
                 return getDateColumn($eService, 'updated_at');
             })
-            ->editColumn('categories', function ($eService) {
-                return getLinksColumnByRouteName($eService->categories, 'categories.edit', 'id', 'name');
-            })
+            // ->editColumn('categories', function ($eService) {
+            //     return getLinksColumnByRouteName($eService->categories, 'categories.edit', 'id', 'name');
+            // })
             ->editColumn('salon.name', function ($eService) {
-                return getLinksColumnByRouteName([$eService->salon], 'salons.edit', 'id', 'name');
+                return getLinksColumnByRouteName([$eService->category], 'salons.edit', 'id', 'name');
             })
-            ->editColumn('available', function ($eService) {
-                return getBooleanColumn($eService, 'available');
-            })
-            ->addColumn('action', 'e_services.datatables_actions')
-            ->rawColumns(array_merge($columns, ['action']));
+            // ->editColumn('available', function ($eService) {
+            //     return getBooleanColumn($eService, 'available');
+            // })
+            ->addColumn('action', 'service_templates.datatables_actions')
+            ->rawColumns(array_merge($columns, ['action']))
+            //  ->rawColumns(array_merge($columns))
+            ;
 
-        return $dataTable;
+        
     }
 
     /**
@@ -88,45 +95,51 @@ class ModelServiceDataTable extends DataTable
             [
                 'data' => 'name',
                 'title' => trans('lang.e_service_name'),
+                'searchable' => false,
 
             ],
-            [
-                'data' => 'salon.name',
-                'name' => 'salon.name',
-                'title' => trans('lang.e_service_salon_id'),
+            // [
+            //     'data' => 'salon.name',
+            //     'name' => 'salon.name',
+            //     'title' => trans('lang.e_service_salon_id'),
 
-            ],
-            [
-                'data' => 'price',
-                'title' => trans('lang.e_service_price'),
+            // ],
+            // [
+            //     'data' => 'price',
+            //     'title' => trans('lang.e_service_price'),
 
-            ],
-            [
-                'data' => 'discount_price',
-                'title' => trans('lang.e_service_discount_price'),
+            // ],
+            // [
+            //     'data' => 'discount_price',
+            //     'title' => trans('lang.e_service_discount_price'),
 
-            ],
+            // ],
             [
-                'data' => 'categories',
+                'data' => 'category.path_names',
                 'title' => trans('lang.e_service_categories'),
                 'searchable' => false,
                 'orderable' => false
             ],
-            [
-                'data' => 'available',
-                'title' => trans('lang.e_service_available'),
+            // [
+            //     'data' => 'available',
+            //     'title' => trans('lang.e_service_available'),
 
-            ],
+            // ],
+            // [
+            //     'data' => 'updated_at',
+            //     'title' => trans('lang.e_service_updated_at'),
+            //     'searchable' => false,
+            // ],
             [
                 'data' => 'updated_at',
-                'title' => trans('lang.e_service_updated_at'),
+                'title' => trans('lang.user_updated_at'),
                 'searchable' => false,
             ]
         ];
 
-        $hasCustomField = in_array(EService::class, setting('custom_field_models', []));
+        $hasCustomField = in_array(ServiceTemplate::class, setting('custom_field_models', []));
         if ($hasCustomField) {
-            $customFieldsCollection = CustomField::where('custom_field_model', EService::class)->where('in_table', '=', true)->get();
+            $customFieldsCollection = CustomField::where('custom_field_model', ServiceTemplate::class)->where('in_table', '=', true)->get();
             foreach ($customFieldsCollection as $key => $field) {
                 array_splice($columns, $field->order - 1, 0, [[
                     'data' => 'custom_fields.' . $field->name . '.view',
@@ -142,18 +155,18 @@ class ModelServiceDataTable extends DataTable
     /**
      * Get query source of dataTable.
      *
-     * @param EService $model
+     * @param ServiceTemplate $model
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function query(EService $model): \Illuminate\Database\Eloquent\Builder
+    public function query(ServiceTemplate $model): \Illuminate\Database\Eloquent\Builder
     {
-        if (auth()->user()->hasRole('salon owner')) {
-            return $model->newQuery()->with("salon")->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
-                ->groupBy('e_services.id')
-                ->where('salon_users.user_id', auth()->id())
-                ->select('e_services.*');
-        }
-        return $model->newQuery()->with("salon")->select("$model->table.*");
+        // if (auth()->user()->hasRole('salon owner')) {
+        //     return $model->newQuery()->join('salon_users', 'salon_users.salon_id', '=', 'service_templates.salon_id')
+        //         ->groupBy('service_templates.id')
+        //         ->where('salon_users.user_id', auth()->id())
+        //         ->select('service_templates.*');
+        // }
+        return $model->newQuery()->with("category")->select("$model->table.*");
     }
 
     /**
@@ -171,7 +184,8 @@ class ModelServiceDataTable extends DataTable
                 config('datatables-buttons.parameters'), [
                     'language' => json_decode(
                         file_get_contents(base_path('resources/lang/' . app()->getLocale() . '/datatable.json')
-                        ), true)
+                        ), true),
+                    'fixedColumns' => [],
                 ]
             ));
     }
@@ -194,6 +208,6 @@ class ModelServiceDataTable extends DataTable
      */
     protected function filename(): string
     {
-        return 'e_servicesdatatable_' . time();
+        return 'service_templatesdatatable_' . time();
     }
 }

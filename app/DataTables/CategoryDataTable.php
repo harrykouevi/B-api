@@ -44,6 +44,9 @@ class CategoryDataTable extends DataTable
             ->editColumn('name', function ($category) {
                 return $category->name;
             })
+            ->editColumn('path', function ($category) {
+                return $category->path;
+            })
             ->editColumn('color', function ($category) {
                 return getColorColumn($category, 'color');
             })
@@ -78,6 +81,11 @@ class CategoryDataTable extends DataTable
             [
                 'data' => 'name',
                 'title' => trans('lang.category_name'),
+
+            ],
+            [
+                'data' => 'parent.path_names',
+                'title' => trans('category_parent'),
 
             ],
             [

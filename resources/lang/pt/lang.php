@@ -713,7 +713,7 @@ return [
     'role_plural' => 'Funções',
     'role_table' => 'Lista de Funções',
     'save' => 'Salvar',
-    'saved_successfully' => ':operador salvo com sucesso',
+    'saved_successfully' => ':operator salvo com sucesso',
     'search' => 'Procurar',
     'select' => 'Selecionar',
     'select_please' => 'Selecione Por favor...',

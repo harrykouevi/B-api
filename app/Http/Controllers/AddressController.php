@@ -12,6 +12,7 @@ use App\Criteria\Addresses\AddressesOfUserCriteria;
 use App\DataTables\AddressDataTable;
 use App\Http\Requests\CreateAddressRequest;
 use App\Http\Requests\UpdateAddressRequest;
+use App\Models\Address;
 use App\Repositories\AddressRepository;
 use App\Repositories\CustomFieldRepository;
 use Flash;
@@ -82,12 +83,16 @@ class AddressController extends Controller
      */
     public function create(): View
     {
+        $address = new Address();
+        $address->latitude = 6.253907;   // Latitude du centre du Togo
+        $address->longitude = 1.213699;
+
         $hasCustomField = in_array($this->addressRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->addressRepository->model());
             $html = generateCustomField($customFields);
         }
-        return view('addresses.create')->with("customFields", $html ?? false);
+        return view('addresses.create', compact('address'))->with("customFields", $html ?? false);
     }
 
     /**

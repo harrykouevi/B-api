@@ -14,6 +14,7 @@ use App\Http\Requests\UpdateCategoryRequest;
 use App\Repositories\CategoryRepository;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\UploadRepository;
+use App\Services\CategoryTemplateService;
 use Exception;
 use Flash;
 use Illuminate\Http\RedirectResponse;
@@ -37,12 +38,20 @@ class CategoryController extends Controller
      */
     private UploadRepository $uploadRepository;
 
-    public function __construct(CategoryRepository $categoryRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo)
+     /**
+     * @var CategoryTemplateService
+     */
+    private CategoryTemplateService $categoryTemplateService;
+
+
+    public function __construct(CategoryTemplateService $categoryTemplateService , CategoryRepository $categoryRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo)
     {
         parent::__construct();
         $this->categoryRepository = $categoryRepo;
         $this->customFieldRepository = $customFieldRepo;
         $this->uploadRepository = $uploadRepo;
+        $this->categoryTemplateService = $categoryTemplateService;
+
     }
 
     /**
@@ -92,7 +101,10 @@ class CategoryController extends Controller
      */
     public function create(): View
     {
-        $parentCategory = $this->categoryRepository->pluck('name', 'id');
+        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( false ) ;    
+        $parentCategory = $this->categoryTemplateService->flattenCategoriesForAdminFront($allcategory) ;
+      
+        // $parentCategory = $this->categoryRepository->pluck('name', 'id');
 
         $hasCustomField = in_array($this->categoryRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
@@ -132,13 +144,17 @@ class CategoryController extends Controller
     public function edit(int $id): RedirectResponse|View
     {
         $category = $this->categoryRepository->findWithoutFail($id);
-        $parentCategory = $this->categoryRepository->pluck('name', 'id')->prepend(__('lang.category_parent_id_placeholder'), '');
-
+        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( false ) ;    
+        $parentCategory = $this->categoryTemplateService->flattenCategoriesForAdminFront($allcategory) ;
+      
         if (empty($category)) {
             Flash::error(__('lang.not_found', ['operator' => __('lang.category')]));
 
             return redirect(route('categories.index'));
         }
+
+        $parentSelected = [$category->parent_id] ;
+
         $customFieldsValues = $category->customFieldsValues()->with('customField')->get();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->categoryRepository->model());
         $hasCustomField = in_array($this->categoryRepository->model(), setting('custom_field_models', []));
@@ -146,7 +162,7 @@ class CategoryController extends Controller
             $html = generateCustomField($customFields, $customFieldsValues);
         }
 
-        return view('categories.edit')->with('category', $category)->with("customFields", $html ?? false)->with("parentCategory", $parentCategory);
+        return view('categories.edit')->with('category', $category)->with("parentSelected", $parentSelected)->with("customFields", $html ?? false)->with("parentCategory", $parentCategory);
     }
 
     /**

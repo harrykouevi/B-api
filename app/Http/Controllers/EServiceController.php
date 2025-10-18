@@ -18,6 +18,7 @@ use App\Repositories\CustomFieldRepository;
 use App\Repositories\EServiceRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\UploadRepository;
+use App\Services\CategoryTemplateService;
 use Exception;
 use Flash;
 use Illuminate\Http\RedirectResponse;
@@ -51,7 +52,12 @@ class EServiceController extends Controller
      */
     private SalonRepository $salonRepository;
 
-    public function __construct(EServiceRepository $eServiceRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo
+    /**
+     * @var CategoryTemplateService
+     */
+    private CategoryTemplateService $categoryTemplateService;
+
+    public function __construct(CategoryTemplateService $categoryTemplateService ,EServiceRepository $eServiceRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo
         , CategoryRepository                       $categoryRepo
         , SalonRepository                          $salonRepo)
     {
@@ -61,6 +67,7 @@ class EServiceController extends Controller
         $this->uploadRepository = $uploadRepo;
         $this->categoryRepository = $categoryRepo;
         $this->salonRepository = $salonRepo;
+        $this->categoryTemplateService = $categoryTemplateService;
     }
 
     /**
@@ -86,6 +93,7 @@ class EServiceController extends Controller
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->eServiceRepository->model());
         try {
+            $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
             $eService = $this->eServiceRepository->create($input);
             $eService->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
@@ -111,15 +119,18 @@ class EServiceController extends Controller
      */
     public function create(): View
     {
-        $category = $this->categoryRepository->pluck('name', 'id');
+        // $category = $this->categoryRepository->pluck('name', 'id');
+        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( true ) ;    
+        $category = $this->categoryTemplateService->flattenCategoriesForAdminFront($allcategory) ;
         $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
+        $category_services = $this->categoryTemplateService->flattenTemplatesForAdminFront($allcategory) ;
         $categoriesSelected = [];
         $hasCustomField = in_array($this->eServiceRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->eServiceRepository->model());
             $html = generateCustomField($customFields);
         }
-        return view('e_services.create')->with("customFields", $html ?? false)->with("category", $category)->with("categoriesSelected", $categoriesSelected)->with("salon", $salon);
+        return view('e_services.create')->with("customFields", $html ?? false)->with("category", $category)->with("category_services", $category_services)->with("categoriesSelected", $categoriesSelected)->with("salon", $salon);
     }
 
     /**
@@ -161,7 +172,9 @@ class EServiceController extends Controller
 
             return redirect(route('eServices.index'));
         }
-        $category = $this->categoryRepository->pluck('name', 'id');
+        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( false ) ;    
+        $category = $this->categoryTemplateService->flattenCategoriesForAdminFront($allcategory) ;
+        
         $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
         $categoriesSelected = $eService->categories()->pluck('categories.id')->toArray();
 
@@ -193,10 +206,13 @@ class EServiceController extends Controller
             Flash::error('E Service not found');
             return redirect(route('eServices.index'));
         }
+
+       
+
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->eServiceRepository->model());
         try {
-            $input['categories'] = $input['categories'] ?? [];
+            $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
             $eService = $this->eServiceRepository->update($input, $id);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {

@@ -27,6 +27,7 @@ use App\Http\Controllers\PayPalController;
 use App\Http\Controllers\SalonController;
 use App\Http\Controllers\SalonPayoutController;
 use App\Http\Controllers\SalonReviewController;
+use App\Http\Controllers\ServiceTemplateController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserController;
@@ -159,9 +160,9 @@ Route::middleware('auth')->group(function () {
         'show'
     ]);
 
-
+    
     // Route::post('model-services/remove-media', 'ModelServiceController@removeMedia');
-    Route::resource('model-services', 'ModelServiceController')->except([
+    Route::resource('model-services', ServiceTemplateController::class)->except([
         'show'
     ]);
 
