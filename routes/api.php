@@ -18,6 +18,7 @@ use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\ServiceTemplateAPIController;
+use App\Http\Controllers\API\OptionTemplateAPIController;
 use App\Http\Controllers\API\UserAPIController;
 use App\Http\Controllers\API\WithdrawalPhoneController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
@@ -116,6 +117,13 @@ Route::get('categories/{id}/templates/breadcrumb', 'API\CategoryAPIController@te
 Route::resource('categories', CategoryAPIController::class);
 
 Route::resource('service_templates', ServiceTemplateAPIController::class);
+
+// Routes spécifiques pour les option templates (AVANT la resource route)
+Route::get('option-templates/by-service/{serviceTemplateId}', [OptionTemplateAPIController::class, 'byServiceTemplate']);
+
+// Route resource standard pour les option templates
+Route::resource('option_templates', OptionTemplateAPIController::class);
+
 Route::resource('e_services', 'API\EServiceAPIController');
 Route::resource('galleries', 'API\GalleryAPIController');
 Route::get('salon_reviews/{id}', 'API\SalonReviewAPIController@show');
