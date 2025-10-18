@@ -12,6 +12,7 @@ use Illuminate\Contracts\Database\Eloquent\Castable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Image\Manipulations;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 
 
@@ -110,4 +111,8 @@ class ServiceTemplate extends Model implements HasMedia
         return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
     }
 
+    public function optionTemplates(): HasMany
+    {
+        return $this->hasMany(OptionTemplate::class);
+    }
 }
