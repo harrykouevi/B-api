@@ -49,7 +49,7 @@ class Option extends Model implements HasMedia
         'description' => 'required',
         'price' => 'required|numeric|min:0|max:99999999,99',
         'e_service_id' => 'required|exists:e_services,id',
-        'option_group_id' => 'required|exists:option_groups,id'
+        'option_group_id' => 'nullable|exists:option_groups,id'
     ];
     public array $translatable = [
         'name',
