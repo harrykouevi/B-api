@@ -26,7 +26,7 @@ use App\Http\Requests\UpdateEServiceRequest;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\UploadRepository;
-use App\Services\categoryTemplateService;
+use App\Services\CategoryTemplateService;
 use Exception;
 use Flash;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
