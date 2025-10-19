@@ -101,7 +101,7 @@ class Category extends Model implements HasMedia
      */
     public static array $rules = [
         'name' => 'required|max:127',
-        'color' => 'required|max:36',
+        'color' => 'nullable|max:36',
         'description' => 'nullable',
         'order' => 'nullable|numeric|min:0',
         'parent_id' => 'nullable|exists:categories,id'
