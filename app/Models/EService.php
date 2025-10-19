@@ -61,13 +61,16 @@ class EService extends Model implements HasMedia, Castable
      * @var array
      */
     public static array $rules = [
-        'name' => 'required|max:127',
+        'name' => 'required_without:template_id|max:127',
         'price' => 'required|numeric|min:0|max:99999999,99',
         'discount_price' => 'nullable|numeric|min:0|max:99999999,99',
         'duration' => 'nullable|max:16',
         'description' => 'required',
-        'salon_id' => 'required|exists:salons,id'
+        'salon_id' => 'required|exists:salons,id',
+        'category_id' => 'required_without:template_id|exists:categories,id',
+        'template_id' => 'nullable|exists:service_templates,id',
     ];
+
     public array $translatable = [
         'name',
         'description',

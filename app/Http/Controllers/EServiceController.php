@@ -17,6 +17,7 @@ use App\Repositories\CategoryRepository;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\EServiceRepository;
 use App\Repositories\SalonRepository;
+use App\Repositories\ServiceTemplateRepository;
 use App\Repositories\UploadRepository;
 use App\Services\CategoryTemplateService;
 use Exception;
@@ -57,8 +58,15 @@ class EServiceController extends Controller
      */
     private CategoryTemplateService $categoryTemplateService;
 
+
+     /**
+     * @var ServiceTemplateRepository
+     */
+    private ServiceTemplateRepository $serviceTemplateRepository;
+
     public function __construct(CategoryTemplateService $categoryTemplateService ,EServiceRepository $eServiceRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo
         , CategoryRepository                       $categoryRepo
+        , ServiceTemplateRepository  $serviceTemplateRepo
         , SalonRepository                          $salonRepo)
     {
         parent::__construct();
@@ -67,6 +75,7 @@ class EServiceController extends Controller
         $this->uploadRepository = $uploadRepo;
         $this->categoryRepository = $categoryRepo;
         $this->salonRepository = $salonRepo;
+        $this->serviceTemplateRepository = $serviceTemplateRepo;
         $this->categoryTemplateService = $categoryTemplateService;
     }
 
@@ -93,7 +102,15 @@ class EServiceController extends Controller
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->eServiceRepository->model());
         try {
-            $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
+            // Get the service template
+            $template = $this->serviceTemplateRepository->findWithoutFail($input['template_id'] ?? null);
+            if($template){
+                $input['name'] = $template->name ;
+                $input['categories'] = [$template->category_id] ;
+            }else{
+                $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
+            }
+
             $eService = $this->eServiceRepository->create($input);
             $eService->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
@@ -172,8 +189,9 @@ class EServiceController extends Controller
 
             return redirect(route('eServices.index'));
         }
-        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( false ) ;    
+        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( true ) ;    
         $category = $this->categoryTemplateService->flattenCategoriesForAdminFront($allcategory) ;
+        $category_services = $this->categoryTemplateService->flattenTemplatesForAdminFront($allcategory) ;
         
         $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
         $categoriesSelected = $eService->categories()->pluck('categories.id')->toArray();
@@ -185,7 +203,7 @@ class EServiceController extends Controller
             $html = generateCustomField($customFields, $customFieldsValues);
         }
 
-        return view('e_services.edit')->with('eService', $eService)->with("customFields", $html ?? false)->with("category", $category)->with("categoriesSelected", $categoriesSelected)->with("salon", $salon);
+        return view('e_services.edit')->with('eService', $eService)->with("category_services", $category_services)->with("customFields", $html ?? false)->with("category", $category)->with("categoriesSelected", $categoriesSelected)->with("salon", $salon);
     }
 
     /**
@@ -212,7 +230,17 @@ class EServiceController extends Controller
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->eServiceRepository->model());
         try {
-            $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
+
+            // Get the service template
+            $template = $this->serviceTemplateRepository->findWithoutFail($input['template_id'] ?? null);
+            if($template){
+                $input['name'] = $template->name ;
+                $input['categories'] = [$template->category_id] ;
+
+            }else{
+                $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
+            }
+            
             $eService = $this->eServiceRepository->update($input, $id);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {

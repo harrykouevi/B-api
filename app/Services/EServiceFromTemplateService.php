@@ -40,7 +40,7 @@ class EServiceFromTemplateService
         $eServiceData = [
             'name' => $template->name,
             'description' => $template->description,
-            'category_id' => $template->category_id,
+            'categories' => [$template->category_id],
             'salon_id' => $salonId,
             // Override with provided data
             'price' => $data['price'] ?? 0,
@@ -140,7 +140,7 @@ class EServiceFromTemplateService
             $eService->update([
                 'name' => $template->name,
                 'description' => $template->description,
-                'category_id' => $template->category_id,
+                'categories' => [$template->category_id],
             ]);
 
             // Update images if template changed

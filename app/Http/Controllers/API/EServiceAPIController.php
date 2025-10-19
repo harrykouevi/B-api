@@ -281,11 +281,11 @@ class EServiceAPIController extends Controller
         try {
             // Request is automatically validated through FormRequest
             $salonId = $request->input('salon_id');
-            $templateData = $request->input('template');
+            $templateData = $request->except(['salon_id']);
             $eService = $this->eServiceFromTemplateService->create($templateData, $salonId);
-
+            
             return $this->sendResponse(
-                $eService->toArray(),
+                $eService->load('categories')->toArray(),
                 __('lang.saved_successfully', ['operator' => __('lang.e_service')])
             );
         } catch (ValidationException $e) {

@@ -21,23 +21,30 @@ class OptionTemplate extends Model implements HasMedia
     public $table = 'option_templates';
     protected $fillable = [
         'name',
+        'group',
         'description',
         'price',
         'service_template_id',
+        'option_group_id'
     ];
 
     protected $casts = [
         'name' => 'string',
+        'group' => 'string',
         'description' => 'string',
         'price' => 'float',
         'service_template_id' => 'integer',
+        'option_group_id' => 'integer'
     ];
 
     public static array $rules = [
         'name' => 'required|max:127',
+        'name' => 'required|max:127',
         'description' => 'nullable',
         'price' => 'required|numeric|min:0.01',
-        'service_template_id' => 'required|exists:service_templates,id'
+        'service_template_id' => 'required|exists:service_templates,id',
+        'option_group_id' => 'nullable|exists:option_groups,id'
+        
     ];
 
     public function serviceTemplate(): BelongsTo
@@ -48,5 +55,13 @@ class OptionTemplate extends Model implements HasMedia
     public function customFieldsValues(): MorphMany
     {
         return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
+    }
+
+     /**
+     * @return BelongsTo
+     **/
+    public function optionGroup(): BelongsTo
+    {
+        return $this->belongsTo(OptionGroup::class, 'option_group_id', 'id');
     }
 }

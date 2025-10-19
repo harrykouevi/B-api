@@ -16,13 +16,8 @@
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row" id="template_field">
         {!! Form::label('template_service_id', trans("lang.e_service_template_service"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {{-- {!! Form::select('template_service_id', 
-                ["" => trans("lang.e_service_template_service_placeholder")] , 
-                null, 
-                ['class' => 'select2 form-control not-required', 'id' => 'template_service_id']
-            ) !!} --}}
-            
-            <select name="service_template_id"  class="select2 form-control not-required" id="template_service_id">
+           
+            <select name="template_id"  class="select2 form-control not-required" id="template_service_id">
                 
                 @foreach($category_services as $id => $service)
                     <option value="{{ $id }}"  
@@ -252,12 +247,17 @@
                 // masquer les champs name + category
                 $('#name_field').attr('style', 'display: none !important');
                 $('#category_field').attr('style', 'display: none !important');
+                $('#name_field input').val('');
+                $('#category_field select').val('').trigger('change');
             } else {
                 // masquer le champ template
                 $('#template_field').attr('style', 'display: none !important');
                 // réafficher les champs normaux
                 $('#name_field').css('display', 'flex'); // ton form-group est en flex
                 $('#category_field').css('display', 'flex');
+
+                // --- Vider le champ template
+                 $('#template_field select').val('').trigger('change');
             }
         }
 

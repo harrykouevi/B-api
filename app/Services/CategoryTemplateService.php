@@ -165,7 +165,6 @@ class CategoryTemplateService
     function flattenTemplatesForAdminFront($categories, $prefix = '', $level = 0) : array
     {
         $list = [];
-        // dd($categories) ;
         foreach ($categories as $category) {
             $label = str_repeat('— ', $level) . $category['name'];
             // on ajoute la catégorie courante avec indentation
@@ -177,7 +176,7 @@ class CategoryTemplateService
                 foreach ($category['templates'] as $t) {
                     // on ajoute la catégorie courante avec indentation
                     $list[$t['id']] = [
-                        'label' => str_repeat('— ', $level).'* ' .$t['name'],
+                        'label' => '* ' .$t['name'],
                         
                     ];
                 }
@@ -525,7 +524,7 @@ class CategoryTemplateService
             })->toArray();
         }
 
-        if ($withTemplates && $category->relationLoaded('serviceTemplates')) {
+        if ($withTemplates ) {
             $node['templates_count'] = $category->serviceTemplates->count();
             $node['templates'] = $category->serviceTemplates->map(function($template) use ($withOptions) {
                 return $this->formatTemplate($template, $withOptions);

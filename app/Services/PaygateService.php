@@ -17,7 +17,7 @@ class PaygateService
 
     private UserRepository $userRepository;
     private WalletTransactionRepository $transactionRepository;
-    protected string $apiKey;
+    protected ?string $apiKey;
     protected string $baseUrl;
 
 
