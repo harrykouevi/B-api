@@ -66,7 +66,7 @@ class ServiceTemplateController extends Controller
 
      public function __construct(ServiceTemplateRepository $serviceTemplateRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo
         , CategoryRepository                       $categoryRepo
-        , categoryTemplateService $categoryTemplateService
+        , CategoryTemplateService $categoryTemplateService
         , SalonRepository                          $salonRepo)
     {
         parent::__construct();
