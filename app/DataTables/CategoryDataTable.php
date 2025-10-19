@@ -145,8 +145,10 @@ class CategoryDataTable extends DataTable
     {
         return $model->newQuery()
         ->with('parent') // charge automatiquement le parent avec alias correct
-        ->select('categories.*') // sélectionne les colonnes principales
-        ->orderBy('name', 'asc');
+        ->from('categories as c1') // alias pour la table principale
+        ->leftJoin('categories as c2', 'c1.parent_id', '=', 'c2.id') // alias pour la table parente
+        ->select('c1.*', 'c2.name as parent_name')// sélectionne les colonnes principales
+        ->orderBy('c1.name', 'asc');
     }
 
     /**
