@@ -9,14 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('categories', function (Blueprint $table) {
-            $table->string('slug')->unique()->after('name');
-            $table->longText('path')->nullable()->after('parent_id');
-            $table->longText('path_slugs')->nullable()->after('path');
-            $table->longText('path_names')->nullable()->after('path_slugs');
+            if (!Schema::hasColumn('categories', 'slug')){ 
+                $table->string('slug')->unique()->after('name');
+                $table->index('slug');
+            }
+            if (!Schema::hasColumn('categories', 'path')){ 
+                $table->index('path');
+                $table->longText('path')->nullable()->after('parent_id');
+            }
+            if (!Schema::hasColumn('categories', 'path_slugs')) $table->longText('path_slugs')->nullable()->after('path');
+            if (!Schema::hasColumn('categories', 'path_names')) $table->longText('path_names')->nullable()->after('path_slugs');
 
-            // Index pour performance
-            $table->index('slug');
-            $table->index('path');
+            
+            
         });
     }
 
