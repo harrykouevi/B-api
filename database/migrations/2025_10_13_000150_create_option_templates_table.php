@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        // Schema::dropIfExists('option_templates');
+        Schema::dropIfExists('option_templates');
         Schema::create('option_templates', function (Blueprint $table) {
             $table->increments('id');
             $table->longText('name');
