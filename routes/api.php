@@ -140,6 +140,12 @@ Route::resource('options', 'API\OptionAPIController');
 
 Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
 
+// Routes for creating and updating EServices from templates (authenticated)
+Route::middleware('auth:api')->group(function () {
+    Route::post('e_services/from-template', 'API\EServiceAPIController@storeFromTemplate')->name('e_services.storeFromTemplate');
+    Route::put('e_services/{id}/from-template', 'API\EServiceAPIController@updateFromTemplate')->name('e_services.updateFromTemplate');
+});
+
 Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink'])->name('affiliates.generate');

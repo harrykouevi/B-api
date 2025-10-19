@@ -12,6 +12,7 @@ use App\Http\Requests\CreateServiceTemplateRequest;
 use App\Http\Requests\UpdateServiceTemplateRequest;
 use App\Repositories\ServiceTemplateRepository;
 use App\Repositories\CategoryRepository;
+use App\Repositories\UploadRepository;
 use Exception;
 use Flash;
 use Illuminate\Http\RedirectResponse;
@@ -28,11 +29,17 @@ class ServiceTemplateController extends Controller
     /** @var  CategoryRepository */
     private CategoryRepository $categoryRepository;
 
-    public function __construct(ServiceTemplateRepository $serviceTemplateRepo, CategoryRepository $categoryRepo)
+    /**
+     * @var UploadRepository
+     */
+    private UploadRepository $uploadRepository;
+
+    public function __construct(ServiceTemplateRepository $serviceTemplateRepo, CategoryRepository $categoryRepo, UploadRepository $uploadRepository)
     {
         parent::__construct();
         $this->serviceTemplateRepository = $serviceTemplateRepo;
         $this->categoryRepository = $categoryRepo;
+        $this->uploadRepository = $uploadRepository;
     }
 
     /**
@@ -59,6 +66,15 @@ class ServiceTemplateController extends Controller
         
         try {
             $serviceTemplate = $this->serviceTemplateRepository->create($input);
+            
+            // Handle image uploads
+            if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
+                foreach ($input['image'] as $fileUuid) {
+                    $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
+                    $mediaItem = $cacheUpload->getMedia('image')->first();
+                    $mediaItem->copy($serviceTemplate, 'image');
+                }
+            }
         } catch (ValidatorException $e) {
             Flash::error($e->getMessage());
         }
@@ -142,6 +158,15 @@ class ServiceTemplateController extends Controller
         
         try {
             $serviceTemplate = $this->serviceTemplateRepository->update($input, $id);
+            
+            // Handle image uploads
+            if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
+                foreach ($input['image'] as $fileUuid) {
+                    $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
+                    $mediaItem = $cacheUpload->getMedia('image')->first();
+                    $mediaItem->copy($serviceTemplate, 'image');
+                }
+            }
         } catch (ValidatorException $e) {
             Flash::error($e->getMessage());
         }
@@ -173,5 +198,22 @@ class ServiceTemplateController extends Controller
         Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.service_template')]));
 
         return redirect(route('service_templates.index'));
+    }
+
+    /**
+     * Remove Media of ServiceTemplate
+     * @param Request $request
+     */
+    public function removeMedia(Request $request): void
+    {
+        $input = $request->all();
+        $serviceTemplate = $this->serviceTemplateRepository->findWithoutFail($input['id']);
+        try {
+            if ($serviceTemplate->hasMedia($input['collection'])) {
+                $serviceTemplate->getFirstMedia($input['collection'])->delete();
+            }
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+        }
     }
 }
