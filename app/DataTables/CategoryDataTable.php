@@ -143,7 +143,10 @@ class CategoryDataTable extends DataTable
      */
     public function query(Category $model): \Illuminate\Database\Eloquent\Builder
     {
-        return $model->newQuery()->with("parent");
+        return $model->newQuery()
+        ->with('parent') // charge automatiquement le parent avec alias correct
+        ->select('categories.*') // sélectionne les colonnes principales
+        ->orderBy('name', 'asc');
     }
 
     /**
