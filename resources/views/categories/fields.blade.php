@@ -116,7 +116,7 @@
                     
                     <option value="{{ $id }}"  
                         data-level="{{ $cat['level'] }}"
-                        @if($cat['level'] < 2) disabled  @endif
+                       
                         @if(in_array($id, $parentSelected ?? [])) selected @endif>
                         {{ $cat['label'] }}
                     </option>
