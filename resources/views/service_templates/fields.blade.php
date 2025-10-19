@@ -20,7 +20,7 @@
         {!! Form::label('categories[]', trans("lang.e_service_categories"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
             {{-- {!! Form::select('categories[]', $category, $categoriesSelected, ['class' => 'select2 form-control not-required' , 'data-empty'=>trans('lang.e_service_categories_placeholder'),'multiple'=>'multiple']) !!} --}}
-            {{-- <select name="category_id"  class="select2 form-control not-required" >
+            <select name="category_id"  class="select2 form-control not-required" >
                 @foreach($category as $id => $cat)
                     <option value="{{ $id }}"  
                         data-level="{{ $cat['level'] }}"
@@ -29,7 +29,7 @@
                         {{ $cat['label'] }}
                     </option>
                 @endforeach
-            </select> --}}
+            </select>
             <div class="form-text text-muted">{{ trans("lang.e_service_categories_help") }}</div>
         </div>
     </div>

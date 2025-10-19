@@ -1588,6 +1588,48 @@ class PermissionsTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
+            array(
+                'id' => 231,
+                'name' => 'option-templates.index',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 232,
+                'name' => 'option-templates.create',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 233,
+                'name' => 'option-templates.store',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 234,
+                'name' => 'option-templates.edit',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 235,
+                'name' => 'option-templates.update',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 236,
+                'name' => 'option-templates.destroy',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
         ));
 
 

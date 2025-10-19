@@ -65,8 +65,8 @@ class ModelServiceDataTable extends DataTable
             // ->editColumn('categories', function ($eService) {
             //     return getLinksColumnByRouteName($eService->categories, 'categories.edit', 'id', 'name');
             // })
-            ->editColumn('salon.name', function ($eService) {
-                return getLinksColumnByRouteName([$eService->category], 'salons.edit', 'id', 'name');
+            ->editColumn('category.path_names', function ($eService) {
+                return getLinksColumnByRouteName([$eService->category], 'categories.edit', 'id', 'path_names');
             })
             // ->editColumn('available', function ($eService) {
             //     return getBooleanColumn($eService, 'available');

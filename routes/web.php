@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OptionTemplateController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayPalController;
 use App\Http\Controllers\SalonController;
@@ -160,11 +161,6 @@ Route::middleware('auth')->group(function () {
         'show'
     ]);
 
-    
-    // Route::post('model-services/remove-media', 'ModelServiceController@removeMedia');
-    Route::resource('model-services', ServiceTemplateController::class)->except([
-        'show'
-    ]);
 
     Route::resource('faqCategories', 'FaqCategoryController')->except([
         'show'
@@ -173,12 +169,17 @@ Route::middleware('auth')->group(function () {
     Route::resource('categories', 'CategoryController')->except([
         'show'
     ]);
-    Route::resource('serviceTemplates', 'ServiceTemplateController')->except([
+    
+    Route::post('model-services/remove-media', [ServiceTemplateController::class , 'removeMedia']);
+    Route::resource('model-services', ServiceTemplateController::class)->except([
         'show'
     ]);
-    Route::resource('optionTemplates', 'OptionTemplateController')->except([
+
+    Route::post('option-templates/remove-media', 'OptionTemplateController@removeMedia');
+    Route::resource('option-templates', OptionTemplateController::class)->except([
         'show'
     ]);
+
     Route::resource('bookingStatuses', 'BookingStatusController')->except([
         'show',
     ]);

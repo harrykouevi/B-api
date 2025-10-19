@@ -16,6 +16,14 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+       
+        // Désactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+        DB::table('users')->truncate();
+
+        // Réactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
       
         $user = User::create([
             'name' => 'admin 1',

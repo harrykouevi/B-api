@@ -177,7 +177,7 @@ class CategoryTemplateService
                 foreach ($category['templates'] as $t) {
                     // on ajoute la catégorie courante avec indentation
                     $list[$t['id']] = [
-                        'label' => str_repeat('* ', $level) .$t['name'],
+                        'label' => str_repeat('— ', $level).'* ' .$t['name'],
                         
                     ];
                 }

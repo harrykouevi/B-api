@@ -12,6 +12,11 @@ use App\Http\Requests\CreateOptionTemplateRequest;
 use App\Http\Requests\UpdateOptionTemplateRequest;
 use App\Repositories\OptionTemplateRepository;
 use App\Repositories\ServiceTemplateRepository;
+use App\DataTables\OptionDataTable;
+use App\DataTables\OptionTemplateDataTable;
+use App\Repositories\CustomFieldRepository;
+use App\Repositories\UploadRepository;
+use App\Services\CategoryTemplateService;
 use Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -19,28 +24,53 @@ use Prettus\Validator\Exceptions\ValidatorException;
 
 class OptionTemplateController extends Controller
 {
+    /**
+     * @var CustomFieldRepository
+     */
+    private CustomFieldRepository $customFieldRepository;
+
+    /**
+     * @var UploadRepository
+     */
+    private UploadRepository $uploadRepository;
+
     /** @var  OptionTemplateRepository */
     private OptionTemplateRepository $optionTemplateRepository;
 
     /** @var  ServiceTemplateRepository */
     private ServiceTemplateRepository $serviceTemplateRepository;
 
-    public function __construct(OptionTemplateRepository $optionTemplateRepo, ServiceTemplateRepository $serviceTemplateRepo)
+     /**
+     * @var CategoryTemplateService
+     */
+    private CategoryTemplateService $categoryTemplateService;
+
+    public function __construct(OptionTemplateRepository $optionTemplateRepo, ServiceTemplateRepository $serviceTemplateRepo
+    , CategoryTemplateService $categoryTemplateService 
+    , CustomFieldRepository $customFieldRepo
+    , UploadRepository $uploadRepo)
     {
         parent::__construct();
         $this->optionTemplateRepository = $optionTemplateRepo;
         $this->serviceTemplateRepository = $serviceTemplateRepo;
+        $this->customFieldRepository = $customFieldRepo;
+        $this->categoryTemplateService = $categoryTemplateService;
+        $this->uploadRepository = $uploadRepo;
+
+
     }
 
+    
+
     /**
-     * Display a listing of the OptionTemplate.
+     * Display a listing of the ModelService.
      *
-     * @return View
+     * @param ModelServiceDataTable $modelServiceDataTable
+     * @return mixed
      */
-    public function index(): View
+    public function index(OptionTemplateDataTable $optionTemplateDataTable): mixed
     {
-        $optionTemplates = $this->optionTemplateRepository->all();
-        return view('option_templates.index')->with('optionTemplates', $optionTemplates);
+        return $optionTemplateDataTable->render('option_templates.index');
     }
 
     /**
@@ -53,16 +83,19 @@ class OptionTemplateController extends Controller
     public function store(CreateOptionTemplateRequest $request): RedirectResponse
     {
         $input = $request->all();
+        $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->optionTemplateRepository->model());
         
         try {
             $optionTemplate = $this->optionTemplateRepository->create($input);
+            $optionTemplate->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
+
         } catch (ValidatorException $e) {
             Flash::error($e->getMessage());
         }
 
         Flash::success(__('lang.saved_successfully', ['operator' => __('lang.option_template')]));
 
-        return redirect(route('option_templates.index'));
+        return redirect(route('option-templates.index'));
     }
 
     /**
@@ -73,8 +106,19 @@ class OptionTemplateController extends Controller
     public function create(): View
     {
         $serviceTemplates = $this->serviceTemplateRepository->pluck('name', 'id');
+        
+        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( true ) ;    
+        $category_services = $this->categoryTemplateService->flattenTemplatesForAdminFront($allcategory) ;
+        
 
-        return view('option_templates.create')->with('serviceTemplates', $serviceTemplates);
+        $hasCustomField = in_array($this->optionTemplateRepository->model(), setting('custom_field_models', []));
+        if ($hasCustomField) {
+            $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->optionTemplateRepository->model());
+            $html = generateCustomField($customFields);
+        }
+        return view('option_templates.create')->with("customFields", $html ?? false)->with("category_services", $category_services)
+        ->with("selectedServicetemplate", [])
+        ->with('serviceTemplates', $serviceTemplates);
     }
 
     /**
@@ -107,15 +151,28 @@ class OptionTemplateController extends Controller
     public function edit(int $id): RedirectResponse|View
     {
         $optionTemplate = $this->optionTemplateRepository->findWithoutFail($id);
-        $serviceTemplates = $this->serviceTemplateRepository->pluck('name', 'id');
-
+        
         if (empty($optionTemplate)) {
             Flash::error(__('lang.not_found', ['operator' => __('lang.option_template')]));
 
             return redirect(route('option_templates.index'));
         }
+        $selectedServicetemplate = $optionTemplate->serviceTemplate()->pluck('id')->toArray();
+        
+        $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( true ) ;    
+        $category_services = $this->categoryTemplateService->flattenTemplatesForAdminFront($allcategory) ;
+        
+        $customFieldsValues = $optionTemplate->customFieldsValues()->with('customField')->get();
+        $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->optionTemplateRepository->model());
+        $hasCustomField = in_array($this->optionTemplateRepository->model(), setting('custom_field_models', []));
+        if ($hasCustomField) {
+            $html = generateCustomField($customFields,$customFieldsValues);
+        }
 
-        return view('option_templates.edit')->with('optionTemplate', $optionTemplate)->with('serviceTemplates', $serviceTemplates);
+        return view('option_templates.edit')->with('optionTemplate', $optionTemplate)
+        ->with("customFields", $html ?? false)
+        ->with("selectedServicetemplate", $selectedServicetemplate)
+        ->with("category_services", $category_services);
     }
 
     /**
@@ -136,16 +193,28 @@ class OptionTemplateController extends Controller
         }
         
         $input = $request->all();
-        
+        $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->optionTemplateRepository->model());
+
         try {
             $optionTemplate = $this->optionTemplateRepository->update($input, $id);
+
+            if (isset($input['image']) && $input['image']) {
+                $cacheUpload = $this->uploadRepository->getByUuid($input['image']);
+                $mediaItem = $cacheUpload->getMedia('image')->first();
+                $mediaItem = $mediaItem->forgetCustomProperty('generated_conversions');
+                $mediaItem->copy($option, 'image');
+            }
+            foreach (getCustomFieldsValues($customFields, $request) as $value) {
+                $option->customFieldsValues()
+                    ->updateOrCreate(['custom_field_id' => $value['custom_field_id']], $value);
+            }
         } catch (ValidatorException $e) {
             Flash::error($e->getMessage());
         }
 
         Flash::success(__('lang.updated_successfully', ['operator' => __('lang.option_template')]));
 
-        return redirect(route('option_templates.index'));
+        return redirect(route('option-templates.index'));
     }
 
     /**

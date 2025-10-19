@@ -160,12 +160,12 @@
                             <i class="nav-icon fas fa-plus-square"></i>@endif<p  class="text-xs" >{{trans('lang.option_group_plural')}}</p></a>
                 </li>
             @endcan --}}
-            {{-- @can('options.index')
+            @can('options.index')
                 <li class="nav-item">
-                    <a class="nav-link {{ Request::is('options*') ? 'active' : '' }}" href="{!! route('options.index') !!}">@if($icons)
-                            <i class="nav-icon far fa-plus-square"></i>@endif<p  class="text-xs" >{{trans('lang.option_plural')}}</p></a>
+                    <a class="nav-link {{ Request::is('options*') ? 'active' : '' }}" href="{!! route('option-templates.index') !!}">@if($icons)
+                            <i class="nav-icon far fa-plus-square"></i>@endif<p  class="text-xs" >{{trans('lang.option_template_plural')}}</p></a>
                 </li>
-            @endcan --}}
+            @endcan
 
         </ul>
     </li>

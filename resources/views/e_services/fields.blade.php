@@ -22,7 +22,7 @@
                 ['class' => 'select2 form-control not-required', 'id' => 'template_service_id']
             ) !!} --}}
             
-            <select name="template_service_id"  class="select2 form-control not-required" id="template_service_id">
+            <select name="service_template_id"  class="select2 form-control not-required" id="template_service_id">
                 
                 @foreach($category_services as $id => $service)
                     <option value="{{ $id }}"  
