@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateOptionRequest;
 use App\Http\Requests\UpdateOptionRequest;
 use App\Repositories\OptionRepository;
+use App\Repositories\OptionTemplateRepository;
 use App\Repositories\UploadRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,15 +31,20 @@ class OptionAPIController extends Controller
 {
     /** @var  OptionRepository */
     private OptionRepository $optionRepository;
+
+     /** @var  OptionTemplateRepository */
+    private OptionTemplateRepository $optionTemplateRepository;
     /**
      * @var UploadRepository
      */
     private UploadRepository $uploadRepository;
 
-    public function __construct(OptionRepository $optionRepo, UploadRepository $uploadRepository)
+    public function __construct(OptionRepository $optionRepo, UploadRepository $uploadRepository , OptionTemplateRepository $optionTemplateRepository)
     {
         parent::__construct();
         $this->optionRepository = $optionRepo;
+        $this->optionTemplateRepository = $optionTemplateRepository ;
+        
         $this->uploadRepository = $uploadRepository;
     }
 
@@ -99,19 +105,16 @@ class OptionAPIController extends Controller
     {
         $input = $request->all();
         try {
-            $template = $this->optionTemplateRepository->findWithoutFail($input['template_id'] ?? null);
+            $template = $this->optionTemplateRepository->findWithoutFail($input['option_template_id'] ?? null);
             if($template){
                 $input['name'] = $template->name ;
-                $input['categories'] = [$template->category_id] ;
+                $input['option_group_id'] = $template->option_group_id ;
             }else{
-                $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
+                $input['option_group_id'] = ($input['option_group_id'])? $input['option_group_id'] : null;
             }
 
             // Prepare EService data
-            $eServiceData = [
-                'name' => $template->name,
-                'description' => $template->description,
-                'categories' => [$template->category_id],
+
             $option = $this->optionRepository->create($input);
             if (isset($input['image']) && $input['image']) {
                 $cacheUpload = $this->uploadRepository->getByUuid($input['image']);
@@ -143,6 +146,14 @@ class OptionAPIController extends Controller
         }
         $input = $request->all();
         try {
+            $template = $this->optionTemplateRepository->findWithoutFail($input['option_template_id'] ?? null);
+            if($template){
+                $input['name'] = $template->name ;
+                $input['option_group_id'] = $template->option_group_id ;
+            }else{
+                $input['option_group_id'] = ($input['option_group_id'])? $input['option_group_id'] : null;
+            }
+            
             $option = $this->optionRepository->update($input, $id);
             if (isset($input['image']) && $input['image']) {
                 $cacheUpload = $this->uploadRepository->getByUuid($input['image']);
