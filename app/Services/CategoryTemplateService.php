@@ -570,14 +570,15 @@ class CategoryTemplateService
      */
     private function formatOption($option): array
     {
-        return [
-            'id' => $option->id,
-            'name' => $option->name,
-            'description' => $option->description,
-            'service_template_id' => $option->service_template_id,
-            'created_at' => $option->created_at,
-            'updated_at' => $option->updated_at,
-        ];
+        return $option->toArray() ;
+        // return [
+        //     'id' => $option->id,
+        //     'name' => $option->name,
+        //     'description' => $option->description,
+        //     'service_template_id' => $option->service_template_id,
+        //     'created_at' => $option->created_at,
+        //     'updated_at' => $option->updated_at,
+        // ];
     }
 
     /**
