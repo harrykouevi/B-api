@@ -210,6 +210,8 @@ class EServiceAPIController extends Controller
         try {
             $input = $request->all();
             $input['categories'] = $input['categories'] ?? [];
+            $input['options_data'] = $input['options'] ?? [];
+            unset($input['options']) ;
             $eService = $this->eServiceRepository->update($input, $id);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 if ($eService->hasMedia('image')) {
@@ -222,6 +224,9 @@ class EServiceAPIController extends Controller
                 }
             }
         } catch (Exception $e) {
+             Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
             return $this->sendError($e->getMessage());
         }
 

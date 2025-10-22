@@ -45,12 +45,14 @@ class Option extends Model implements HasMedia
      * @var array
      */
     public static array $rules = [
-        'name' => 'required|max:127',
+        'name' => 'required_without:option_template_id|max:127',
         'description' => 'required',
         'price' => 'required|numeric|min:0|max:99999999,99',
         'e_service_id' => 'required|exists:e_services,id',
-        'option_group_id' => 'nullable|exists:option_groups,id'
+        'option_group_id' => 'required_without:template_id|exists:option_groups,id',
+        'option_template_id' => 'nullable|exists:option_templates,id',
     ];
+
     public array $translatable = [
         'name',
         'description',

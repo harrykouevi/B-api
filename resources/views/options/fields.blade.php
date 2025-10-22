@@ -2,8 +2,58 @@
     <h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
 @endif
 <div class="d-flex flex-column col-sm-12 col-md-6">
-    <!-- Name Field -->
+    <!-- E Service Id Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('e_service_id', trans("lang.option_e_service_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::select('e_service_id', $eService, null, ['class' => 'select2 form-control']) !!}
+            <div class="form-text text-muted">{{ trans("lang.option_e_service_id_help") }}</div>
+        </div>
+    </div>
+
+    
+     <!-- Use Template Checkbox -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('use_template', trans("lang.option_template"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9 d-flex align-items-center">
+            <span class="icheck-{{ setting('theme_color') }}">
+                {!! Form::checkbox('use_template', 1, null, ['id' => 'use_template']) !!}
+                <label for="use_template">{{ trans("lang.option_template_label") }}</label>
+            </span>
+        </div>
+    </div>
+    <!-- Option Group Id Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row"  id="option_group_field">
+        {!! Form::label('option_group_id', trans("lang.option_option_group_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::select('option_group_id', $optionGroup, null, ['class' => 'select2 form-control' , 'id' => 'option_group_id']) !!}
+            <div class="form-text text-muted">{{ trans("lang.option_option_group_id_help") }}</div>
+        </div>
+    </div>
+    <!-- Template Option Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row" id="template_field">
+        {!! Form::label('template_option_id', trans("lang.option_template_option"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            
+            <select name="option_template_id"  class="select2 form-control not-required" id="template_option_id">
+               
+                
+                @foreach($option_templates as $optiont)
+                    <option value="{{ $optiont["id"] }}"  
+                        data-option-group="{{ $optiont['option_group_id'] ?? '' }}"
+                        @if(in_array( $optiont["id"], $optionegoriesSelected ?? [])) selected @endif>
+                        {{ $optiont['name'] }}
+                    </option>
+                   
+                @endforeach
+            </select>
+            <div class="form-text text-muted">
+                {{ trans("lang.option_template_option_help") }}
+            </div>
+        </div>
+    </div>
+    <!-- Name Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row" id="name_field">
         {!! Form::label('name', trans("lang.option_name"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
             {!! Form::text('name', null,  ['class' => 'form-control','placeholder'=>  trans("lang.option_name_placeholder")]) !!}
@@ -69,6 +119,87 @@
             });
             dz_var1611346087953519449ble[0].mockFile = var1611346087953519449ble;
             dropzoneFields['image'] = dz_var1611346087953519449ble;
+        
+            function toggleTemplateMode() {
+           
+                const useTemplate = $('#use_template').is(':checked');
+
+                if (useTemplate) {
+                    // afficher le champ template
+                    $('#template_field').css('display', 'flex'); // pour conserver la mise en forme flex
+                    // masquer les champs name + category
+                    $('#name_field').attr('style', 'display: none !important');
+                    // $('#option_group_field').attr('style', 'display: none !important');
+                    $('#name_field input').val('');
+                    $('#option_group_field select').val('').trigger('change');
+                } else {
+                    // masquer le champ template
+                    $('#template_field').attr('style', 'display: none !important');
+                    // réafficher les champs normaux
+                    $('#name_field').css('display', 'flex'); // ton form-group est en flex
+                    // $('#option_group_field').css('display', 'flex');
+
+                    // --- Vider le champ template
+                    $('#template_field select').val('').trigger('change');
+                }
+            }
+
+            function filterTemplateOptions() {
+                const selectedGroup = $('#option_group_field select').val();
+                const $templateSelect = $('#template_field select');
+
+
+                 // --- 1️⃣ Sauvegarde toutes les options au premier appel (si pas déjà fait)
+                if (!$templateSelect.data('all-options')) {
+                    const allOptions = $templateSelect.find('option').map(function () {
+                        return {
+                            value: $(this).val(),
+                            text: $(this).text(),
+                            group: $(this).data('option-group') ?? '',
+                            disabled: $(this).is(':disabled')
+                        };
+                    }).get();
+                    $templateSelect.data('all-options', allOptions);
+                }
+
+                const allOptions = $templateSelect.data('all-options');
+
+                // --- 2️⃣ Filtrer les options selon le groupe sélectionné
+                const filteredOptions = allOptions.filter(opt =>
+                    opt.group == selectedGroup || opt.group === '' || opt.group === null
+                );
+
+                // --- 3️⃣ Vider et recharger le <select>
+                $templateSelect.empty();
+                filteredOptions.forEach(opt => {
+                    $templateSelect.append(
+                        $('<option>')
+                            .val(opt.value)
+                            .text(opt.text)
+                            .prop('disabled', opt.disabled)
+                    );
+                });
+
+                // --- 4️⃣ Réinitialiser la sélection
+                $templateSelect.val('').trigger('change');
+
+                // --- 5️⃣ Rafraîchir le plugin Select2 proprement
+                if ($templateSelect.hasClass('select2-hidden-accessible')) {
+                    // Détruire et réinitialiser proprement
+                    $templateSelect.select2('destroy').select2();
+                }
+
+                console.log(`Options affichées : ${filteredOptions.length}`);
+            }
+
+            // Exécution initiale
+            $('#option_group_field select').on('change', filterTemplateOptions);
+            filterTemplateOptions();
+
+            // Exécuter au changement et au chargement initial
+            $('#use_template').on('change', toggleTemplateMode);
+            toggleTemplateMode();
+        
         </script>
 @endprepend
 
@@ -97,23 +228,7 @@
         </div>
     </div>
 
-    <!-- E Service Id Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('e_service_id', trans("lang.option_e_service_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            {!! Form::select('e_service_id', $eService, null, ['class' => 'select2 form-control']) !!}
-            <div class="form-text text-muted">{{ trans("lang.option_e_service_id_help") }}</div>
-        </div>
-    </div>
-
-    <!-- Option Group Id Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('option_group_id', trans("lang.option_option_group_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            {!! Form::select('option_group_id', $optionGroup, null, ['class' => 'select2 form-control']) !!}
-            <div class="form-text text-muted">{{ trans("lang.option_option_group_id_help") }}</div>
-        </div>
-    </div>
+    
 
 </div>
 @if($customFields)

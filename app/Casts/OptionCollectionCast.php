@@ -25,6 +25,7 @@ class OptionCollectionCast implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes): array
     {
+        
         if(empty($value))  return [];
       
         $decodedValue = json_decode($value, true);
@@ -48,6 +49,8 @@ class OptionCollectionCast implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes): array
     {
+        dd('ttt');
+        
         $collection = $value instanceof Collection ? $value : collect($value);
         return [
             'options' => json_encode($collection->map->only(['id', 'name', 'price']), JSON_THROW_ON_ERROR)

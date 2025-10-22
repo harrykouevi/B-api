@@ -9,6 +9,7 @@
 namespace App\Models;
 
 use App\Casts\EServiceCast;
+use App\Casts\OptionCollectionCast;
 use App\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Castable;
@@ -107,6 +108,7 @@ class EService extends Model implements HasMedia, Castable
         'enable_at_customer_address' => 'boolean',
         'available' => 'boolean',
         'salon_id' => 'integer',
+        'options' => OptionCollectionCast::class,
     ];
     /**
      * New Attributes

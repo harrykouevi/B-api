@@ -13,6 +13,15 @@
         </div>
     </div>
 
+    <!-- Option Group Id Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('option_group_id', trans("lang.option_template_option_group_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::select('option_group_id', $optionGroup, null, ['class' => 'select2 form-control']) !!}
+            <div class="form-text text-muted">{{ trans("lang.option_template_option_group_id_help") }}</div>
+        </div>
+    </div>
+
     <!-- Image Field -->
     <div class="form-group align-items-start d-flex flex-column flex-md-row">
         {!! Form::label('image', trans("lang.option_template_image"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -117,14 +126,7 @@
         </div>
     </div>
 
-    <!-- Option Group Id Field -->
-    {{-- <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('option_group_id', trans("lang.option_template_option_group_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            {!! Form::select('option_group_id', $optionGroup, null, ['class' => 'select2 form-control']) !!}
-            <div class="form-text text-muted">{{ trans("lang.option_template_option_group_id_help") }}</div>
-        </div>
-    </div> --}}
+    
 
 </div>
 @if($customFields)

@@ -15,6 +15,7 @@ use App\Repositories\ServiceTemplateRepository;
 use App\DataTables\OptionDataTable;
 use App\DataTables\OptionTemplateDataTable;
 use App\Repositories\CustomFieldRepository;
+use App\Repositories\OptionGroupRepository;
 use App\Repositories\UploadRepository;
 use App\Services\CategoryTemplateService;
 use Flash;
@@ -33,6 +34,12 @@ class OptionTemplateController extends Controller
      * @var UploadRepository
      */
     private UploadRepository $uploadRepository;
+    
+     /**
+     * @var OptionGroupRepository
+     */
+    private OptionGroupRepository $optionGroupRepository;
+
 
     /** @var  OptionTemplateRepository */
     private OptionTemplateRepository $optionTemplateRepository;
@@ -48,6 +55,8 @@ class OptionTemplateController extends Controller
     public function __construct(OptionTemplateRepository $optionTemplateRepo, ServiceTemplateRepository $serviceTemplateRepo
     , CategoryTemplateService $categoryTemplateService 
     , CustomFieldRepository $customFieldRepo
+    , OptionGroupRepository                 $optionGroupRepo
+
     , UploadRepository $uploadRepo)
     {
         parent::__construct();
@@ -55,6 +64,8 @@ class OptionTemplateController extends Controller
         $this->serviceTemplateRepository = $serviceTemplateRepo;
         $this->customFieldRepository = $customFieldRepo;
         $this->categoryTemplateService = $categoryTemplateService;
+        $this->optionGroupRepository = $optionGroupRepo;
+
         $this->uploadRepository = $uploadRepo;
 
 
@@ -109,6 +120,7 @@ class OptionTemplateController extends Controller
         
         $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( true ) ;    
         $category_services = $this->categoryTemplateService->flattenTemplatesForAdminFront($allcategory) ;
+        $optionGroup = $this->optionGroupRepository->pluck('name', 'id');
         
 
         $hasCustomField = in_array($this->optionTemplateRepository->model(), setting('custom_field_models', []));
@@ -118,6 +130,7 @@ class OptionTemplateController extends Controller
         }
         return view('option_templates.create')->with("customFields", $html ?? false)->with("category_services", $category_services)
         ->with("selectedServicetemplate", [])
+        ->with("optionGroup", $optionGroup)
         ->with('serviceTemplates', $serviceTemplates);
     }
 
@@ -135,7 +148,7 @@ class OptionTemplateController extends Controller
         if (empty($optionTemplate)) {
             Flash::error('Option Template not found');
 
-            return redirect(route('option_templates.index'));
+            return redirect(route('option-templates.index'));
         }
 
         return view('option_templates.show')->with('optionTemplate', $optionTemplate);
@@ -155,13 +168,14 @@ class OptionTemplateController extends Controller
         if (empty($optionTemplate)) {
             Flash::error(__('lang.not_found', ['operator' => __('lang.option_template')]));
 
-            return redirect(route('option_templates.index'));
+            return redirect(route('option-templates.index'));
         }
         $selectedServicetemplate = $optionTemplate->serviceTemplate()->pluck('id')->toArray();
-        
         $allcategory = $this->categoryTemplateService->getRootCategoriesWithChildren( true ) ;    
         $category_services = $this->categoryTemplateService->flattenTemplatesForAdminFront($allcategory) ;
         
+        $optionGroup = $this->optionGroupRepository->pluck('name', 'id');
+
         $customFieldsValues = $optionTemplate->customFieldsValues()->with('customField')->get();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->optionTemplateRepository->model());
         $hasCustomField = in_array($this->optionTemplateRepository->model(), setting('custom_field_models', []));
@@ -171,6 +185,7 @@ class OptionTemplateController extends Controller
 
         return view('option_templates.edit')->with('optionTemplate', $optionTemplate)
         ->with("customFields", $html ?? false)
+        ->with("optionGroup", $optionGroup)
         ->with("selectedServicetemplate", $selectedServicetemplate)
         ->with("category_services", $category_services);
     }
@@ -189,7 +204,7 @@ class OptionTemplateController extends Controller
 
         if (empty($optionTemplate)) {
             Flash::error('Option Template not found');
-            return redirect(route('option_templates.index'));
+            return redirect(route('option-templates.index'));
         }
         
         $input = $request->all();
@@ -231,13 +246,13 @@ class OptionTemplateController extends Controller
         if (empty($optionTemplate)) {
             Flash::error('Option Template not found');
 
-            return redirect(route('option_templates.index'));
+            return redirect(route('option-templates.index'));
         }
 
         $this->optionTemplateRepository->delete($id);
 
         Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.option_template')]));
 
-        return redirect(route('option_templates.index'));
+        return redirect(route('option-templates.index'));
     }
 }

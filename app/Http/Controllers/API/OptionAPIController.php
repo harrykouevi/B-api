@@ -99,6 +99,19 @@ class OptionAPIController extends Controller
     {
         $input = $request->all();
         try {
+            $template = $this->optionTemplateRepository->findWithoutFail($input['template_id'] ?? null);
+            if($template){
+                $input['name'] = $template->name ;
+                $input['categories'] = [$template->category_id] ;
+            }else{
+                $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
+            }
+
+            // Prepare EService data
+            $eServiceData = [
+                'name' => $template->name,
+                'description' => $template->description,
+                'categories' => [$template->category_id],
             $option = $this->optionRepository->create($input);
             if (isset($input['image']) && $input['image']) {
                 $cacheUpload = $this->uploadRepository->getByUuid($input['image']);

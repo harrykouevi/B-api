@@ -17,6 +17,7 @@ use App\Repositories\CustomFieldRepository;
 use App\Repositories\EServiceRepository;
 use App\Repositories\OptionGroupRepository;
 use App\Repositories\OptionRepository;
+use App\Repositories\OptionTemplateRepository;
 use App\Repositories\UploadRepository;
 use Exception;
 use Flash;
@@ -51,8 +52,14 @@ class OptionController extends Controller
      */
     private OptionGroupRepository $optionGroupRepository;
 
+     /**
+     * @var OptionTemplateRepository
+     */
+    private OptionTemplateRepository $optionTemplateRepository;
+
     public function __construct(OptionRepository $optionRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo
         , EServiceRepository                     $eServiceRepo
+        , OptionTemplateRepository $optionTemplateRepo
         , OptionGroupRepository                  $optionGroupRepo)
     {
         parent::__construct();
@@ -61,6 +68,7 @@ class OptionController extends Controller
         $this->uploadRepository = $uploadRepo;
         $this->eServiceRepository = $eServiceRepo;
         $this->optionGroupRepository = $optionGroupRepo;
+        $this->optionTemplateRepository = $optionTemplateRepo;
     }
 
     /**
@@ -86,6 +94,15 @@ class OptionController extends Controller
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->optionRepository->model());
         try {
+            // Get the service template
+            $template = $this->optionTemplateRepository->findWithoutFail($input['option_template_id'] ?? null);
+            if($template){
+                $input['name'] = $template->name ;
+                $input['option_group_id'] = $template->option_group_id ;
+            }else{
+                $input['option_group_id'] = ($input['option_group_id'])? $input['option_group_id'] : null;
+            }
+            
             $option = $this->optionRepository->create($input);
             $option->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
             if (isset($input['image']) && $input['image']) {
@@ -114,13 +131,14 @@ class OptionController extends Controller
         $this->eServiceRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
         $eService = $this->eServiceRepository->groupedBySalons();
         $optionGroup = $this->optionGroupRepository->pluck('name', 'id');
+        $option_templates = $this->optionTemplateRepository->get();
 
         $hasCustomField = in_array($this->optionRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->optionRepository->model());
             $html = generateCustomField($customFields);
         }
-        return view('options.create')->with("customFields", $html ?? false)->with("eService", $eService)->with("optionGroup", $optionGroup);
+        return view('options.create')->with("customFields", $html ?? false)->with("eService", $eService)->with("option_templates", $option_templates)->with("optionGroup", $optionGroup);
     }
 
     /**
@@ -139,9 +157,12 @@ class OptionController extends Controller
             Flash::error(__('lang.not_found', ['operator' => __('lang.option')]));
             return redirect(route('options.index'));
         }
+        $option_templates = $this->optionTemplateRepository->get();
+
         $this->eServiceRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
         $eService = $this->eServiceRepository->groupedBySalons();
         $optionGroup = $this->optionGroupRepository->pluck('name', 'id');
+        $option_templates = $this->optionTemplateRepository->get();
 
 
         $customFieldsValues = $option->customFieldsValues()->with('customField')->get();
@@ -151,7 +172,10 @@ class OptionController extends Controller
             $html = generateCustomField($customFields, $customFieldsValues);
         }
 
-        return view('options.edit')->with('option', $option)->with("customFields", $html ?? false)->with("eService", $eService)->with("optionGroup", $optionGroup);
+        return view('options.edit')->with('option', $option)->with("customFields", $html ?? false)
+        ->with("optionGroup", $optionGroup)
+        ->with("option_templates", $option_templates)
+        ->with("eService", $eService)->with("optionGroup", $optionGroup);
     }
 
     /**

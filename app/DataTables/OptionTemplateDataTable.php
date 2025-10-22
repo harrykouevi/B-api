@@ -48,9 +48,9 @@ class OptionTemplateDataTable extends DataTable
             ->editColumn('service_template.name', function ($option) {
                 return getLinksColumnByRouteName([$option->serviceTemplate], 'model-services.edit', 'id', 'name');
             })
-            // ->editColumn('option_group.name', function ($option) {
-            //     return getLinksColumnByRouteName([$option->optionGroup], 'optionGroups.edit', 'id', 'name');
-            // })
+            ->editColumn('option_group.name', function ($option) {
+                return getLinksColumnByRouteName([$option->optionGroup], 'optionGroups.edit', 'id', 'name');
+            })
            
             ->editColumn('updated_at', function ($option) {
                 return getDateColumn($option);
@@ -91,12 +91,12 @@ class OptionTemplateDataTable extends DataTable
 
             ],
             
-            // [
-            //     'data' => 'option_group.name',
-            //     'name' => 'optionGroup.name',
-            //     'title' => trans('lang.option_group'),
+            [
+                'data' => 'option_group.name',
+                'name' => 'optionGroup.name',
+                'title' => trans('lang.option_group'),
 
-            // ],
+            ],
             [
                 'data' => 'updated_at',
                 'title' => trans('lang.option_updated_at'),
