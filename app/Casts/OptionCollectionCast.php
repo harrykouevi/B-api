@@ -49,7 +49,6 @@ class OptionCollectionCast implements CastsAttributes
      */
     public function set($model, string $key, $value, array $attributes): array
     {
-        dd('ttt');
         
         $collection = $value instanceof Collection ? $value : collect($value);
         return [

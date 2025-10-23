@@ -203,6 +203,9 @@ class BookingAPIController extends Controller
            
             return $this->sendError(array_values($e->errors()),422);
         } catch (Exception $e) {
+            // Log::error('FAIL:'. $e->getMessage() , [
+            //      'trace' => $e->getTraceAsString()
+            // ]);
             return $this->sendError($e->getMessage() , 500);
         }
 
