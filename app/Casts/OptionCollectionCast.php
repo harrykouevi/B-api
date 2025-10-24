@@ -28,7 +28,7 @@ class OptionCollectionCast implements CastsAttributes
         
         if(empty($value))  return [];
       
-        $decodedValue = json_decode($value, true);
+        $decodedValue = is_string($value) ? json_decode($value, true) : $value;
         return array_map(function ($value) {
             $option = Option::find($value['id']);
             if (!empty($option)) {
@@ -52,7 +52,11 @@ class OptionCollectionCast implements CastsAttributes
         
         $collection = $value instanceof Collection ? $value : collect($value);
         return [
-            'options' => json_encode($collection->map->only(['id', 'name', 'price']), JSON_THROW_ON_ERROR)
+            'options' => $collection->map(function ($item) {
+                return collect($item)->only(['id', 'name', 'price']) ;
+            })
+            ->values() // facultatif, pour réindexer
+            ->toJson()
         ];
     }
 }

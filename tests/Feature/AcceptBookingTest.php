@@ -87,6 +87,7 @@ class AcceptBookingTest extends TestCase
                     'e_services' => [
                             ['id' => 3, 'name' => 'Mid Fade Taper', 'price' => 1500, 'discount_price' => 0]
                         ],
+                    'options'  => [["id"=>5,"name"=>"Coupe mi-long","price"=>1000]],
                     'salon' => [ 'id' => 2,
                             'name' => 'Eugène Salon',
                             'phone_number' => '+22896133362',
@@ -101,6 +102,9 @@ class AcceptBookingTest extends TestCase
                     
             ]);
 
+
+            Log::info( $booking ) ;
+
             $response =  $this->actingAs($user2, 'api')->postJson(route('api.payments.wallets', $wallet2->id), [
                 "id" => $booking->id,
                 'payment' => ['amount'=> 200 ],
@@ -111,7 +115,7 @@ class AcceptBookingTest extends TestCase
             ] );
 
            
-            $response2 =  $this->actingAs($user2, 'api')->putJson(route('api.bookings.update', $booking->id), [
+            $response2 =  $this->actingAs($user, 'api')->putJson(route('api.bookings.update', $booking->id), [
                 'booking_status_id' =>  4 ,
                 'taxe'  =>  ["value" => 10, "type" => "percent"]
                             
