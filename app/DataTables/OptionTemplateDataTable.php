@@ -94,15 +94,17 @@ class OptionTemplateDataTable extends DataTable
 
             ],
             [
+               
                 'data' => 'service_template.name',
-                'name' => 'eService.name',
+                'name' => 'service_templates.name',
                 'title' => trans('lang.model_service'),
+                'orderable' => true
 
             ],
             
             [
                 'data' => 'option_group.name',
-                'name' => 'optionGroup.name',
+                'name' => 'option_groups.name',
                 'title' => trans('lang.option_group'),
 
             ],
@@ -137,10 +139,15 @@ class OptionTemplateDataTable extends DataTable
     public function query(OptionTemplate $model): \Illuminate\Database\Eloquent\Builder
     {
         if (auth()->user()->hasRole('admin')) {
-            return $model->newQuery()->with("serviceTemplate")->select("$model->table.*");
+            return $model->newQuery()->with("serviceTemplate")->with("optionGroup")
+            ->join("service_templates", "option_templates.service_template_id", "=", "service_templates.id")
+            ->leftJoin('option_groups', 'option_groups.id', '=', 'option_templates.option_group_id')
+            
+            ->select("$model->table.*");
         } else if (auth()->user()->hasRole('salon owner')) {
             return $model->newQuery()->with("serviceTemplate")
-                ->join("service_templates", "options_templates.service_template_id", "=", "service_templates.id")
+                ->join("service_templates", "option_templates.service_template_id", "=", "service_templates.id")
+                ->leftJoin('option_groups', 'option_groups.id', '=', 'option_templates.option_group_id')
                 ->groupBy("options_templates.id")
                 ->select("$model->table.*");
         } else {
