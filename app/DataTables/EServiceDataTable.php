@@ -151,6 +151,7 @@ class EServiceDataTable extends DataTable
                 'data' => 'updated_at',
                 'title' => trans('lang.e_service_updated_at'),
                 'searchable' => false,
+                'orderable' => true
             ]
         ];
 
