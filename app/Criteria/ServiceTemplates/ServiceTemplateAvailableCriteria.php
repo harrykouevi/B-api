@@ -6,7 +6,7 @@
  * Copyright (c) 2025
  */
 
-namespace App\Criteria\EServices;
+namespace App\Criteria\ServiceTemplates;
 
 use Prettus\Repository\Contracts\CriteriaInterface;
 use Prettus\Repository\Contracts\RepositoryInterface;
@@ -14,7 +14,7 @@ use Prettus\Repository\Contracts\RepositoryInterface;
 /**
  * Class ServiceTemplateAvailableCriteria.
  *
- * @package namespace App\Criteria\EServices;
+ * @package namespace App\Criteria\ServiceTemplates;
  */
 class ServiceTemplateAvailableCriteria implements CriteriaInterface
 {

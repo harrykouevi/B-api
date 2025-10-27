@@ -142,7 +142,7 @@
 @can('eServices.index')
     <li class="nav-item has-treeview {{ Request::is('eServices*') || Request::is('options*') || Request::is('optionGroups*') || Request::is('nutrition*') ? 'menu-open' : '' }}">
         <a href="#" class="nav-link {{  Request::is('eServices*') || Request::is('options*') || Request::is('optionGroups*') || Request::is('nutrition*') ? 'active' : '' }}"> @if($icons)
-                <i class="nav-icon fas fa-pencil-ruler"></i>@endif
+                <i class="nav-icon fas fa-layer-group"></i>@endif
             <p  class="text-xs" >{{trans('lang.model_service_plural')}} <i class="right fas fa-angle-left"></i>
             </p>
         </a>

@@ -17,12 +17,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Prettus\Validator\Exceptions\ValidatorException;
-use App\Criteria\Categories\CategoriesDescendantsCriteria;
-use App\Criteria\EServices\EServicesOfUserCriteria;
-use App\Criteria\Salons\SalonsOfUserCriteria;
+use App\Criteria\ServiceTemplates\ServicesTemplateCriteria ;
 use App\DataTables\ModelServiceDataTable;
-use App\Http\Requests\CreateEServiceRequest;
-use App\Http\Requests\UpdateEServiceRequest;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\UploadRepository;
@@ -153,7 +149,7 @@ class ServiceTemplateController extends Controller
      */
     public function show(int $id): RedirectResponse|View
     {
-        $this->serviceTemplateRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
+        $this->serviceTemplateRepository->pushCriteria(new ServicesTemplateCriteria(auth()->id()));
         $eService = $this->serviceTemplateRepository->findWithoutFail($id);
 
         if (empty($eService)) {
@@ -251,18 +247,18 @@ class ServiceTemplateController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        $this->serviceTemplateRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
-        $eService = $this->serviceTemplateRepository->findWithoutFail($id);
+        $this->serviceTemplateRepository->pushCriteria(new ServicesTemplateCriteria(auth()->id()));
+        $tService = $this->serviceTemplateRepository->findWithoutFail($id);
 
-        if (empty($eService)) {
-            Flash::error('E Service not found');
+        if (empty($tService)) {
+            Flash::error('Service Template not found');
 
             return redirect(route('model-services.index'));
         }
 
         $this->serviceTemplateRepository->delete($id);
 
-        Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.e_service')]));
+        Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.model_service')]));
 
         return redirect(route('model-services.index'));
     }

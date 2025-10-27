@@ -19,6 +19,8 @@
             <span class="icheck-{{ setting('theme_color') }}">
                 {!! Form::checkbox('use_template', 1, null, ['id' => 'use_template']) !!}
                 <label for="use_template">{{ trans("lang.option_template_label") }}</label>
+            
+                <div class="form-text text-muted">{{ trans("lang.option_template_label_help") }}</div>
             </span>
         </div>
     </div>
@@ -63,6 +65,21 @@
         </div>
     </div>
 
+    
+
+
+<!-- Description Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('description', trans("lang.option_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::textarea('description', null, ['class' => 'form-control','placeholder'=>
+             trans("lang.option_description_placeholder")  ]) !!}
+            <div class="form-text text-muted">{{ trans("lang.option_description_help") }}</div>
+        </div>
+    </div>
+
+</div>
+<div class="d-flex flex-column col-sm-12 col-md-6">
     <!-- Image Field -->
     <div class="form-group align-items-start d-flex flex-column flex-md-row">
         {!! Form::label('image', trans("lang.option_image"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -202,21 +219,6 @@
         
         </script>
 @endprepend
-
-
-<!-- Description Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('description', trans("lang.option_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            {!! Form::textarea('description', null, ['class' => 'form-control','placeholder'=>
-             trans("lang.option_description_placeholder")  ]) !!}
-            <div class="form-text text-muted">{{ trans("lang.option_description_help") }}</div>
-        </div>
-    </div>
-
-</div>
-<div class="d-flex flex-column col-sm-12 col-md-6">
-
     <!-- Price Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('price', trans("lang.option_price"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}

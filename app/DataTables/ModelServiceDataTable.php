@@ -34,15 +34,33 @@ class ModelServiceDataTable extends DataTable
     {
         $dataTable = new EloquentDataTable($query);
         $dataTable->filter(function ($query) {
-
+           
             // Filtre par type de transaction
-            if (request()->has('action_search') && !is_null(request('action_search'))) {
-                $query->where('action', request('action_search'));
+            if (request()->has('search') && (!is_null(request('search')['value']) || request('search')['value'] != '')) {
+                $search = request('search')['value'] ;
+                $columns = $this->getColumns();
+
+                $query->where(function ($q) use ($columns, $search) {
+                    foreach ($columns as $column) {
+                        if ($column['searchable'] ?? false) {
+                            if (str_contains($column['name'], '.')) {
+                                $parts = explode('.', $column['name']);
+                                $colName = $parts[0] . '.' . $parts[1]; 
+                            } else {
+                                $colName = $column['name'];
+                            }
+                            $q->orWhere($colName, 'like', "%{$search}%");
+                        }
+                    }
+                });
             }
 
         });
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
+            ->editColumn('id', function ($eService) {
+                return  "<span style=' color: #a0bdd7; font-family: fangsong;'>" . $eService->id . "</span>";
+            })
             ->editColumn('image', function ($eService) {
                 return getMediaColumn($eService, 'image');
             })
@@ -88,14 +106,20 @@ class ModelServiceDataTable extends DataTable
     {
         $columns = [
             [
+                'data' => 'id',
+                'title' => '#',
+
+            ],
+            [
                 'data' => 'image',
                 'title' => trans('lang.e_service_image'),
                 'searchable' => false, 'orderable' => false, 'exportable' => false, 'printable' => false,
             ],
             [
                 'data' => 'name',
+                'name' => 'service_templates.name',
                 'title' => trans('lang.e_service_name'),
-                'searchable' => false,
+                'searchable' => true,
 
             ],
             // [
@@ -116,9 +140,10 @@ class ModelServiceDataTable extends DataTable
             // ],
             [
                 'data' => 'category.path_names',
+                'name' => 'categories.path_names',
                 'title' => trans('lang.e_service_categories'),
-                'searchable' => false,
-                'orderable' => false
+                'searchable' => true,
+                'orderable' => true
             ],
             // [
             //     'data' => 'available',
@@ -160,13 +185,18 @@ class ModelServiceDataTable extends DataTable
      */
     public function query(ServiceTemplate $model): \Illuminate\Database\Eloquent\Builder
     {
-        // if (auth()->user()->hasRole('salon owner')) {
-        //     return $model->newQuery()->join('salon_users', 'salon_users.salon_id', '=', 'service_templates.salon_id')
-        //         ->groupBy('service_templates.id')
-        //         ->where('salon_users.user_id', auth()->id())
-        //         ->select('service_templates.*');
-        // }
-        return $model->newQuery()->with("category")->select("$model->table.*");
+        if (auth()->user()->hasRole('salon owner')) {
+            return $model->newQuery()->join('salon_users', 'salon_users.salon_id', '=', 'service_templates.salon_id')
+                    ->with('category')
+                ->leftJoin('categories', 'categories.id', '=', 'service_templates.category_id')
+                ->groupBy('service_templates.id')
+                ->where('salon_users.user_id', auth()->id())
+                ->select('service_templates.*');
+        }
+        return $model->newQuery()
+        ->with("category")
+        ->leftJoin('categories', 'categories.id', '=', 'service_templates.category_id')
+        ->select("$model->table.*");
     }
 
     /**

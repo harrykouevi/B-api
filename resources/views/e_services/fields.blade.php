@@ -4,11 +4,11 @@
 <div class="d-flex flex-column col-sm-12 col-md-4 px-4">
     <!-- Use Template Checkbox -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('use_template', trans("lang.e_service_use_template"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        {!! Form::label('use_template', ".", ['class' => 'col-md-3 control-label text-md-right mx-1' , 'style' => 'color:#f4f6f9']) !!}
         <div class="col-md-9 d-flex align-items-center">
             <span class="icheck-{{ setting('theme_color') }}">
                 {!! Form::checkbox('use_template', 1, null, ['id' => 'use_template']) !!}
-                <label for="use_template">{{ trans("lang.e_service_use_template_label") }}</label>
+                <label for="use_template">{{ trans("lang.e_service_use_template") }}</label>
             </span>
         </div>
     </div>

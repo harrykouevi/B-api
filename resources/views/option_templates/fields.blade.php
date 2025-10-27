@@ -2,6 +2,17 @@
     <h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
 @endif
 <div class="d-flex flex-column col-sm-12 col-md-6">
+    
+
+    <!-- Option Group Id Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('option_group_id', trans("lang.option_template_option_group_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::select('option_group_id', $optionGroup, null, ['class' => 'select2 form-control']) !!}
+            <div class="form-text text-muted">{{ trans("lang.option_template_option_group_id_help") }}</div>
+        </div>
+    </div>
+
     <!-- Name Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('name', trans("lang.option_template_name"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -13,15 +24,39 @@
         </div>
     </div>
 
-    <!-- Option Group Id Field -->
+
+    <!-- E Service Id Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('option_group_id', trans("lang.option_template_option_group_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        {!! Form::label('service_template_id', trans("lang.option_template_e_service_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::select('option_group_id', $optionGroup, null, ['class' => 'select2 form-control']) !!}
-            <div class="form-text text-muted">{{ trans("lang.option_template_option_group_id_help") }}</div>
+            <select name="service_template_id"  class="select2 form-control not-required" id="template_service_id">
+                
+                @foreach($category_services as $id => $service)
+                    <option value="{{ $id }}"  
+                        
+                        @if(array_key_exists("level" ,$service)) disabled  @endif
+                        @if(in_array($id, $selectedServicetemplate ?? [])) selected @endif>
+                        {{ $service['label'] }}
+                    </option>
+                   
+                @endforeach
+            </select>
+            <div class="form-text text-muted">{{ trans("lang.option_template_e_service_id_help") }}</div>
         </div>
     </div>
 
+    <!-- Description Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('description', trans("lang.option_template_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::textarea('description', null, ['class' => 'form-control','placeholder'=>
+             trans("lang.option_template_description_placeholder")  ]) !!}
+            <div class="form-text text-muted">{{ trans("lang.option_template_description_help") }}</div>
+        </div>
+    </div>
+
+</div>
+<div class="d-flex flex-column col-sm-12 col-md-6">
     <!-- Image Field -->
     <div class="form-group align-items-start d-flex flex-column flex-md-row">
         {!! Form::label('image', trans("lang.option_template_image"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -80,21 +115,6 @@
             dropzoneFields['image'] = dz_var1611346087953519449ble;
         </script>
 @endprepend
-
-
-<!-- Description Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('description', trans("lang.option_template_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            {!! Form::textarea('description', null, ['class' => 'form-control','placeholder'=>
-             trans("lang.option_template_description_placeholder")  ]) !!}
-            <div class="form-text text-muted">{{ trans("lang.option_template_description_help") }}</div>
-        </div>
-    </div>
-
-</div>
-<div class="d-flex flex-column col-sm-12 col-md-6">
-
     <!-- Price Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('price', trans("lang.option_template_price"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -106,25 +126,7 @@
         </div>
     </div>
 
-    <!-- E Service Id Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('e_service_id', trans("lang.option_template_e_service_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            <select name="service_template_id"  class="select2 form-control not-required" id="template_service_id">
-                
-                @foreach($category_services as $id => $service)
-                    <option value="{{ $id }}"  
-                        
-                        @if(array_key_exists("level" ,$service)) disabled  @endif
-                        @if(in_array($id, $selectedServicetemplate ?? [])) selected @endif>
-                        {{ $service['label'] }}
-                    </option>
-                   
-                @endforeach
-            </select>
-            <div class="form-text text-muted">{{ trans("lang.option_template_e_service_id_help") }}</div>
-        </div>
-    </div>
+    
 
     
 

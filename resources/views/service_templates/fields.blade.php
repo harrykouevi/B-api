@@ -3,7 +3,7 @@
 @if($customFields)
     <h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
 @endif
-<div class="d-flex flex-column col-sm-12 col-md-4 px-4">
+<div class="d-flex flex-column col-sm-12 col-md-6 px-4">
     <!-- Name Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('name', trans("lang.e_service_name"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -34,6 +34,15 @@
         </div>
     </div>
 
+    <!-- Description Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
+        {!! Form::label('description', trans("lang.e_service_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::textarea('description', null, ['class' => 'form-control','placeholder'=>
+             trans("lang.e_service_description_placeholder")  ]) !!}
+            <div class="form-text text-muted">{{ trans("lang.e_service_description_help") }}</div>
+        </div>
+    </div>
     <!-- Price Field -->
     {{-- <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
         {!! Form::label('price', trans("lang.e_service_price"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -92,7 +101,7 @@
         </div>
     </div> --}}
 </div>
-<div class="d-flex flex-column col-sm-12 col-md-5 px-4">
+<div class="d-flex flex-column col-sm-12 col-md-6 px-4">
 
     <!-- Image Field -->
     <div class="form-group align-items-start d-flex flex-column flex-md-row">
@@ -156,15 +165,7 @@
             
         </script>
 @endprepend
-<!-- Description Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
-        {!! Form::label('description', trans("lang.e_service_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            {!! Form::textarea('description', null, ['class' => 'form-control','placeholder'=>
-             trans("lang.e_service_description_placeholder")  ]) !!}
-            <div class="form-text text-muted">{{ trans("lang.e_service_description_help") }}</div>
-        </div>
-    </div>
+
 
 </div>
 

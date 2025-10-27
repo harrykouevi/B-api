@@ -33,7 +33,31 @@ class EServiceDataTable extends DataTable
     public function dataTable(mixed $query): DataTableAbstract
     {
         $dataTable = new EloquentDataTable($query);
+        $dataTable->filter(function ($query) {
+           
+            // Filtre par type de transaction
+            if (request()->has('search') && (!is_null(request('search')['value']) || request('search')['value'] != '')) {
+                $search = request('search')['value'] ;
+                $columns = $this->getColumns();
+
+                $query->where(function ($q) use ($columns, $search) {
+                    foreach ($columns as $column) {
+                        if ($column['searchable'] ?? false) {
+                            if (str_contains($column['name'], '.')) {
+                                $parts = explode('.', $column['name']);
+                                $colName = $parts[0] . '.' . $parts[1]; 
+                            } else {
+                                $colName = $column['name'];
+                            }
+                            $q->orWhere($colName, 'like', "%{$search}%");
+                        }
+                    }
+                });
+            }
+
+        });
         $columns = array_column($this->getColumns(), 'data');
+        
         $dataTable = $dataTable
             ->editColumn('image', function ($eService) {
                 return getMediaColumn($eService, 'image');
@@ -80,6 +104,7 @@ class EServiceDataTable extends DataTable
     protected function getColumns(): array
     {
         $columns = [
+            
             [
                 'data' => 'image',
                 'title' => trans('lang.e_service_image'),
@@ -87,13 +112,17 @@ class EServiceDataTable extends DataTable
             ],
             [
                 'data' => 'name',
+                'name' => 'e_services.name',
                 'title' => trans('lang.e_service_name'),
+                'searchable' => true,
+                'orderable' => true
 
             ],
             [
                 'data' => 'salon.name',
                 'name' => 'salon.name',
                 'title' => trans('lang.e_service_salon_id'),
+                'orderable' => true
 
             ],
             [
@@ -108,9 +137,10 @@ class EServiceDataTable extends DataTable
             ],
             [
                 'data' => 'categories',
+                'name' => 'categories.path_names', 
                 'title' => trans('lang.e_service_categories'),
-                'searchable' => false,
-                'orderable' => false
+                'searchable' => true,
+                'orderable' => true
             ],
             [
                 'data' => 'available',
@@ -147,13 +177,28 @@ class EServiceDataTable extends DataTable
      */
     public function query(EService $model): \Illuminate\Database\Eloquent\Builder
     {
+        // if (auth()->user()->hasRole('salon owner')) {
+        //     return $model->newQuery()->with("salon")->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
+        //         ->groupBy('e_services.id')
+        //         ->where('salon_users.user_id', auth()->id())
+        //         ->select('e_services.*');
+        // }
+        // return $model->newQuery()->with("salon")->select("$model->table.*");
+
+
+        $query = $model->newQuery()
+            ->with(['salon', 'categories']) // relation Eloquent
+            ->leftJoin('e_service_categories', 'e_services.id', '=', 'e_service_categories.e_service_id')
+            ->leftJoin('categories', 'categories.id', '=', 'e_service_categories.category_id')
+            ->select('e_services.*', 'categories.path_names as category_path');
+
         if (auth()->user()->hasRole('salon owner')) {
-            return $model->newQuery()->with("salon")->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
-                ->groupBy('e_services.id')
+            $query->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
                 ->where('salon_users.user_id', auth()->id())
-                ->select('e_services.*');
+                ->groupBy('e_services.id');
         }
-        return $model->newQuery()->with("salon")->select("$model->table.*");
+
+        return $query;
     }
 
     /**

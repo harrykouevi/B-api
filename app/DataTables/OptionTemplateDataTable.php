@@ -36,6 +36,10 @@ class OptionTemplateDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         $dataTable = $dataTable
+            ->editColumn('id', function ($option) {
+                return  "<span style=' color: #a0bdd7; font-family: fangsong;'>" . $option->id . "</span>";
+              
+            })
             ->editColumn('name', function ($option) {
                 return $option->name;
             })
@@ -69,6 +73,11 @@ class OptionTemplateDataTable extends DataTable
     protected function getColumns(): array
     {
         $columns = [
+            [
+                'data' => 'id',
+                'title' => '#',
+
+            ],
             [
                 'data' => 'name',
                 'title' => trans('lang.option_name'),

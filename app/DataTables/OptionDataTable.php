@@ -33,6 +33,29 @@ class OptionDataTable extends DataTable
     public function dataTable(mixed $query): DataTableAbstract
     {
         $dataTable = new EloquentDataTable($query);
+        $dataTable->filter(function ($query) {
+           
+            // Filtre par type de transaction
+            if (request()->has('search') && (!is_null(request('search')['value']) || request('search')['value'] != '')) {
+                $search = request('search')['value'] ;
+                $columns = $this->getColumns();
+
+                $query->where(function ($q) use ($columns, $search) {
+                    foreach ($columns as $column) {
+                        if ($column['searchable'] ?? false) {
+                            if (str_contains($column['name'], '.')) {
+                                $parts = explode('.', $column['name']);
+                                $colName = $parts[0] . '.' . $parts[1]; 
+                            } else {
+                                $colName = $column['name'];
+                            }
+                            $q->orWhere($colName, 'like', "%{$search}%");
+                        }
+                    }
+                });
+            }
+
+        });
         $columns = array_column($this->getColumns(), 'data');
         $dataTable = $dataTable
             ->editColumn('name', function ($option) {
@@ -75,7 +98,9 @@ class OptionDataTable extends DataTable
         $columns = [
             [
                 'data' => 'name',
+                'name' => 'options.name',
                 'title' => trans('lang.option_name'),
+                'searchable' => true,
 
             ],
             [
@@ -89,9 +114,12 @@ class OptionDataTable extends DataTable
 
             ],
             [
+               
                 'data' => 'e_service.name',
-                'name' => 'eService.name',
+                'name' => 'e_services.name',
                 'title' => trans('lang.e_service'),
+                'searchable' => true,
+
 
             ],
             [
@@ -137,7 +165,10 @@ class OptionDataTable extends DataTable
     public function query(Option $model): \Illuminate\Database\Eloquent\Builder
     {
         if (auth()->user()->hasRole('admin')) {
-            return $model->newQuery()->with("eService")->with("optionGroup")->with('eService.salon')->select("$model->table.*");
+            return $model->newQuery()->with("eService")->with("optionGroup")->with('eService.salon')
+            ->leftJoin("e_services", "options.e_service_id", "=", "e_services.id")
+            ->select("$model->table.*");
+       
         } else if (auth()->user()->hasRole('salon owner')) {
             return $model->newQuery()->with("eService")->with("optionGroup")->with('eService.salon')
                 ->join("e_services", "options.e_service_id", "=", "e_services.id")
