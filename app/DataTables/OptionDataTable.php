@@ -174,7 +174,7 @@ class OptionDataTable extends DataTable
         } else if (auth()->user()->hasRole('salon owner')) {
             return $model->newQuery()->with("eService")->with("optionGroup")->with('eService.salon')
                 ->join("e_services", "options.e_service_id", "=", "e_services.id")
-                ->leftJoin('option_groups', 'option_groups.id', '=', 'option_templates.option_group_id')
+                ->leftJoin('option_groups', 'option_groups.id', '=', 'e_services.option_group_id')
                 
                 ->join("salon_users", "e_services.salon_id", "=", "salon_users.salon_id")
                 ->where('salon_users.user_id', auth()->id())
