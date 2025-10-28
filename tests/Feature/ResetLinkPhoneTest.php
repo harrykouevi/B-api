@@ -28,7 +28,7 @@ class ResetLinkPhoneTest extends TestCase
             $user = User::create([
                     'name' => 'userdddd test',
                     'email' => 'user222@example.com',
-                    'phone_number' => '+22897334363',
+                    'phone_number' => '+22896617963',
                     'phone_verified_at' => now(),
                     'email_verified_at' => now(),
                     'password' => Hash::make('password125'),
@@ -42,8 +42,8 @@ class ResetLinkPhoneTest extends TestCase
 
            
 
-            $response =  $this->actingAs($user, 'api')->postJson(route('api.users.sendresetlinkphone'), [
-                "phone_number" => '+22897334363',
+            $response =  $this->actingAs($user, 'api')->postJson(route('api.users.password.phone.request'), [
+                "phone_number" => '+22896617963',
                 // 'payment' => ['amount'=> 200 ],
             ]);
 

@@ -399,21 +399,24 @@ class UserAPIController extends Controller
             $data = [
                 'messages' => [
                     [
+                        "sender"=> "Charm",
                         'destinations' => [
                             ['to' => $phoneNumber]
                         ],
-                        'from' => 'Charm',
-                        'text' => "Votre code de vérification: $currentOTP\nValable 5 minutes."
+                        // 'from' => 'Charm',
+                        "content" => ['text' => "Votre code de vérification: $currentOTP Valable 5 minutes."]
                     ]
                 ]
             ];
 
             $response = Http::withHeaders([
-                'Authorization' => 'App ' . $_apiKey,
-                'Content-Type'  => 'application/json',
-                'Accept'        => 'application/json',
-            ])->post('https://nm6rr5.api.infobip.com/sms/3/messages', $data);
-                    
+                'Authorization'=> 'App ' . $_apiKey,
+                'Content-Type'=> 'application/json',
+            ])
+            ->post('https://api.infobip.com/sms/3/messages', $data);
+
+
+           
             if ($response->successful()) {
 
                 return $this->sendResponse(true, 'Reset OTP was sent successfully');

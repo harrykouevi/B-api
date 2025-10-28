@@ -45,7 +45,7 @@ class resetPasswordPhoneMethodTest extends TestCase
             // Stocker dans le cache avec expiration de 5 minutes
             Cache::put('otp_' . $phone, Hash::make($currentOTP), now()->addMinutes(5));
           
-            $response =  $this->postJson(route('api.users.resetpasswordphonemethod'), [
+            $response =  $this->postJson(route('api.users.password.phone.reset'), [
                 "phone_number" => $phone,
                 "password" => "martiness",
                 "password_confirmation" => "martiness",
