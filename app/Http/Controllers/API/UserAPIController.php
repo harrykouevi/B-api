@@ -9,6 +9,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Criteria\Users\SalonsCustomersCriteria;
+use Illuminate\Support\Facades\Http;
 use App\Events\DoPaymentEvent;
 use App\Events\SendEmailOtpEvent;
 use App\Exceptions\InvalidPaymentInfoException;
@@ -34,6 +35,8 @@ use App\Services\PartenerShipService;
 use App\Types\WalletType;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+
 
 
 class UserAPIController extends Controller
@@ -352,10 +355,12 @@ class UserAPIController extends Controller
     function sendResetLinkEmail(Request $request): JsonResponse
     {
         try {
-            $this->validate($request, ['email' => 'required|email|exists:users']);
+            $this->validate($request, ['email' => 'required|email']);
             $response = Password::broker()->sendResetLink(
                 $request->only('email')
             );
+
+           
             if ($response == Password::RESET_LINK_SENT) {
                 return $this->sendResponse(true, 'Reset link was sent successfully');
             } else {
@@ -363,8 +368,133 @@ class UserAPIController extends Controller
             }
         } catch (ValidationException $e) {
             return $this->sendError($e->getMessage());
-        } catch (Exception) {
+        } catch (Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
             return $this->sendError("Email not configured in your admin panel settings");
+        }
+    }
+
+
+    function sendResetLinkPhone(Request $request): JsonResponse
+    {
+        try {
+            $this->validate($request, ['phone_number' => 'required|max:255']);
+            $phoneNumber = $request->input('phone_number');
+            $user = $this->userRepository->findWhere([  'phone_number' => $phoneNumber])->first() ;
+
+            if (empty($user)) {
+                // dd("eee");
+                return $this->sendResponse(true, 'If an account exists with this phone number, a reset link will be sent.');
+            }
+            // Générer un code OTP à 6 chiffres
+            $currentOTP = random_int(100000, 999999);
+            $currentOTP = (string) $currentOTP;
+            // Stocker dans le cache avec expiration de 5 minutes
+            Cache::put('otp_' . $phoneNumber, Hash::make($currentOTP), now()->addMinutes(5));
+          
+
+            $_apiKey = 'bba4558d9e99eb22b1624c09bc3bc1d4-17a91549-9d23-4598-b8f3-dd4d81104792';
+            $data = [
+                'messages' => [
+                    [
+                        'destinations' => [
+                            ['to' => $phoneNumber]
+                        ],
+                        'from' => 'Charm',
+                        'text' => "Votre code de vérification: $currentOTP\nValable 5 minutes."
+                    ]
+                ]
+            ];
+
+            $response = Http::withHeaders([
+                'Authorization' => 'App ' . $_apiKey,
+                'Content-Type'  => 'application/json',
+                'Accept'        => 'application/json',
+            ])->post('https://nm6rr5.api.infobip.com/sms/3/messages', $data);
+                    
+            if ($response->successful()) {
+
+                return $this->sendResponse(true, 'Reset OTP was sent successfully');
+            } else {
+                return $this->sendError('Reset OTP  link not sent , please Try again', 500);
+            }
+
+        } catch (ValidationException $e) {
+            return $this->sendError($e->getMessage(),422);
+        } catch (Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError("An unexpected error occurred. Please try again later.",500);
+
+        }
+    }
+
+
+    function resetPasswordPhoneMethod(Request $request): JsonResponse
+    {
+        try {
+            $this->validate($request, ['phone_number' => 'required|max:255',
+                                        'password' => 'required|string|min:3|confirmed',
+                                        'reset_code' => 'required|min:3']);
+
+            $phoneNumber = $request->input('phone_number');
+            
+            $user = $this->userRepository->findWhere([  'phone_number' => $phoneNumber])->first() ;
+            if (empty($user)) {
+                return $this->sendError('User not found');
+            }
+
+            // Vérifier si l'OTP existe encore
+            if (!Cache::has('otp_' . $phoneNumber)) {
+                return $this->sendError( 'Le délai pour réinitialiser votre mot de passe a expiré. Veuillez faire une nouvelle demande.');
+            }
+
+
+            $hashedOtp = Cache::get('otp_' . $phoneNumber);
+        
+
+            // Option : limiter les tentatives (anti brute‑force)
+            $attemptsKey = 'otp_attempts_' . $phoneNumber;
+            $attempts = Cache::get($attemptsKey, 0);
+            if ($attempts >= 5) {
+                Cache::forget('otp_' . $phoneNumber); // invalide l'OTP après trop d'essais
+                Cache::forget($attemptsKey);
+                $this->sendError('Nombre maximal de tentatives atteint. Veuillez redemander un nouveau code.');
+            }
+
+            // Vérifier le hash
+            if (!Hash::check($request->input('reset_code'), $hashedOtp)) {
+                // incrémenter compteur d'essais (expire aussi au bout de 5 minutes)
+                Cache::put($attemptsKey, $attempts + 1, now()->addMinutes(5));
+                $this->sendError('OTP incorrect.');
+            }
+
+            // Succès : supprimer l'OTP et le compteur
+            Cache::forget('otp_' . $phoneNumber);
+            Cache::forget($attemptsKey);
+
+            // Continuer le flow (autoriser la réinitialisation, générer token, etc.)
+
+           
+
+            $input = $request->except(['reset_code']);
+            $input['password'] = Hash::make($request->input('password'));
+            $this->userRepository->update($input, $user->id);
+           
+          
+            return $this->sendResponse(true, 'la réinitialisation ...');
+           
+        } catch (ValidationException $e) {
+            return $this->sendError($e->getMessage());
+        } catch (Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError("An unexpected error occurred. Please try again later.",500);
+
         }
     }
 

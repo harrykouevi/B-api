@@ -72,7 +72,9 @@ Route::match(['get', 'post'],'paygate/callback', [PaygateController::class, 'han
 
 Route::post('register', [UserAPIController::class, 'register']);
 Route::post('v2/register', [UserAPIController::class, 'v2_register']);
-Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
+Route::post('send_reset_link_email', [UserAPIController::class, 'sendResetLinkEmail'])->name('users.sendresetlinkemail');
+Route::post('send_reset_request_phone', [UserAPIController::class, 'sendResetLinkPhone'])->name('users.sendresetlinkphone');
+Route::post('password_reset_by_phone', [UserAPIController::class, 'resetPasswordPhoneMethod'])->name('users.resetpasswordphonemethod');
 Route::get('user', 'API\UserAPIController@user');
 Route::get('logout', 'API\UserAPIController@logout');
 Route::get('settings', 'API\UserAPIController@settings');
