@@ -116,7 +116,7 @@ class UpdateBookingPaymentListener
     private function getWalletUseToPayBooking(Booking $booking): ?array
     {
         // Vérifie si le paiement est avec le wallet et non encore validé
-        if ($booking->payment->paymentStatus_id != 3 
+        if ($booking->payment && $booking->payment->paymentStatus_id != 3  
             && $booking->payment->paymentMethod->name === 'Wallet') {
             
             $walletTransaction = $this->walletTransactionRepository->findWhere([
@@ -254,18 +254,14 @@ class UpdateBookingPaymentListener
                 //et si le booking n'est pas lié à un report
                 if(auth()->user()->hasRole('salon owner') && is_null($booking->reported_from_id) ){
                     // si acceptation de la reservation est faite par le coiffeur
-                    
-                    [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
-
-                    if($clientW  == Null) throw new \Exception('client  dont have a wallet yet');
-                    
+                   
                     //dans le cas de paiement par cash jai crée un purchase à pending
                     //je verifie sil y en a pour savoir si cest un paiement cash
-                    $purchase = $this->purchaseRepository ->scopeQuery(function ($query) use ($booking) {
+                    $is_pending_purchase_for_booking = is_null( $purchase = $this->purchaseRepository ->scopeQuery(function ($query) use ($booking) {
                             return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])->where("purchase_status_id", 1);
-                        })->first();
+                        })->first()) ? false : true ;
                     
-                    if(!is_null($purchase) ){ 
+                    if($is_pending_purchase_for_booking ){ 
                         $is_pyment_cash = true ;
                         $purchase = $this->purchaseRepository->update(['taxes'=>  $booking->purchase_taxes], $purchase->id);
                                        
@@ -285,22 +281,28 @@ class UpdateBookingPaymentListener
                     }
 
                    
-                    $currency = json_decode($clientW->currency, true);
+                    [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
+                    
                     //si il y a eu achat de service
-                    if($purchase){
-                        if ($is_pyment_cash == false && $currency['code'] == setting('default_currency_code')) {
-                            
-                            $payment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes);
-                            $payment = $payment[0];
-                            if($payment){
-                                
-                                try{ 
-                                    if($booking->payment->paymentMethod->name == 'Wallet'){
-                                        $purchase = $this->purchaseRepository->update(['payment_id' => $payment->id , 'purchase_status_id' => 2  ], $purchase->id);
-                                    }
+                    // if($purchase){
+                        if ($is_pyment_cash == false && !is_null($clientW) ) {
+
+                            $currency = json_decode($clientW->currency, true);
+
+                            if ($currency['code'] == setting('default_currency_code')) {
+
+                                $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes);
+                                $purchasepayment = $purchasepayment[0];
+                                if($purchasepayment){
                                     
-                                } catch (Exception $e) {
-                                    Log::error($e->getMessage());
+                                    try{ 
+                                        
+                                        $purchase = $this->purchaseRepository->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
+                                        
+                                        
+                                    } catch (Exception $e) {
+                                        Log::error($e->getMessage());
+                                    }
                                 }
                             }
                         }else if( $is_pyment_cash == true ){
@@ -315,14 +317,14 @@ class UpdateBookingPaymentListener
                             if($salonW == Null) throw new \Exception('salon user dont have a wallet yet');
                 
                            
-                            $payment = $this->paymentService->intentCashPayment( $input,$salonW,$purchase->taxes);
+                            $this->paymentService->intentCashPayment( $input,$salonW,$purchase->taxes);
                             //$payment = $this->paymentService->update(['payment_status_id' => 2 ], $payment->id);
                             
                            
                         } else {
                             Log::Error(['DebitCustomerForService','no default_currency_code in setting']);
                         }
-                    }
+                    // }
                 }
             }
 

@@ -52,12 +52,13 @@ class WalletTransactionsOfUserCriteria implements CriteriaInterface
         if (auth()->check() && !auth()->user()->hasRole('admin')) {
             return $model->join('wallets', 'wallets.id', '=', 'wallet_transactions.wallet_id')
                 ->where('wallets.user_id', $this->userId)
+                ->where('wallet_transactions.amount', '>', 0) 
                 ->where('wallets.enabled', 1)
                 ->select('wallet_transactions.*');
 
         } else if (auth()->user()->hasRole('customer') || auth()->user()->hasRole('salon owner')) {
             
-            $model = $model->where('wallet_transactions.user_id', $this->userId) ;
+            $model = $model->where('wallet_transactions.user_id', $this->userId)->where('wallet_transactions.amount', '>', 0) ; 
             if(!is_null($this->paymentId)) $model->where('wallet_transactions.user_id', $this->userId) ;
 
             return $model->select('wallet_transactions.*');

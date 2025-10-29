@@ -96,11 +96,11 @@ class PaymentService
         $payment = Null ;
         if ($currency['code'] == setting('default_currency_code')) {
            
-            if($amount != 0) { 
+            if($amount >= 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet] , $tax) ;
                     Log::info(['Padsdfffee-createPayment']);
-                    event(new NotifyPaymentEvent($payment ,$payer_wallet ,$user ));
+                    if($amount > 0) event(new NotifyPaymentEvent($payment ,$payer_wallet ,$user ));
 
                     return [$payment , $wallet] ;
                 } catch (Exception $e) {
@@ -258,85 +258,84 @@ class PaymentService
         $payer_wallet =  $wallets[1] ;
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
-            if($input['payment']['amount'] > 0){
+            $amount = $input['payment']['amount'];
 
-                $payment = $this->paymentRepository->create($input['payment']);
+            $payment = $this->paymentRepository->create($input['payment']);
 
-                $amount = $input['payment']['amount'];
-                
-                // Calcul de la commission si elle existe
-                $commission = 0 ;
-                if ($tax !== null) {
-                    $commission = self::getCommission($amount , $tax) ;
-                }        
-                
-                for ($i=0; $i <= 2  ; $i++) { 
-                    $transaction = [];
-                    $transaction['payment_id'] = $payment->id;
-                    if($i == 0){
+        
+            // Calcul de la commission si elle existe
+            $commission = 0 ;
+            if ($tax !== null && $amount > 0 ) {
+                $commission = self::getCommission($amount , $tax) ;
+            }   
 
-                        $transaction['user_id'] = $wallet->user_id;
-                        $transaction['status'] = "completed" ;
-                        $transaction['wallet_id'] = $wallet->id;
-                        $transaction['description'] = 'compte credité';
-                        $transaction['action'] =  'credit';
-                        $transaction['amount'] = $amount ;
-                        
-                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
-                            //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
-                            //de l'argent provenant du client 
-                            $transaction['amount'] = $amount - $commission;
-                        }
+            for ($i=0; $i <= 2  ; $i++) { 
+                $transaction = [];
+                $transaction['payment_id'] = $payment->id;
+                if($i == 0){
+
+                    $transaction['user_id'] = $wallet->user_id;
+                    $transaction['status'] = "completed" ;
+                    $transaction['wallet_id'] = $wallet->id;
+                    $transaction['description'] = 'compte credité';
+                    $transaction['action'] =  'credit';
+                    $transaction['amount'] = $amount ;
+                    
+                    if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                        //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
+                        //de l'argent provenant du client 
+                        $transaction['amount'] = $amount - $commission;
                     }
-                    if($i == 1){
-                        $transaction['user_id'] = $payer_wallet->user_id;
-                        $transaction['status'] = "completed" ;
-                        $transaction['wallet_id'] = $payer_wallet->id;
-                        $transaction['description'] = 'compte débité';
-                        $transaction['action'] =  'debit';
-                        $transaction['amount'] = $amount ;
-                        
-                        if(  $commission > 0 &&  $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
-                            //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
-                            //de l'argent provenant du client 
-                            $transaction['amount'] = $amount - $commission;
-                        }
-
-                    }
-                    if($i == 2){
-                        
-                        if(  $commission > 0 ){ 
-
-                            $transaction['amount'] = $commission ;
-                            $w= $this->walletRepository->find(setting('app_default_wallet_id'));
-                            $transaction['user_id'] = $w->user_id;
-                            $transaction['status'] = "completed" ;
-                            $transaction['wallet_id'] = $w->id;
-
-
-                            if(  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
-                                //il y a t'il une commission prise chez le coiffeur parce qu'il recoit
-                                //de l'argent provenant du client 
-                                $transaction['description'] = 'compte crédité';
-                                $transaction['action'] =  'credit';
-
-                            }else if( $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
-                                //y a t'il une commission à rembourser au client  parce qu'il avait payé
-                                //de l'argent au coiffeur 
-                                $transaction['description'] = 'compte débité';
-                                $transaction['action'] =  'debit';
-                            }else{
-                                $transaction = [];
-                            }
-                        }else{
-                            break ;
-                        }
-                    }
-
-                    $this->walletTransactionRepository->create($transaction);
                 }
-                return $payment ;
+                if($i == 1){
+                    $transaction['user_id'] = $payer_wallet->user_id;
+                    $transaction['status'] = "completed" ;
+                    $transaction['wallet_id'] = $payer_wallet->id;
+                    $transaction['description'] = 'compte débité';
+                    $transaction['action'] =  'debit';
+                    $transaction['amount'] = $amount ;
+                    
+                    if(  $commission > 0 &&  $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
+                        //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
+                        //de l'argent provenant du client 
+                        $transaction['amount'] = $amount - $commission;
+                    }
+
+                }
+                if($i == 2){
+                    
+                    if(  $commission > 0 ){ 
+
+                        $transaction['amount'] = $commission ;
+                        $w= $this->walletRepository->find(setting('app_default_wallet_id'));
+                        $transaction['user_id'] = $w->user_id;
+                        $transaction['status'] = "completed" ;
+                        $transaction['wallet_id'] = $w->id;
+
+
+                        if(  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                            //il y a t'il une commission prise chez le coiffeur parce qu'il recoit
+                            //de l'argent provenant du client 
+                            $transaction['description'] = 'compte crédité';
+                            $transaction['action'] =  'credit';
+
+                        }else if( $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
+                            //y a t'il une commission à rembourser au client  parce qu'il avait payé
+                            //de l'argent au coiffeur 
+                            $transaction['description'] = 'compte débité';
+                            $transaction['action'] =  'debit';
+                        }else{
+                            $transaction = [];
+                        }
+                    }else{
+                        break ;
+                    }
+                }
+
+                $this->walletTransactionRepository->create($transaction);
             }
+            
+            return $payment ;
         }
         return Null ;
     }

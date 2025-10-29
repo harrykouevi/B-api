@@ -113,16 +113,8 @@ class PaymentAPIController extends Controller
     {
         $input = $request->all();
         try {
-            // $booking = $this->bookingRepository->find($input['id']);
-            // $input['payment']['amount'] = $booking->getTotal();
-            // $input['payment']['description'] = __('lang.payment_booking_id') . $input['id'];
-            // $input['payment']['payment_status_id'] = 1;
-            // $input['payment']['user_id'] = $booking->user_id;
-            // $payment = $this->paymentRepository->create($input['payment']);
-            // $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
             $transactionAmount= $input['payment']['amount'] ;
             
-            // $wallet = $this->walletRepository->find($walletId);
             $this->walletRepository->pushCriteria(new EnabledCriteria());
             $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
             $wallet = $this->walletRepository->all()->first(function ($wallet) use ($transactionAmount) {
@@ -155,7 +147,7 @@ class PaymentAPIController extends Controller
                   
                     try{ 
                         if($payment){
-                            event(new NotifyPaymentEvent($payment ,$wallet ,new User()));
+                            if($transactionAmount > 0) event(new NotifyPaymentEvent($payment ,$wallet ,new User()));
                             $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                         } 
                         
@@ -175,9 +167,9 @@ class PaymentAPIController extends Controller
                     } catch (Exception $e) {
                         Log::error($e->getMessage());
                     }
-                if($payment){    
+                   
                     return $this->sendResponse($payment->toArray(), __('lang.saved_successfully', ['operator' => __('lang.payment')]));
-                }
+                
 
             } else {
                 return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
@@ -267,13 +259,13 @@ class PaymentAPIController extends Controller
                 if($payment){
                     $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
                     event(new BookingStatusChangedEvent($booking));
-                    
-                    try{ 
-                        Log::info(['PaymentAPIController-wallet',$booking->salon->users]);
-                    } catch (Exception $e) {
-                        Log::error($e->getMessage());
-                    }
+                
                 }else{
+                    // If there's no payment required, return a successful response
+                    if (isset($input['payment']['amount']) && $input['payment']['amount'] <= 0) {
+                        return $this->sendResponse([], 'Aucun paiement requis pour cette réservation');
+                    }
+
                     throw new Exception('failed booking payment');
 
                 }
