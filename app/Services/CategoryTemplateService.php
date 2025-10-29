@@ -33,7 +33,7 @@ class CategoryTemplateService
     {
         $cacheKey = "category.template.tree.{$withTemplates}.{$onlyFeatured}.{$withOptions}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($withTemplates, $onlyFeatured, $withOptions) {
+        return Cache::remember($cacheKey, 120, function () use ($withTemplates, $onlyFeatured, $withOptions) {
             // Charger toutes les catégories en une seule requête
             $query = Category::with('media');
 
@@ -101,7 +101,7 @@ class CategoryTemplateService
     {
         $cacheKey = "category.{$categoryId}.tree.templates.{$withOptions}";
 
-        return Cache::remember($cacheKey, 1800, function () use ($categoryId, $withOptions) {
+        return Cache::remember($cacheKey, 120, function () use ($categoryId, $withOptions) {
             $category = $this->findCategoryOrFail($categoryId);
 
             // Charger la catégorie avec ses templates
@@ -203,7 +203,7 @@ class CategoryTemplateService
     {
         $cacheKey = "category.{$categoryId}.templates.flat.{$withOptions}";
 
-        return Cache::remember($cacheKey, 1800, function () use ($categoryId, $withOptions) {
+        return Cache::remember($cacheKey, 120, function () use ($categoryId, $withOptions) {
             $category = $this->findCategoryOrFail($categoryId);
 
             // Utiliser le path pour trouver tous les descendants
@@ -317,7 +317,7 @@ class CategoryTemplateService
     {
         $cacheKey = "categories.featured.templates.{$withOptions}";
         
-        return Cache::remember($cacheKey, 3600, function () use ($withOptions) {
+        return Cache::remember($cacheKey, 120, function () use ($withOptions) {
             $query = Category::featured()->with('media');
             
             if ($withOptions) {
@@ -381,7 +381,7 @@ class CategoryTemplateService
     {
         $cacheKey = "category.template.all.descendants.{$withTemplates}.{$withOptions}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($withTemplates, $withOptions) {
+        return Cache::remember($cacheKey, 120, function () use ($withTemplates, $withOptions) {
             // Charger toutes les catégories
             $query = Category::with('media')->orderBy('path');
 
