@@ -106,6 +106,12 @@ return [
             'level' => env('APP_LOG_LEVEL', 'debug'),
         ],
 
+        'otp_sending' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/otp_sending.log'),
+            'level' => env('APP_LOG_LEVEL', 'debug'),
+        ],
+
         'vegeta' => [
             'driver' => 'single',
             'path' => storage_path('logs/vegeta.log'),

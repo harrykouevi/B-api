@@ -56,12 +56,19 @@ class UserAPIController extends Controller
      */
     private PartenerShipService $partenerShipService;
 
+     /**
+     * @var OtpService
+     */
+    private OtpService $otpService;
+
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct(PartenerShipService $partenerShipService ,PaymentService $paymentService  , UserRepository $userRepository, UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo)
+    public function __construct(PartenerShipService $partenerShipService ,PaymentService $paymentService  , UserRepository $userRepository, 
+        UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo ,
+        OtpService $otpService)
     {
         parent::__construct();
         $this->userRepository = $userRepository;
@@ -71,6 +78,7 @@ class UserAPIController extends Controller
         $this->customFieldRepository = $customFieldRepo;
         $this->paymentService =  $paymentService ;
         $this->partenerShipService =  $partenerShipService ;
+        $this->otpService =  $otpService ;
 
     }
 
@@ -385,44 +393,15 @@ class UserAPIController extends Controller
             $user = $this->userRepository->findWhere([  'phone_number' => $phoneNumber])->first() ;
 
             if (empty($user)) {
-                // dd("eee");
                 return $this->sendResponse(true, 'If an account exists with this phone number, a reset link will be sent.');
             }
             // Générer un code OTP à 6 chiffres
-            $currentOTP = random_int(100000, 999999);
-            $currentOTP = (string) $currentOTP;
-            // Stocker dans le cache avec expiration de 5 minutes
-            Cache::put('otp_' . $phoneNumber, Hash::make($currentOTP), now()->addMinutes(5));
-          
+            $currentOTP = (string) $this->otpService->gen() ;
+            $this->otpService->sendSMS($currentOTP , $phoneNumber) ;
+            $this->otpService->sendByWhatsapp($currentOTP , $phoneNumber) ;
 
-            $_apiKey = 'bba4558d9e99eb22b1624c09bc3bc1d4-17a91549-9d23-4598-b8f3-dd4d81104792';
-            $data = [
-                'messages' => [
-                    [
-                        "sender"=> "Charm",
-                        'destinations' => [
-                            ['to' => $phoneNumber]
-                        ],
-                        // 'from' => 'Charm',
-                        "content" => ['text' => "Votre code de vérification: $currentOTP Valable 5 minutes."]
-                    ]
-                ]
-            ];
-
-            $response = Http::withHeaders([
-                'Authorization'=> 'App ' . $_apiKey,
-                'Content-Type'=> 'application/json',
-            ])
-            ->post('https://api.infobip.com/sms/3/messages', $data);
-
-
-           
-            if ($response->successful()) {
-
-                return $this->sendResponse(true, 'Reset OTP was sent successfully');
-            } else {
-                return $this->sendError('Reset OTP  link not sent , please Try again', 500);
-            }
+            
+            return $this->sendResponse(true, 'If an account exists with this phone number, a Reset OTP  will be sent.');
 
         } catch (ValidationException $e) {
             return $this->sendError($e->getMessage(),422);
