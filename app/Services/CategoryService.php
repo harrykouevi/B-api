@@ -33,7 +33,7 @@ class CategoryService
     {
         $cacheKey = "category.tree.{$withServices}.{$onlyFeatured}";
 
-        return Cache::remember($cacheKey, 3600, static function () use ($withServices, $onlyFeatured) {
+        return Cache::remember($cacheKey, 120, static function () use ($withServices, $onlyFeatured) {
             return Category::getTreeWithDescendants($withServices, $onlyFeatured);
         });
     }
@@ -77,7 +77,7 @@ class CategoryService
     {
         $cacheKey = "category.{$categoryId}.tree.services";
 
-        return Cache::remember($cacheKey, 1800, function () use ($categoryId) {
+        return Cache::remember($cacheKey, 120, function () use ($categoryId) {
             $category = $this->findCategoryOrFail($categoryId);
 
             // Charger la catégorie avec ses services
@@ -107,7 +107,7 @@ class CategoryService
     {
         $cacheKey = "category.{$categoryId}.services.flat";
 
-        return Cache::remember($cacheKey, 1800, function () use ($categoryId) {
+        return Cache::remember($cacheKey, 120, function () use ($categoryId) {
             $category = $this->findCategoryOrFail($categoryId);
 
             // Utiliser le path pour trouver tous les descendants
@@ -151,7 +151,7 @@ class CategoryService
     {
         $cacheKey = "category.roots.children.{$withServices}";
 
-        return Cache::remember($cacheKey, 3600, static function () use ($withServices) {
+        return Cache::remember($cacheKey, 120, static function () use ($withServices) {
             return Category::getRootsWithChildren($withServices);
         });
     }
@@ -196,7 +196,7 @@ class CategoryService
      */
     public function getFeaturedCategoriesWithServices(): array
     {
-        return Cache::remember('categories.featured.services', 3600, function () {
+        return Cache::remember('categories.featured.services', 120, function () {
             return Category::featured()
                 ->with(['media', 'featuredEServices.media', 'featuredEServices.salon'])
                 ->get()
@@ -248,7 +248,7 @@ class CategoryService
     {
         $cacheKey = "category.all.descendants.{$withServices}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($withServices) {
+        return Cache::remember($cacheKey, 120, function () use ($withServices) {
             // Charger toutes les catégories
             $query = Category::with('media')->orderBy('path');
 
@@ -303,7 +303,7 @@ class CategoryService
     {
         $cacheKey = "category.all.descendants.{$withServices}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($allCategories ,$withServices) {
+        return Cache::remember($cacheKey, 120, function () use ($allCategories ,$withServices) {
             
             // Pour chaque catégorie, construire son arbre de descendants
             return $allCategories->map(function ($category) use ($allCategories, $withServices) {
