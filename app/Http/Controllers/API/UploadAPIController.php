@@ -76,7 +76,8 @@ class UploadAPIController extends Controller
 
             // Si c'est un format UUID standard
             if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $identifier)) {
-                $upload = Upload::where('uuid', $identifier)->first();
+                // $upload = Upload::where('uuid', $identifier)->first();
+                $upload = Upload::where('id', $identifier)->first();
             }
             // Si c'est un ID numérique
             else if (is_numeric($identifier)) {
