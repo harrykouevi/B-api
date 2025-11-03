@@ -31,12 +31,12 @@ class ServiceTemplatesSeeder extends Seeder
             [
                 'name' => 'Coupe Homme',
                 'description' => 'Coupe de cheveux moderne pour homme',
-                'category_id' => 5,
+                'category_id' => 2,
             ],
             [
                 'name' => 'Coloration',
                 'description' => 'Coloration complète des cheveux avec produits professionnels',
-                'category_id' => 9,
+                'category_id' => 2,
             ],
             [
                 'name' => 'Soin Visage',
@@ -46,12 +46,12 @@ class ServiceTemplatesSeeder extends Seeder
             [
                 'name' => 'Épilation Sourcils',
                 'description' => 'Épilation et restructuration des sourcils',
-                'category_id' => 7,
+                'category_id' => 6,
             ],
             [
                 'name' => 'Manucure',
                 'description' => 'Soin complet des mains avec lime, cuticules et vernis',
-                'category_id' => 7,
+                'category_id' => 6,
             ],
             [
                 'name' => 'Pédicure',
@@ -71,7 +71,7 @@ class ServiceTemplatesSeeder extends Seeder
             [
                 'name' => 'Taille de Barbe',
                 'description' => 'Taille et mise en forme de la barbe',
-                'category_id' => 9,
+                'category_id' => 8,
             ],
         ];
 

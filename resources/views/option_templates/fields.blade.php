@@ -30,7 +30,12 @@
         {!! Form::label('service_template_id', trans("lang.option_template_e_service_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
             <select name="service_template_id"  class="select2 form-control not-required" id="template_service_id">
-                
+                <option value=""  
+                       
+                       
+                        >
+                        Sélectionner
+                    </option>
                 @foreach($category_services as $id => $service)
                     <option value="{{ $id }}"  
                         
