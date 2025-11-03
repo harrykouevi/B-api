@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::table('e_services', function (Blueprint $table) {
             $table->longText('slug')->nullable();
 
-           
         });
     }
 
