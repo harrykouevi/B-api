@@ -20,6 +20,12 @@
        
             {{-- {!! Form::select('parent_id', $parentCategory, null, ['data-empty'=>trans("lang.category_parent_id_placeholder"), 'class' => 'select2 not-required form-control']) !!} --}}
             <select name="parent_id"  class="select2 form-control not-required" >
+            	<option value=""  
+                        data-level=""
+                       
+                        >
+                        Sélectionner
+                    </option>
                 @foreach($parentCategory as $id => $cat)
                     
                     <option value="{{ $id }}"  

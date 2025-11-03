@@ -1,5 +1,3 @@
-
-
 @if($customFields)
     <h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
 @endif
@@ -21,6 +19,12 @@
         <div class="col-md-9">
             {{-- {!! Form::select('categories[]', $category, $categoriesSelected, ['class' => 'select2 form-control not-required' , 'data-empty'=>trans('lang.e_service_categories_placeholder'),'multiple'=>'multiple']) !!} --}}
             <select name="category_id"  class="select2 form-control not-required" >
+            	<option value=""  
+                        data-level=""
+                       
+                        >
+                        Sélectionner
+                    </option>
                 @foreach($category as $id => $cat)
                     <option value="{{ $id }}"  
                         data-level="{{ $cat['level'] }}"
