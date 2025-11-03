@@ -512,7 +512,7 @@ class CategoryTemplateService
             'description' => $category->description,
             'featured' => $category->featured,
             'order' => $category->order,
-            'image' => $category->getFirstMedia('image'), 
+            'media' => $category->getFirstMedia('image'), 
             'level' => $category->level,
             'url' => $category->url,
         ];
