@@ -32,8 +32,8 @@ class EServiceFeatureTest extends TestCase
 
             $user = User::create([
                 'name' => 'user1 test',
-                'email' => 'user1E82@example.com',
-                'phone_number' => '+00228900409982',
+                'email' => 'user1E82@exampleE.com',
+                'phone_number' => '+002289004095982',
                 'phone_verified_at' => now(),
                 'email_verified_at' => now(),
                 'password' => Hash::make('password125'),

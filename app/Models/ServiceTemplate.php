@@ -13,6 +13,8 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Image\Manipulations;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+
 
 
 
@@ -23,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property string description
  * @property string name
+ * @property string slug
  */
 class ServiceTemplate extends Model implements HasMedia
 {
@@ -59,6 +62,21 @@ class ServiceTemplate extends Model implements HasMedia
         'description' => 'required',
         'category_id' => 'required|exists:categories,id'
     ];
+
+
+    protected static function boot(): void
+    {
+        parent::boot();
+        // Avant la création
+        static::creating(function ($s) {
+            $s->slug = Str::slug($s->name);
+        });
+
+        // Avant la mise à jour
+        static::updating(function ($s) {
+            $s->slug = Str::slug($s->name);
+        });
+    }
 
 
     /**

@@ -1,0 +1,143 @@
+[2025-11-03 12:21:46] testing.INFO: array (
+  'status' => 200,
+  'response' => 
+  array (
+    'success' => true,
+    'data' => 
+    array (
+      'name' => 'Salon test',
+      'address_id' => 1,
+      'phone_number' => '+00228900409982',
+      'mobile_number' => '+00228900409982',
+      'accepted' => true,
+      'featured' => false,
+      'available' => true,
+      'availability_range' => 10,
+      'id' => 33,
+      'custom_fields' => 
+      array (
+      ),
+      'has_media' => false,
+      'rate' => 0,
+      'closed' => true,
+      'total_reviews' => 0,
+      'has_valid_subscription' => NULL,
+      'address_name' => 'lumia',
+      'city' => NULL,
+      'district' => NULL,
+      'media' => 
+      array (
+      ),
+      'availability_hours' => 
+      array (
+      ),
+      'address' => 
+      array (
+        'id' => 1,
+        'description' => 'assigamé',
+        'address' => 'lumia',
+        'city' => NULL,
+        'district' => NULL,
+        'latitude' => 6.253907,
+        'longitude' => 1.213699,
+        'default' => false,
+        'user_id' => 2,
+        'custom_fields' => 
+        array (
+        ),
+      ),
+    ),
+    'message' => 'User retrieved successfully',
+  ),
+)  
+[2025-11-03 12:21:46] testing.INFO: array (
+  'status' => 200,
+  'response' => 
+  array (
+    'success' => true,
+    'data' => 
+    array (
+      'name' => 'pourri',
+      'price' => 1000,
+      'discount_price' => 1500,
+      'duration' => '12:05',
+      'description' => 'bla bla bla',
+      'salon_id' => 33,
+      'slug' => 'pourri',
+      'id' => 50,
+      'custom_fields' => 
+      array (
+      ),
+      'has_media' => false,
+      'is_favorite' => false,
+      'media' => 
+      array (
+      ),
+    ),
+    'message' => 'Service Saved successfully',
+  ),
+)  
+[2025-11-03 12:21:46] testing.INFO: array (
+  'status' => 200,
+  'response' => 
+  array (
+    'success' => true,
+    'data' => 
+    array (
+      'name' => 'Massage Relaxant',
+      'description' => 'Massage de détente pour évacuer le stress',
+      'salon_id' => 33,
+      'price' => 1000,
+      'discount_price' => 1500,
+      'duration' => '12:05',
+      'featured' => false,
+      'enable_booking' => true,
+      'enable_at_salon' => true,
+      'enable_at_customer_address' => false,
+      'available' => true,
+      'slug' => 'massage-relaxant',
+      'id' => 51,
+      'custom_fields' => 
+      array (
+      ),
+      'has_media' => false,
+      'is_favorite' => false,
+      'options' => 
+      array (
+      ),
+      'categories' => 
+      array (
+        0 => 
+        array (
+          'id' => 8,
+          'name' => 'LOCKS & STYLES PROTECTEURS',
+          'slug' => 'locks-styles-protecteurs',
+          'color' => '',
+          'description' => NULL,
+          'order' => 8,
+          'featured' => false,
+          'parent_id' => 6,
+          'path' => '1/6/8',
+          'path_slugs' => 'coiffurebarbier/soins-mise-en-forme-des-cheveux/locks-styles-protecteurs',
+          'path_names' => 'COIFFURE&BARBIER/SOINS & MISE EN FORME DES CHEVEUX/LOCKS & STYLES PROTECTEURS',
+          'custom_fields' => 
+          array (
+          ),
+          'has_media' => false,
+          'pivot' => 
+          array (
+            'e_service_id' => 51,
+            'category_id' => 8,
+          ),
+          'media' => 
+          array (
+          ),
+        ),
+      ),
+      'media' => 
+      array (
+      ),
+    ),
+    'message' => 'Service Saved successfully',
+  ),
+)  

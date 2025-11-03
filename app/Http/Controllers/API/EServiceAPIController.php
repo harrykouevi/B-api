@@ -180,15 +180,7 @@ class EServiceAPIController extends Controller
         try {
             $this->validate($request, EService::$rules);
             $input = $request->all();
-            // Get the service template
-            $template = $this->serviceTemplateRepository->findWithoutFail($input['template_id'] ?? null);
-            if($template){
-                $input['name'] = $template->name ;
-                $input['categories'] = [$template->category_id] ;
-            }else{
-                $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
-            }
-
+            
             $eService = $this->eServiceRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
