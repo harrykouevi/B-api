@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::table('e_services', function (Blueprint $table) {
             $table->string('slug', 191)->change();
-           $table->index(['slug(191)'], 'id_e_service_slug');
+           $table->index('slug', 'id_e_service_slug');
         });
 
         Schema::table('service_templates', function (Blueprint $table) {
             $table->string('slug', 191)->change();
-           $table->index(['slug(191)'], 'id_service_template_slug');
+           $table->index('slug', 'id_service_template_slug');
         });
     }
 
