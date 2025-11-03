@@ -19,6 +19,7 @@ use App\Http\Requests\UpdateEServiceRequest;
 use App\Http\Requests\UpdateEServiceFromTemplateRequest;
 use App\Models\EService;
 use App\Repositories\EServiceRepository;
+use App\Repositories\ServiceTemplateRepository;
 use App\Repositories\UploadRepository;
 use App\Repositories\UserRepository;
 use App\Services\EServiceFromTemplateService;
@@ -31,6 +32,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Nwidart\Modules\Facades\Module;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
+
 
 /**
  * Class EServiceController
@@ -50,6 +52,11 @@ class EServiceAPIController extends Controller
      * @var EServiceFromTemplateService
      */
     private EServiceFromTemplateService $eServiceFromTemplateService;
+
+      /**
+     * @var ServiceTemplateRepository
+     */
+    private ServiceTemplateRepository $serviceTemplateRepository;
 
     public function __construct(
         EServiceRepository $eServiceRepo,
@@ -173,6 +180,15 @@ class EServiceAPIController extends Controller
         try {
             $this->validate($request, EService::$rules);
             $input = $request->all();
+            // Get the service template
+            $template = $this->serviceTemplateRepository->findWithoutFail($input['template_id'] ?? null);
+            if($template){
+                $input['name'] = $template->name ;
+                $input['categories'] = [$template->category_id] ;
+            }else{
+                $input['categories'] = ($input['category_id'])? [$input['category_id']] : [];
+            }
+
             $eService = $this->eServiceRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
