@@ -225,18 +225,18 @@ class Category extends Model implements HasMedia
     /**
      * Override media URL to handle fallbacks
      */
-    public function getFirstMediaUrl(string $collectionName = 'default', string $conversion = ''): string
-    {
-        $url = $this->getFirstMediaUrlTrait($collectionName);
-        $array = explode('.', $url);
-        $extension = strtolower(end($array));
+    // public function getFirstMediaUrl(string $collectionName = 'default', string $conversion = ''): string
+    // {
+    //     $url = $this->getFirstMediaUrlTrait($collectionName);
+    //     $array = explode('.', $url);
+    //     $extension = strtolower(end($array));
 
-        if (in_array($extension, config('media-library.extensions_has_thumb'), true)) {
-            return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
-        }
+    //     if (in_array($extension, config('media-library.extensions_has_thumb'), true)) {
+    //         return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
+    //     }
 
-        return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
-    }
+    //     return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
+    // }
 
     // ========================================
     // METHODS
