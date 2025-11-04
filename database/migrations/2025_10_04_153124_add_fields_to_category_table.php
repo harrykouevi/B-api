@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('categories', function (Blueprint $table) {
             if (!Schema::hasColumn('categories', 'slug')){ 
-                $table->string('slug')->unique()->after('name');
+                $table->string('slug',191)->unique()->after('name');
                 $table->index('slug');
             }
             if (!Schema::hasColumn('categories', 'path')){ 
