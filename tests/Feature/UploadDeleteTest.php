@@ -43,7 +43,7 @@ class UploadDeleteTest extends TestCase
 
             $user2->assignRole(3);
             $response =  $this->actingAs($user2, 'api')->postJson('http://localhost/api/uploads/clear', [
-                    "uuid" => 1
+                    "uuid" => 1449  
                 ]);
         
             Log::info(Upload::all() ) ;
