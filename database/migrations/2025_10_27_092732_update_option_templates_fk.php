@@ -19,9 +19,7 @@ return new class extends Migration {
     {
         Schema::table('option_templates', function (Blueprint $table) {
             $table->dropForeign(['service_template_id']);
-            $table->foreign('service_template_id')
-                  ->references('id')
-                  ->on('service_templates');
+            
         });
     }
 };

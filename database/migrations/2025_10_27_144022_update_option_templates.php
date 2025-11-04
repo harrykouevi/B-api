@@ -23,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('option_templates', function (Blueprint $table) {
-            //
+             $table->longText('description')->change();
         });
     }
 };

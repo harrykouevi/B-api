@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::table('categories', function (Blueprint $table) {
             $table->string('color', 36)->change();
-            $table->longText('name')->nullable()->change();
+            $table->longText('name')->change();
 
         });
     }
