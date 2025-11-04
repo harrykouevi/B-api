@@ -19,6 +19,18 @@ Bienvenue dans la plateforme complète dédiée aux professionnels de la coiffur
 - 📊 **Dashboard d'administration** : Visualisez les statistiques de rendez-vous, ventes et performances de votre salon.
 
 ---
+## 🆕 Nouveautés (v*****)
+
+  2025_10_04_153124_add_fields_to_category_table ................. 6ms DONE
+  2025_10_10_143608_create_service_templates_table ............... 31ms DONE
+  2025_10_13_000148_make_option_group_id_nullable_in_options_table .... 57ms DONE
+  2025_10_13_000150_create_option_templates_table .............. 58ms DONE
+  2025_10_19_193444_update_category_table ..................... 35ms DONE
+  2025_10_27_092732_update_option_templates_fk ................ 24ms DONE
+  2025_10_27_144022_update_option_templates .................. 22ms DONE
+  2025_11_03_125036_update_service_templates_table .......... 13ms DONE
+  2025_11_03_125201_update_e_services_table ................47ms DONE
+  2025_11_03_126114_added_index_to_services_table .......... 81ms DONE
 
 ## 🆕 Nouveautés (v1.2.0)
 
