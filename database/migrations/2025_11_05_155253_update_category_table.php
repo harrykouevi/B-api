@@ -26,7 +26,7 @@ return new class extends Migration
             }
 
             // Add the new composite unique constraint
-            $table->unique(['parent_id', 'name'], 'unique_parent_name');
+            // $table->unique(['parent_id', 'name'], 'unique_parent_name');
         });
     }
 
