@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('name', 255)->change();
             $table->dropUnique(['name']);
             // Add the new composite unique constraint
-            $table->unique(['parent_id', 'name'], 'unique_parent_name');
+            // $table->unique(['parent_id', 'name'], 'unique_parent_name');
         });
     }
 
