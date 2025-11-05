@@ -6,6 +6,7 @@
 /vendor
 /Modules
 /storage/framework/cache/*
+/storage/app/fcm/*
 /storage/logs/*
 .env
 .env.backup
