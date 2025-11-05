@@ -13,9 +13,20 @@ return new class extends Migration
     {
         Schema::table('categories', function (Blueprint $table) {
             $table->string('name', 255)->change();
-            $table->dropUnique(['name']);
+             // Get all existing indexes on the table
+            $sm = Schema::getConnection()->getDoctrineSchemaManager();
+            $indexes = $sm->listTableIndexes('categories');
+
+            // Drop any unique index that includes only 'name'
+            foreach ($indexes as $indexName => $index) {
+                $columns = $index->getColumns();
+                if ($index->isUnique() && $columns === ['name']) {
+                    $table->dropUnique($indexName);
+                }
+            }
+
             // Add the new composite unique constraint
-            // $table->unique(['parent_id', 'name'], 'unique_parent_name');
+            $table->unique(['parent_id', 'name'], 'unique_parent_name');
         });
     }
 
