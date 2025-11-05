@@ -456,12 +456,12 @@ class AppSettingsTableSeeder extends Seeder
             // )
             // ,
             array(
-                'id' => 160,
+                // 'id' => 160,
                 'key' => 'purchase_taxe',
                 'value' => '{"value":10,"type":"percent"}',
             ),
             array(
-                'id' => 161,
+                // 'id' => 161,
                 'key' => 'postpone_charge',
                 'value' => 0,
             ),
