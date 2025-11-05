@@ -28,7 +28,7 @@
                 @foreach($category as $id => $cat)
                     <option value="{{ $id }}"  
                         data-level="{{ $cat['level'] }}"
-                        @if($cat['level'] < 2) disabled  @endif
+                        @if($cat['level'] < 1) disabled  @endif
                         @if(in_array($id, $categoriesSelected ?? [])) selected @endif>
                         {{ $cat['label'] }}
                     </option>
