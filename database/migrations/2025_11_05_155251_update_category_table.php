@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::table('categories', function (Blueprint $table) {
             $table->string('name', 255)->change();
+            // $table->dropUnique(['name']);
+            // Add the new composite unique constraint
+            $table->unique(['parent_id', 'name'], 'unique_parent_name');
         });
     }
 
@@ -22,7 +25,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('categories', function (Blueprint $table) {
-            $table->string('name', 255)->unique()->change();
+            // Drop the composite unique constraint
+            $table->dropUnique('unique_parent_name');
+
+            // Restore the unique constraint on 'name' only
+            // $table->unique('name');
         });
     }
 };
