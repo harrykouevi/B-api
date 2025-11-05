@@ -6,7 +6,7 @@
 /vendor
 /Modules
 /storage/framework/cache/*
-/storage/app/fcm/*
+/storage/app/fcm/firebase_credentials.json
 /storage/logs/*
 .env
 .env.backup
