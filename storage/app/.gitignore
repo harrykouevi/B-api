@@ -1,3 +1,5 @@
 /*
 !public/
+!fcm/
+!fcm/firebase_credentials_copy.json
 !.gitignore
