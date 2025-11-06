@@ -14,6 +14,8 @@ class UsersPartialRecoveryTableSeeder extends Seeder
 
     public function run(): void
     {
+         // Disable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('users')->truncate();
 
         DB::statement("
@@ -224,6 +226,9 @@ class UsersPartialRecoveryTableSeeder extends Seeder
             (238, 'salon', 'john@gmail.com', '+22896547825', NULL, NULL, '$2y$10$7rHkoXTWXTYv4lR2KkZy.ujYm1nhNP8XRsncCTv8kcTnfEzlln2SC', 'EfQXmlRryClULmVykCFJHlTLQWyztyK4KYmQPZwGKFLLqSRgOiRyKy1bapJk', '', NULL, '2025-10-29 18:42:48', '2025-10-29 18:43:51', NULL, NULL, NULL, NULL, NULL, NULL);
 
             ");
+
+             // Re-enable foreign key checks
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         
     }
 }
