@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UsersPartialRecoveryTableSeeder extends Seeder
 {
@@ -221,7 +223,16 @@ class UsersPartialRecoveryTableSeeder extends Seeder
             (235, "Harry Naky", NULL, "+22890365486", NULL, NULL, "$2y$10$fUE7PcrI8VRSaoT/jvhgNO2edp61k0UfY6LCwuwhA6ex1gUM1SVFG", "OuOG5X21m7jcMTo08CjV3F1RLRIq2ZzJTSMWTxOtz5Tt80O5TVGxZ7Dx5HEl", "dBYqmeMTBEQduD66F44rh0:APA91bGCZfLcqaxCBesFjOJCx9oUnbasJ4DDXVH8-ogeKWKsJtVFViWw6El7BNwZbITU8R7chMwtV4CFM64qdWK5Z1V282SvAhrir6VfOOIhbGd81PUY7Jo", NULL, "2025-10-24 16:05:56", "2025-10-24 16:07:55", NULL, NULL, NULL, NULL, NULL, NULL),
             (236, "abalo", NULL, "+22898322112", NULL, NULL, "$2y$10$lmSEjeIzMiCcXibMS3s4b.diiZHI7UTG6lE1Nz8byf1Xa3WQpFHN6", "bo2gVnXJqBo1p2aywybB29OGRktxeTZRL5Uc6M4vZCynygXNGskTTDeLEh40", "", NULL, "2025-10-29 16:57:31", "2025-10-29 16:57:31", NULL, NULL, NULL, NULL, NULL, NULL),
             (237, "kodko", NULL, "+22895471225", NULL, NULL, "$2y$10$mtHwjsDzCsLJGCMRsdGbceZG0g1fRFE22DT/aJkZ7YkuiOFYoDeVm", "pfd1c0rFnM5mwR2zMplJfqKkRlZXm8q99PG5Iu27acO63hzw4PQnaBTFoNiw", "", NULL, "2025-10-29 18:41:32", "2025-10-29 18:42:15", NULL, NULL, NULL, NULL, "qdigo", NULL),
-            (238, "salon", "john@gmail.com", "+22896547825", NULL, NULL, "$2y$10$7rHkoXTWXTYv4lR2KkZy.ujYm1nhNP8XRsncCTv8kcTnfEzlln2SC", "EfQXmlRryClULmVykCFJHlTLQWyztyK4KYmQPZwGKFLLqSRgOiRyKy1bapJk", "", NULL, "2025-10-29 18:42:48", "2025-10-29 18:43:51", NULL, NULL, NULL, NULL, NULL, NULL);
+            (238, "salon", "john@gmail.com", "+22896547825", NULL, NULL, "$2y$10$7rHkoXTWXTYv4lR2KkZy.ujYm1nhNP8XRsncCTv8kcTnfEzlln2SC", "EfQXmlRryClULmVykCFJHlTLQWyztyK4KYmQPZwGKFLLqSRgOiRyKy1bapJk", "", NULL, "2025-10-29 18:42:48", "2025-10-29 18:43:51", NULL, NULL, NULL, NULL, NULL, NULL),
+            (239, "GBOGBOTSI", "koffigbogbotsi1@gmail.com", "+22871840739", NULL, NULL, "$2y$10$m.5EF7JMMEv6uFy9SJtFwuccrJlE2X8KqJXIxIckLWBDti9c.VQ6u", "RfN1nyHsUfQLqLfSxB3bCVFW2WhszhGFkOb18tvRgeZVVeOvzrUsliyQTvFQ", "", NULL, "2025-09-05 15:35:50", "2025-10-24 16:37:14", "2025-09-05 15:50:02", "{\"id\":86,\"link\":\"\",\"code\":\"19891882907\",\"user_id\":198}", "22330", "2025-09-05 15:45:50", NULL, NULL),
+            (245, "La’Klinik - Barber Shop", NULL, "+22890895555", NULL, NULL, "'.Hash::make('CHARM1234').'", "'.Str::random(60).'", "", NULL, "'.now().'", "'.now().'", NULL, NULL, NULL, NULL, NULL, NULL),
+            (248, "I GOT FRESH", NULL, "+22892353460", NULL, NULL, "'.Hash::make('CHARM1234').'", "'.Str::random(60).'", "", NULL, "'.now().'", "'.now().'", NULL, NULL, NULL, NULL, NULL, NULL),
+            (251, "VIVI COIFFURE", NULL, "+22899185571", NULL, NULL, "'.Hash::make('CHARM1234').'", "'.Str::random(60).'", "", NULL, "'.now().'", "'.now().'", NULL, NULL, NULL, NULL, NULL, NULL),
+            (252, "VIVI ONGLERIE", NULL, "+22893779967", NULL, NULL, "'.Hash::make('CHARM1234').'", "'.Str::random(60).'", "", NULL, "'.now().'", "'.now().'", NULL, NULL, NULL, NULL, NULL, NULL),
+            (253, "ANNA LUXURY", NULL, "+22890830775", NULL, NULL, "'.Hash::make('CHARM1234').'", "'.Str::random(60).'", "", NULL, "'.now().'", "'.now().'", NULL, NULL, NULL, NULL, NULL, NULL),
+            (254, "QUIST BARBER SHOP", NULL, "+22890962163", NULL, NULL, "'.Hash::make('CHARM1234').'", "'.Str::random(60).'", "", NULL, "'.now().'", "'.now().'", NULL, NULL, NULL, NULL, NULL, NULL),
+            (255, "GlowbyMilla", NULL, "+22893455119", NULL, NULL, "'.Hash::make('CHARM1234').'", "'.Str::random(60).'", "", NULL, "'.now().'", "'.now().'", NULL, NULL, NULL, NULL, NULL, NULL);
+
 
             ');
 
