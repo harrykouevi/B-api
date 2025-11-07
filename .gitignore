@@ -8,6 +8,7 @@
 /storage/framework/cache/*
 /storage/app/fcm/firebase_credentials.json
 /storage/logs/*
+storage/app/public/*
 .env
 .env.backup
 .phpunit.result.cache

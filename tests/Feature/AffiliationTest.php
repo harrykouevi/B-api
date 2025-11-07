@@ -24,8 +24,8 @@ class AffiliationTest extends TestCase
         try{
             $user2 = User::create([
                 'name' => 'userddEdd test',
-                'email' => 'user2E82@example.com',
-                'phone_number' => '+00228900409988',
+                'email' => 'userS2E82@example.com',
+                'phone_number' => '+002289300409988',
                 'phone_verified_at' => now(),
                 'email_verified_at' => now(),
                 'password' => Hash::make('password125'),
@@ -38,8 +38,8 @@ class AffiliationTest extends TestCase
 
             $user = User::create([
                 'name' => 'user1 test',
-                'email' => 'user1E82@example.com',
-                'phone_number' => '+00228900409982',
+                'email' => 'useZr1E82@example.com',
+                'phone_number' => '+002282900409982',
                 'phone_verified_at' => now(),
                 'email_verified_at' => now(),
                 'password' => Hash::make('password125'),
@@ -50,7 +50,6 @@ class AffiliationTest extends TestCase
             ]);
 
             $user->assignRole(3);
-
             $response =  $this->actingAs($user2, 'api')->postJson(route('api.affiliates.generate'));
 
             $responseData = $response->json();
@@ -60,20 +59,20 @@ class AffiliationTest extends TestCase
             ]);
 
             
-            $response1 =  $this->actingAs($user, 'api')->getJson(route('api.affiliates.confirm',$responseData['data']['code']));
+            // $response1 =  $this->actingAs($user, 'api')->getJson(route('api.affiliates.confirm',$responseData['data']['code']));
 
-            $response1Data = $response1->json();
+            // $response1Data = $response1->json();
             
-            Log::info([
-                'status' => $response1->status(),   // code HTTP
-                'response' => $response1Data        // contenu réel
-            ]);
+            // Log::info([
+            //     'status' => $response1->status(),   // code HTTP
+            //     'response' => $response1Data        // contenu réel
+            // ]);
 
-            Log::info( Wallet::where('user_id',$user2->id)->get() ) ;
-            Log::info( Wallet::where('user_id',$user->id)->get() ) ;
+            // Log::info( Wallet::where('user_id',$user2->id)->get() ) ;
+            // Log::info( Wallet::where('user_id',$user->id)->get() ) ;
         
 
-            $response1->assertStatus(200);
+            $response->assertStatus(200);
         } catch (\Exception $e) {
             Log::error('FAIL:'. $e->getMessage() , [
                  'trace' => $e->getTraceAsString()

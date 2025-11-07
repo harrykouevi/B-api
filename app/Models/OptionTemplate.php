@@ -41,7 +41,7 @@ class OptionTemplate extends Model implements HasMedia
         'name' => 'required|max:127',
         'name' => 'required|max:127',
         'description' => 'nullable',
-        'price' => 'nullable|numeric|min:0.01',
+        'price' => 'nullable|numeric|min:0',
         'service_template_id' => 'required|exists:service_templates,id',
         'option_group_id' => 'nullable|exists:option_groups,id'
         

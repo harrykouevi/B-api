@@ -157,7 +157,7 @@
                 },
                 removedfile: function (file) {
                     dzRemoveFileMultiple(
-                        file, var16110647911349350349ble, '{!! url("eServices/remove-media") !!}',
+                        file, var16110647911349350349ble, '{!! url("model-services/remove-media") !!}',
                         'image', '{!! isset($eService) ? $eService->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}'
                     );
                 }
