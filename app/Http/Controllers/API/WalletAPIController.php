@@ -20,7 +20,7 @@ use App\Repositories\CurrencyRepository;
 use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
 use App\Services\CinetPayService;
-use App\Services\PaygateService;
+use App\Services\PaydunyaService;
 use App\Services\PaymentService;
 use App\Types\WalletType;
 use Exception;
@@ -54,10 +54,10 @@ class WalletAPIController extends Controller
     private PaymentService $paymentService;
 
     private CinetPayService $cinetPayService;
-    private PaygateService $paygateService;
+    private PaydunyaService $paydunyaService;
     private PaymentMethodRepository $paymentMethodRepository;
 
-    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, PaygateService $paygateService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository, PaymentMethodRepository $paymentMethodRepository)
+    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, PaydunyaService $paydunyaService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository, PaymentMethodRepository $paymentMethodRepository)
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
@@ -65,7 +65,7 @@ class WalletAPIController extends Controller
         $this->paymentService = $paymentService;
         $this->cinetPayService = $cinetPayService;
         $this->paymentMethodRepository = $paymentMethodRepository;
-        $this->paygateService = $paygateService;
+        $this->paydunyaService = $paydunyaService;
 
     }
 
@@ -365,6 +365,16 @@ class WalletAPIController extends Controller
         ];
     }
 
+    private function buildPaydunyaPayload(Request $request): array
+    {
+        return [
+            'recipient_email' => $request->input('customer_email') ?? $request->input('email'),
+            'recipient_phone' => $request->input('phone_number') ?? $request->input('customer_phone_number'),
+            'support_fees' => (int)$request->input('paydunya_support_fees', config('services.paydunya.support_fees', 1)),
+            'send_notification' => (int)$request->input('paydunya_send_notification', config('services.paydunya.send_notification', 0)),
+        ];
+    }
+
     public function increaseWallet(Request $request): JsonResponse
     {
         try {
@@ -380,8 +390,8 @@ class WalletAPIController extends Controller
                 return $validationError;
             }
 
-            $userId = $request->get('user_id');
-            $amount = $request->get('amount');
+            $userId = (int)$request->get('user_id');
+            $amount = (float)$request->get('amount');
 
             $paymentMethod = $this->paymentMethodRepository->findByField('route', $paymentChannel)->first();
 
@@ -405,61 +415,27 @@ class WalletAPIController extends Controller
             Log::info('Sortie dans customerData ', ['user_id' => $userId, 'request' => $request->all()]);
 
             $notifyUrl = url("/api/recharge/callback/{$userId}");
-            log::info("notify Url", ['url' => $notifyUrl]);
+            Log::info("notify Url", ['url' => $notifyUrl]);
             $returnUrl = route('payments.return', ['transaction' => $transactionId]);
+            $paydunyaPayload = $this->buildPaydunyaPayload($request);
 
-            // Vérifier si CinetPay est disponible
-            $cinetPayTokenResponse = $this->cinetPayService->getAuthToken();
+            $paymentContext = [
+                'wallet' => $wallet,
+                'userId' => $userId,
+                'amount' => $amount,
+                'description' => $description,
+                'paymentChannel' => $paymentChannel,
+                'customerData' => $customerData,
+                'notifyUrl' => $notifyUrl,
+                'returnUrl' => $returnUrl,
+                'transactionId' => $transactionId,
+                'paydunya' => $paydunyaPayload,
+            ];
 
-            // Si CinetPay est disponible, utiliser CinetPay
-            if (isset($cinetPayTokenResponse['success']) && $cinetPayTokenResponse['success']) {
-                log::info("Début d'envoi via CinetPay");
-                $response = $this->cinetPayService->initPayment(
-                    $amount,
-                    'XOF',
-                    $transactionId,
-                    $description,
-                    $paymentChannel,
-                    $customerData,
-                    $notifyUrl,
-                    $returnUrl
-                );
-                log::info("reponse CinetPay", ['reponse' => $response]);
+            $paymentResult = $this->initiatePaymentWithFallback($paymentContext);
 
-                if (isset($response['data']['payment_url'])) {
-                    return $this->sendResponse($response, "Contact établi avec succès");
-                }
-            } else {
-                // CinetPay n'est pas disponible, utiliser Paygate comme solution de secours
-                Log::warning('CinetPay indisponible, bascule vers Paygate', [
-                    'cinetpay_error' => $cinetPayTokenResponse['message'] ?? 'Erreur inconnue'
-                ]);
-
-                // Initialiser le service Paygate
-
-
-                log::info("Début d'envoi via Paygate");
-                $withdrawal = WalletTransaction::createWithdrawal([
-                    'wallet_id' => $wallet->id,
-                    'user_id' => $userId,
-                    'amount' => $amount,
-                    'description' => $description,
-                    'status' => WalletTransaction::STATUS_PENDING
-                ]);
-                Log::info('Transaction de crédit créée', ['withdrawal_id' => $withdrawal->id]);
-
-                $response = $this->paygateService->initPayment(
-                    $amount,
-                    $withdrawal->id,
-                    $returnUrl = route('payments.paygate_return', ['transaction' => $withdrawal->id])
-
-                );
-                log::info("reponse Paygate", ['reponse' => $response]);
-
-                if (isset($response['data']['payment_url']) || (isset($response['success']) && $response['success'])) {
-                    return $this->sendResponse($response, "Recharge effectuée avec succès via Paygate");
-                }
-
+            if ($paymentResult !== null) {
+                return $this->sendResponse($paymentResult['response'], $paymentResult['message']);
             }
 
             return $this->sendError('Erreur lors de l\'initialisation du paiement', 500);
@@ -471,6 +447,139 @@ class WalletAPIController extends Controller
             Log::info("Erruer:", ['exception' => $e->getMessage()]);
             return $this->sendError($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function initiatePaymentWithFallback(array $context): ?array
+    {
+        $cinetPayResponse = $this->attemptCinetPay($context);
+
+        if ($cinetPayResponse !== null) {
+            return [
+                'response' => $cinetPayResponse,
+                'message' => "Contact établi avec succès",
+            ];
+        }
+
+        Log::info('Bascule vers PayDunya après échec CinetPay', [
+            'transaction_id' => $context['transactionId'],
+        ]);
+
+        $paydunyaResponse = $this->attemptPaydunya($context);
+
+        if ($paydunyaResponse !== null) {
+            return [
+                'response' => $paydunyaResponse,
+                'message' => "Recharge effectuée avec succès via PayDunya",
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function attemptCinetPay(array $context): ?array
+    {
+        $cinetPayTokenResponse = $this->cinetPayService->getAuthToken();
+
+        if (!isset($cinetPayTokenResponse['success']) || !$cinetPayTokenResponse['success']) {
+            Log::warning('CinetPay indisponible', [
+                'transaction_id' => $context['transactionId'],
+                'cinetpay_error' => $cinetPayTokenResponse['message'] ?? 'Erreur inconnue'
+            ]);
+            return null;
+        }
+
+        try {
+            Log::info("Début d'envoi via CinetPay", ['transaction_id' => $context['transactionId']]);
+            $response = $this->cinetPayService->initPayment(
+                $context['amount'],
+                'XOF',
+                $context['transactionId'],
+                $context['description'],
+                $context['paymentChannel'],
+                $context['customerData'],
+                $context['notifyUrl'],
+                $context['returnUrl']
+            );
+            Log::info("Réponse CinetPay reçue", ['response' => $response]);
+        } catch (Exception $exception) {
+            Log::error("Erreur lors de l'appel CinetPay", [
+                'transaction_id' => $context['transactionId'],
+                'exception' => $exception->getMessage()
+            ]);
+            return null;
+        }
+
+        if (isset($response['data']['payment_url'])) {
+            return $response;
+        }
+
+        Log::warning('Réponse CinetPay invalide, absence de payment_url', [
+            'transaction_id' => $context['transactionId'],
+            'response' => $response
+        ]);
+        return null;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function attemptPaydunya(array $context): ?array
+    {
+        Log::info("Début d'envoi via PayDunya", ['transaction_id' => $context['transactionId']]);
+
+        $paydunyaOptions = $context['paydunya'] ?? [];
+        if (empty($paydunyaOptions['recipient_email']) && empty($paydunyaOptions['recipient_phone'])) {
+            Log::warning('PayDunya non exploitable faute de destinataire', [
+                'transaction_id' => $context['transactionId'],
+            ]);
+            return null;
+        }
+
+        $withdrawal = WalletTransaction::createWithdrawal([
+            'wallet_id' => $context['wallet']->id,
+            'user_id' => $context['userId'],
+            'amount' => $context['amount'],
+            'description' => $context['description'],
+            'status' => WalletTransaction::STATUS_PENDING
+        ]);
+        Log::info('Transaction de recharge créée pour PayDunya', ['withdrawal_id' => $withdrawal->id]);
+
+        try {
+            $payload = array_merge($paydunyaOptions, [
+                'description' => $context['description'],
+            ]);
+            $response = $this->paydunyaService->createPaymentRequest($context['amount'], $payload);
+            Log::info("Réponse PayDunya reçue", ['response' => $response]);
+        } catch (Exception $exception) {
+            Log::error("Erreur lors de l'appel PayDunya", [
+                'transaction_id' => $context['transactionId'],
+                'withdrawal_id' => $withdrawal->id,
+                'exception' => $exception->getMessage()
+            ]);
+            return null;
+        }
+
+        if (isset($response['success']) && $response['success'] && isset($response['data']['payment_url'])) {
+            if (!empty($response['data']['reference_number'])) {
+                $withdrawal->description = "{$context['description']} - Ref {$response['data']['reference_number']}";
+                $withdrawal->save();
+            }
+            return $response;
+        }
+
+        Log::warning('Réponse PayDunya invalide', [
+            'transaction_id' => $context['transactionId'],
+            'withdrawal_id' => $withdrawal->id,
+            'response' => $response ?? null
+        ]);
+
+        return null;
     }
 
 

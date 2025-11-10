@@ -41,9 +41,13 @@ Route::match(['get', 'post'], '/payment/return', function (Request $request) {
 })->name('payments.return');
 
 Route::withoutMiddleware(['permissions'])->group(function () {
+    Route::match(['get', 'post'], '/payment/paydunya_return', function (Request $request) {
+        return view('payments.return_paydunya');
+    })->name('payments.paydunya_return');
+
     Route::match(['get', 'post'], '/payment/paygate_return', function (Request $request) {
-        return view('payments.return_paygate');
-    })->name('payments.paygate_return');
+        return redirect()->route('payments.paydunya_return', $request->all());
+    });
 });
 
 Route::get('login/{service}/callback', 'Auth\LoginController@handleProviderCallback');
