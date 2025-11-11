@@ -50,7 +50,9 @@ class PaydunyaService
 
         $recipientEmail = $payload['recipient_email'] ?? null;
         $recipientPhone = $payload['recipient_phone'] ?? null;
-
+        if (strpos($recipientPhone, '228') === 0) {
+            $recipientPhone = substr($recipientPhone, 3);
+        }
         if (empty($recipientEmail) && empty($recipientPhone)) {
             return [
                 'success' => false,

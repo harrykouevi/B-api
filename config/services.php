@@ -93,6 +93,14 @@ return [
         'base_url' => env('PAYDUNYA_BASE_URL', 'https://app.paydunya.com/api/v1'),
         'support_fees' => env('PAYDUNYA_SUPPORT_FEES', 1),
         'send_notification' => env('PAYDUNYA_SEND_NOTIFICATION', 0),
+        'disburse' => [
+            'master_key' => env('PAYDUNYA_DISBURSE_MASTER_KEY', env('PAYDUNYA_MASTER_KEY')),
+            'private_key' => env('PAYDUNYA_DISBURSE_PRIVATE_KEY', env('PAYDUNYA_PRIVATE_KEY')),
+            'token' => env('PAYDUNYA_DISBURSE_TOKEN', env('PAYDUNYA_TOKEN')),
+            'base_url' => env('PAYDUNYA_DISBURSE_BASE_URL', 'https://app.paydunya.com/api/v2'),
+            'callback_url' => env('PAYDUNYA_DISBURSE_CALLBACK_URL'),
+            'default_withdraw_mode' => env('PAYDUNYA_DISBURSE_DEFAULT_MODE'),
+        ],
     ],
 
 ];

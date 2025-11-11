@@ -20,6 +20,7 @@ use App\Repositories\CurrencyRepository;
 use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
 use App\Services\CinetPayService;
+use App\Services\PaydunyaDisbursementService;
 use App\Services\PaydunyaService;
 use App\Services\PaymentService;
 use App\Types\WalletType;
@@ -27,6 +28,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
@@ -55,9 +57,10 @@ class WalletAPIController extends Controller
 
     private CinetPayService $cinetPayService;
     private PaydunyaService $paydunyaService;
+    private PaydunyaDisbursementService $paydunyaDisbursementService;
     private PaymentMethodRepository $paymentMethodRepository;
 
-    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, PaydunyaService $paydunyaService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository, PaymentMethodRepository $paymentMethodRepository)
+    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, PaydunyaService $paydunyaService, PaydunyaDisbursementService $paydunyaDisbursementService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository, PaymentMethodRepository $paymentMethodRepository)
     {
         parent::__construct();
         $this->walletRepository = $walletRepo;
@@ -66,6 +69,7 @@ class WalletAPIController extends Controller
         $this->cinetPayService = $cinetPayService;
         $this->paymentMethodRepository = $paymentMethodRepository;
         $this->paydunyaService = $paydunyaService;
+        $this->paydunyaDisbursementService = $paydunyaDisbursementService;
 
     }
 
@@ -788,6 +792,145 @@ class WalletAPIController extends Controller
         }
     }
 
+    public function withdrawOnWalletPaydunya(Request $request): JsonResponse
+    {
+        $supportedModes = $this->paydunyaDisbursementService->getSupportedWithdrawModes();
+
+        $validatedData = $request->validate([
+            'amount' => 'required|numeric|min:500',
+            'description' => 'nullable|string|max:255',
+            'user_id' => 'required|integer|exists:users,id',
+            'wallet_id' => 'required|string|exists:wallets,id',
+            'account_alias' => 'required|string|min:5|max:20',
+            'withdraw_mode' => ['nullable', Rule::in($supportedModes)],
+            'callback_url' => 'nullable|url',
+        ]);
+
+        try {
+            $userId = (int)$validatedData['user_id'];
+            $walletId = $validatedData['wallet_id'];
+            $amount = (float)$validatedData['amount'];
+            $accountAlias = preg_replace('/\D+/', '', $validatedData['account_alias']);
+            $withdrawMode = $validatedData['withdraw_mode'] ?? $this->paydunyaDisbursementService->getDefaultWithdrawMode();
+            $callbackUrl = $validatedData['callback_url'] ?? $this->paydunyaDisbursementService->getDefaultCallbackUrl();
+            $description = $validatedData['description'] ?? 'Demande de retrait PayDunya';
+
+            if (empty($accountAlias)) {
+                return response()->json([
+                    'error' => 'Numéro de compte invalide',
+                    'message' => 'Le champ account_alias doit contenir des chiffres.',
+                ], 422);
+            }
+
+            if (empty($withdrawMode)) {
+                return response()->json([
+                    'error' => 'Mode de retrait absent',
+                    'message' => 'Veuillez préciser un withdraw_mode valide.',
+                ], 422);
+            }
+
+            if (empty($callbackUrl)) {
+                return response()->json([
+                    'error' => 'Callback manquant',
+                    'message' => 'Définissez PAYDUNYA_DISBURSE_CALLBACK_URL ou transmettez callback_url.',
+                ], 422);
+            }
+
+            $this->walletRepository->pushCriteria(new EnabledCriteria());
+            $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
+            $wallet = $this->walletRepository->find($walletId);
+
+            if (!$wallet) {
+                return response()->json([
+                    'error' => 'Wallet non trouvé ou non autorisé'
+                ], 404);
+            }
+
+            if (!WalletTransaction::canWithdraw($wallet, $amount)) {
+                return response()->json([
+                    'error' => 'Montant invalide ou solde insuffisant',
+                    'message' => 'Le montant doit être supérieur ou égal à 500 et votre solde doit être suffisant.',
+                ], 400);
+            }
+
+            $withdrawal = WalletTransaction::createWithdrawal([
+                'wallet_id' => $wallet->id,
+                'user_id' => $userId,
+                'amount' => $amount,
+                'description' => $description,
+                'status' => WalletTransaction::STATUS_PENDING,
+            ]);
+
+            Log::info('Init PayDunya PER', [
+                'withdrawal_id' => $withdrawal->id,
+                'account_alias' => $accountAlias,
+                'withdraw_mode' => $withdrawMode,
+            ]);
+
+            $invoiceResponse = $this->paydunyaDisbursementService->createInvoice(
+                $accountAlias,
+                (int)$amount,
+                $withdrawMode,
+                $callbackUrl,
+                (string)$withdrawal->id
+            );
+
+            if (!$invoiceResponse['success']) {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+                return response()->json([
+                    'error' => 'Erreur lors de la création du déboursement PayDunya',
+                    'message' => $invoiceResponse['message'],
+                    'details' => $invoiceResponse['data'] ?? null,
+                ], 400);
+            }
+
+            $disburseInvoice = $invoiceResponse['data']['disburse_invoice'];
+            $withdrawal->description = "{$withdrawal->description} | PayDunya invoice: {$disburseInvoice}";
+            $withdrawal->save();
+
+            $submitResponse = $this->paydunyaDisbursementService->submitInvoice($disburseInvoice, (string)$withdrawal->id);
+
+            if (!$submitResponse['success']) {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+                return response()->json([
+                    'error' => 'Soumission PayDunya échouée',
+                    'message' => $submitResponse['message'],
+                    'details' => $submitResponse['data'] ?? null,
+                ], 400);
+            }
+
+            $status = strtolower($submitResponse['data']['status'] ?? '');
+            if ($status === 'success') {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_COMPLETED]);
+            } elseif ($status === 'failed') {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $submitResponse['message'],
+                'status' => $status ?: 'pending',
+                'disburse_invoice' => $disburseInvoice,
+                'transaction_id' => $submitResponse['data']['transaction_id'] ?? null,
+                'provider_ref' => $submitResponse['data']['provider_ref'] ?? null,
+                'withdrawal' => $withdrawal->refresh(),
+            ], 200);
+        } catch (ValidationException $validationException) {
+            return $this->sendError(array_values($validationException->errors()), 422);
+        } catch (\Exception $exception) {
+            Log::error('Erreur retrait PayDunya', [
+                'exception' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+
+            return response()->json([
+                'error' => 'Erreur lors du traitement PayDunya',
+                'message' => $exception->getMessage(),
+            ], 500);
+        }
+    }
+
 
     public function getWithdrawalHistory(Request $request): JsonResponse
     {
@@ -992,5 +1135,12 @@ class WalletAPIController extends Controller
         }
     }
 
+
+    public function handlePaydunyaDisburseCallback(Request $request): JsonResponse
+    {
+        Log::info('Callback PayDunya PER reçu', ['payload' => $request->all()]);
+
+        return response()->json(['status' => 'ok']);
+    }
 
 }
