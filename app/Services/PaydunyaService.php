@@ -51,8 +51,8 @@ class PaydunyaService
         $recipientEmail = $payload['recipient_email'] ?? null;
         $recipientPhone = $payload['recipient_phone'] ?? null;
         Log::info('recipientPhone',['phone:'=>$recipientPhone]);
-        if (strpos($recipientPhone, '228') === 0) {
-            $recipientPhone = substr($recipientPhone, 3);
+        if (strpos($recipientPhone, '+228') === 0) {
+            $recipientPhone = substr($recipientPhone, 4);
         }
         Log::info('recipientPhone',['phone après le if:'=>$recipientPhone]);
         if (empty($recipientEmail) && empty($recipientPhone)) {
