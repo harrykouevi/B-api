@@ -27,7 +27,7 @@ class PaydunyaService
         $this->token = $config['token'] ?? null;
         $this->baseUrl = rtrim($config['base_url'] ?? 'https://app.paydunya.com/api/v1', '/');
         $this->defaultSupportFees = (int)($config['support_fees'] ?? 1);
-        $this->defaultSendNotification = (int)($config['send_notification'] ?? 0);
+        $this->defaultSendNotification = (int)($config['send_notification'] ?? 1);
     }
 
     public function createPaymentRequest(float $amount, array $payload = []): array
@@ -50,11 +50,11 @@ class PaydunyaService
 
         $recipientEmail = $payload['recipient_email'] ?? null;
         $recipientPhone = $payload['recipient_phone'] ?? null;
-        Log::info('recipientPhone',['phone:'=>$recipientPhone]);
+    
         if (strpos($recipientPhone, '+228') === 0) {
             $recipientPhone = substr($recipientPhone, 4);
         }
-        Log::info('recipientPhone',['phone après le if:'=>$recipientPhone]);
+    
         if (empty($recipientEmail) && empty($recipientPhone)) {
             return [
                 'success' => false,

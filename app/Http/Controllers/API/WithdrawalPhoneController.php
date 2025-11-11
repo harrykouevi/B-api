@@ -51,9 +51,9 @@ public function store(Request $request)
 
     $count = WithdrawalPhone::where('user_id', $user->id)->count();
     Log::info('Nombre de numéros existants', ['count' => $count]);
-    if ($count >= 10) {
+    if ($count >= 5) {
         Log::warning('Limite de numéros atteinte', ['user_id' => $userId]);
-        return response()->json(['error' => 'Limite de 10 numéros atteinte'], 403);
+        return response()->json(['error' => 'Limite de 5 numéros atteinte'], 403);
     }
 
     $phone = new WithdrawalPhone();
@@ -64,7 +64,7 @@ public function store(Request $request)
     $prefix = '228';
     $name = $user->name ?? 'Utilisateur';
     $surname = $user->name ?? 'Utilisateur';
-    $email = $user->email ?? ('user' . $userId . '@charm.com');
+    $email = $user->email ?? 'bhelpconsulting@gmail.com';
     $rawNumber = preg_replace('/\D/', '', $phone->phone_number);
 
     // Si le numéro commence par "228", on l'enlève
