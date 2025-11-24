@@ -22,6 +22,7 @@ use App\Repositories\PaymentMethodRepository;
 use App\Repositories\WalletRepository;
 use App\Services\CinetPayService;
 use App\Services\PaydunyaDisbursementService;
+use App\Services\PaydunyaCheckoutService;
 use App\Services\PaydunyaService;
 use App\Services\PaymentService;
 use App\Types\PaymentType;
@@ -60,11 +61,20 @@ class WalletAPIController extends Controller
 
     private CinetPayService $cinetPayService;
     private PaydunyaService $paydunyaService;
+    private PaydunyaCheckoutService $paydunyaCheckoutService;
     private PaydunyaDisbursementService $paydunyaDisbursementService;
     private PaymentMethodRepository $paymentMethodRepository;
 
-    public function __construct(CinetPayService $cinetPayService, PaymentService $paymentService, PaydunyaService $paydunyaService, PaydunyaDisbursementService $paydunyaDisbursementService, WalletRepository $walletRepo, CurrencyRepository $currencyRepository, PaymentMethodRepository $paymentMethodRepository)
-    {
+    public function __construct(
+        CinetPayService $cinetPayService,
+        PaymentService $paymentService,
+        PaydunyaService $paydunyaService,
+        PaydunyaCheckoutService $paydunyaCheckoutService,
+        PaydunyaDisbursementService $paydunyaDisbursementService,
+        WalletRepository $walletRepo,
+        CurrencyRepository $currencyRepository,
+        PaymentMethodRepository $paymentMethodRepository
+    ) {
         parent::__construct();
         $this->walletRepository = $walletRepo;
         $this->currencyRepository = $currencyRepository;
@@ -72,8 +82,8 @@ class WalletAPIController extends Controller
         $this->cinetPayService = $cinetPayService;
         $this->paymentMethodRepository = $paymentMethodRepository;
         $this->paydunyaService = $paydunyaService;
+        $this->paydunyaCheckoutService = $paydunyaCheckoutService;
         $this->paydunyaDisbursementService = $paydunyaDisbursementService;
-
     }
 
     /**
@@ -538,60 +548,74 @@ class WalletAPIController extends Controller
      */
     private function attemptPaydunya(array $context): ?array
     {
-        Log::info("Début d'envoi via PayDunya", ['transaction_id' => $context['transactionId']]);
-
-        $paydunyaOptions = $context['paydunya'] ?? [];
-        if (empty($paydunyaOptions['recipient_email']) && empty($paydunyaOptions['recipient_phone'])) {
-            Log::warning('PayDunya non exploitable faute de destinataire', [
-                'transaction_id' => $context['transactionId'],
-            ]);
-            return null;
-        }
+        Log::info("Début d'envoi via PayDunya Checkout (PAR)", ['transaction_id' => $context['transactionId']]);
 
         try {
-            $payload = array_merge($paydunyaOptions, [
+            // Créer des items pour la facture
+            $items = [
+                [
+                    'name' => 'Recharge de wallet',
+                    'quantity' => 1,
+                    'unit_price' => (int) $context['amount'],
+                    'total_price' => (int) $context['amount'],
+                    'description' => $context['description'],
+                ],
+            ];
+
+            // Options pour la création de l'invoice
+            $options = [
                 'description' => $context['description'],
+                'callback_url' => $context['notifyUrl'],
+                'return_url' => $context['returnUrl'],
+                'cancel_url' => route('payments.cancel', ['transaction' => $context['transactionId']]),
+                'custom_data' => [
+                    'user_id' => $context['userId'],
+                    'wallet_id' => $context['wallet']->id,
+                    'transaction_id' => $context['transactionId'],
+                ],
+            ];
+
+            $response = $this->paydunyaCheckoutService->createInvoice($context['amount'], $items, $options);
+            Log::info("Réponse PayDunya Checkout reçue", ['response' => $response]);
+
+            if (!$response['success'] || empty($response['data']['payment_url'])) {
+                Log::warning('Réponse PayDunya Checkout invalide', [
+                    'transaction_id' => $context['transactionId'],
+                    'response' => $response ?? null
+                ]);
+                return null;
+            }
+
+            $token = $response['data']['token'] ?? null;
+            if (!$token) {
+                Log::warning('Token PayDunya Checkout manquant', [
+                    'transaction_id' => $context['transactionId'],
+                    'response' => $response,
+                ]);
+                return null;
+            }
+
+            // Enregistrer la demande de paiement avec le token PayDunya
+            PaydunyaPaymentRequest::create([
+                'user_id' => $context['userId'],
+                'wallet_id' => $context['wallet']->id,
+                'amount' => $context['amount'],
+                'reference_number' => $token, // Utiliser le token comme référence
+                'status' => PaydunyaPaymentRequest::STATUS_PENDING,
+                'payment_channel' => $context['paymentChannel'],
+                'description' => $context['description'],
+                'payment_url' => $response['data']['payment_url'] ?? null,
+                'payload' => $response['data']['raw'] ?? $response,
             ]);
-            $response = $this->paydunyaService->createPaymentRequest($context['amount'], $payload);
-            Log::info("Réponse PayDunya reçue", ['response' => $response]);
+
+            return $response;
         } catch (Exception $exception) {
-            Log::error("Erreur lors de l'appel PayDunya", [
+            Log::error("Erreur lors de l'appel PayDunya Checkout", [
                 'transaction_id' => $context['transactionId'],
                 'exception' => $exception->getMessage()
             ]);
             return null;
         }
-
-        if (!isset($response['success']) || !$response['success'] || empty($response['data']['payment_url'])) {
-            Log::warning('Réponse PayDunya invalide', [
-                'transaction_id' => $context['transactionId'],
-                'response' => $response ?? null
-            ]);
-            return null;
-        }
-
-        $referenceNumber = $response['data']['reference_number'] ?? null;
-        if (!$referenceNumber) {
-            Log::warning('Référence PayDunya manquante', [
-                'transaction_id' => $context['transactionId'],
-                'response' => $response,
-            ]);
-            return null;
-        }
-
-        PaydunyaPaymentRequest::create([
-            'user_id' => $context['userId'],
-            'wallet_id' => $context['wallet']->id,
-            'amount' => $context['amount'],
-            'reference_number' => $referenceNumber,
-            'status' => PaydunyaPaymentRequest::STATUS_PENDING,
-            'payment_channel' => $context['paymentChannel'],
-            'description' => $context['description'],
-            'payment_url' => $response['data']['payment_url'] ?? null,
-            'payload' => $response['data']['raw'] ?? $response,
-        ]);
-
-        return $response;
     }
 
 
@@ -1315,35 +1339,48 @@ class WalletAPIController extends Controller
     public function handlePaydunyaPaymentCallback(Request $request): JsonResponse
     {
         $payload = $request->all();
-        Log::info('Callback PayDunya DMP reçu', ['payload' => $payload]);
+        Log::info('Callback PayDunya Checkout reçu', ['payload' => $payload]);
 
-        $referenceNumber = $payload['reference_number'] ?? $payload['reference'] ?? null;
-        if (!$referenceNumber) {
-            Log::warning('Callback PayDunya sans référence', ['payload' => $payload]);
-            return response()->json(['error' => 'missing_reference'], 422);
+        // Vérifier le hash pour sécurité (selon la doc PayDunya)
+        $receivedHash = $payload['data']['hash'] ?? null;
+        $masterKey = config('services.paydunya.checkout.master_key');
+        $expectedHash = hash('sha512', $masterKey);
+
+        if ($receivedHash && $receivedHash !== $expectedHash) {
+            Log::warning('Hash PayDunya invalide', [
+                'received' => $receivedHash,
+                'expected' => substr($expectedHash, 0, 20) . '...'
+            ]);
+            return response()->json(['error' => 'invalid_hash'], 403);
         }
 
-        $status = strtolower($payload['status'] ?? '');
+        $invoiceData = $payload['data']['invoice'] ?? null;
+        $token = $invoiceData['token'] ?? $payload['token'] ?? null;
+        $status = strtolower($payload['data']['status'] ?? $payload['status'] ?? '');
+
+        if (!$token) {
+            Log::warning('Callback PayDunya sans token', ['payload' => $payload]);
+            return response()->json(['error' => 'missing_token'], 422);
+        }
+
         if (empty($status)) {
             Log::warning('Callback PayDunya sans statut', ['payload' => $payload]);
             return response()->json(['error' => 'missing_status'], 422);
         }
 
         /** @var PaydunyaPaymentRequest|null $paymentRequest */
-        $paymentRequest = PaydunyaPaymentRequest::where('reference_number', $referenceNumber)->first();
+        $paymentRequest = PaydunyaPaymentRequest::where('reference_number', $token)->first();
 
         if (!$paymentRequest) {
-            Log::warning('Callback PayDunya introuvable', ['reference_number' => $referenceNumber]);
+            Log::warning('Callback PayDunya introuvable', ['token' => $token]);
             return response()->json(['error' => 'unknown_reference'], 404);
         }
 
         $normalizedStatus = match ($status) {
             'completed', 'success' => PaydunyaPaymentRequest::STATUS_COMPLETED,
-            'failed' => PaydunyaPaymentRequest::STATUS_FAILED,
+            'failed', 'cancelled' => PaydunyaPaymentRequest::STATUS_FAILED,
             default => PaydunyaPaymentRequest::STATUS_PENDING,
         };
-
-
 
         if ($normalizedStatus === PaydunyaPaymentRequest::STATUS_COMPLETED && $paymentRequest->status !== PaydunyaPaymentRequest::STATUS_COMPLETED) {
             try {
@@ -1367,10 +1404,16 @@ class WalletAPIController extends Controller
                     $paymentRequest->callback_payload = $payload;
                     $paymentRequest->completed_at = now();
                     $paymentRequest->save();
+
+                    Log::info('Wallet crédité avec succès via PayDunya Checkout', [
+                        'token' => $paymentRequest->reference_number,
+                        'amount' => $paymentRequest->amount,
+                        'wallet_id' => $wallet->id,
+                    ]);
                 });
             } catch (Exception $exception) {
-                Log::error('Erreur lors du crédit PayDunya', [
-                    'reference_number' => $referenceNumber,
+                Log::error('Erreur lors du crédit PayDunya Checkout', [
+                    'token' => $token,
                     'exception' => $exception->getMessage(),
                 ]);
 

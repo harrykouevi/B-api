@@ -95,13 +95,40 @@ return [
         'base_url' => env('PAYDUNYA_BASE_URL', 'https://app.paydunya.com/api/v1'),
         'support_fees' => env('PAYDUNYA_SUPPORT_FEES', 1),
         'send_notification' => env('PAYDUNYA_SEND_NOTIFICATION', 0),
+
+        // Configuration pour le service Checkout (PAR - Paiement Avec Redirection)
+        // Utilisé pour augmenter le wallet via page de paiement PayDunya
+        'checkout' => [
+            'master_key' => env('PAYDUNYA_CHECKOUT_MASTER_KEY', env('PAYDUNYA_MASTER_KEY')),
+            'public_key' => env('PAYDUNYA_CHECKOUT_PUBLIC_KEY', env('PAYDUNYA_PUBLIC_KEY')),
+            'private_key' => env('PAYDUNYA_CHECKOUT_PRIVATE_KEY', env('PAYDUNYA_PRIVATE_KEY')),
+            'token' => env('PAYDUNYA_CHECKOUT_TOKEN', env('PAYDUNYA_TOKEN')),
+            'base_url' => env('PAYDUNYA_CHECKOUT_BASE_URL', 'https://app.paydunya.com/api/v1'),
+            'mode' => env('PAYDUNYA_CHECKOUT_MODE', 'live'), // 'test' ou 'live'
+
+            // Store information
+            'store_name' => env('PAYDUNYA_STORE_NAME', env('APP_NAME')),
+            'store_tagline' => env('PAYDUNYA_STORE_TAGLINE'),
+            'store_phone' => env('PAYDUNYA_STORE_PHONE'),
+            'store_postal_address' => env('PAYDUNYA_STORE_POSTAL_ADDRESS'),
+            'store_website_url' => env('PAYDUNYA_STORE_WEBSITE_URL', env('APP_URL')),
+            'store_logo_url' => env('PAYDUNYA_STORE_LOGO_URL'),
+
+            // Callback URLs
+            'callback_url' => env('PAYDUNYA_CHECKOUT_CALLBACK_URL'),
+            'return_url' => env('PAYDUNYA_CHECKOUT_RETURN_URL'),
+            'cancel_url' => env('PAYDUNYA_CHECKOUT_CANCEL_URL'),
+        ],
+
+        // Configuration pour le service Disburse (PER - Push/Décaissement)
+        // Utilisé pour les retraits (envoyer de l'argent vers Mobile Money)
         'disburse' => [
             'master_key' => env('PAYDUNYA_DISBURSE_MASTER_KEY', env('PAYDUNYA_MASTER_KEY')),
             'private_key' => env('PAYDUNYA_DISBURSE_PRIVATE_KEY', env('PAYDUNYA_PRIVATE_KEY')),
             'token' => env('PAYDUNYA_DISBURSE_TOKEN', env('PAYDUNYA_TOKEN')),
             'base_url' => env('PAYDUNYA_DISBURSE_BASE_URL', 'https://app.paydunya.com/api/v2'),
             'callback_url' => env('PAYDUNYA_DISBURSE_CALLBACK_URL'),
-            'default_withdraw_mode' => env('PAYDUNYA_DISBURSE_DEFAULT_MODE'),
+            'default_withdraw_mode' => env('PAYDUNYA_DISBURSE_DEFAULT_MODE', 't-money-togo'),
         ],
     ],
 
