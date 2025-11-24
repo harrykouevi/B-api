@@ -14,12 +14,14 @@ class CinetPayService
     protected string $baseUrl;
     protected string $transferBaseUrl;
     protected string $apiPassword;
+    protected string $apiPasswordForPayment;
 
     public function __construct()
     {
         $this->apiKey = config('services.cinetpay.api_key');
         $this->siteId = config('services.cinetpay.site_id');
         $this->apiPassword = config('services.cinetpay.api_password');
+        $this->apiPasswordForPayment = config('services.cinetpay.api_password_depot');
         $this->baseUrl = config('services.cinetpay.base_url', 'https://api-checkout.cinetpay.com');
         $this->transferBaseUrl = config('services.cinetpay.transfert_base_url');
     }
@@ -141,6 +143,74 @@ class CinetPayService
             $payload = [
                 'apikey' => $this->apiKey,
                 'password' => $this->apiPassword,
+            ];
+
+            Log::info('CinetPay login request POST', [
+                'url' => $url,
+                'payload' => $payload
+            ]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            ])->asForm()->post($url, $payload);
+
+            Log::info('CinetPay login response POST', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            if ($response->failed()) {
+                return [
+                    'success' => false,
+                    'message' => 'Erreur lors de la communication avec le service de paiement.',
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ];
+            }
+
+            $data = $response->json();
+
+            if (isset($data['code']) && $data['code'] !== 0) {
+                $errorMessage = $data['message'] ?? 'Erreur d\'authentification inconnue';
+
+                if ($data['code'] == 701) { // Utilisez == pour la comparaison
+                    return [
+                        'success' => false,
+                        'message' => 'Erreur: les identifiants CinetPay sont incorrects',
+                    ];
+                }
+
+                return [
+                    'success' => false,
+                    'message' => $errorMessage,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'token' => $data['data']['token'] ?? null
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'authentification CinetPay', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Erreur lors de l\'authentification: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function getAuthTokenForPayment()
+    {
+        try {
+            $url = "{$this->transferBaseUrl}/v1/auth/login?lang=fr";
+
+            $payload = [
+                'apikey' => $this->apiKey,
+                'password' => $this->apiPasswordForPayment,
             ];
 
             Log::info('CinetPay login request POST', [

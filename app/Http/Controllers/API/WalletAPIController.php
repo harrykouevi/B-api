@@ -491,7 +491,7 @@ class WalletAPIController extends Controller
      */
     private function attemptCinetPay(array $context): ?array
     {
-        $cinetPayTokenResponse = $this->cinetPayService->getAuthToken();
+        $cinetPayTokenResponse = $this->cinetPayService->getAuthTokenForPayment();
 
         if (!isset($cinetPayTokenResponse['success']) || !$cinetPayTokenResponse['success']) {
             Log::warning('CinetPay indisponible', [
