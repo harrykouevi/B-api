@@ -222,6 +222,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('withdrawal-phones', [WithdrawalPhoneController::class, 'index'])->name('withdrawal-phones.index');
     Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
     Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');
+    Route::post('withdrawal-phones/{id}/resync', [WithdrawalPhoneController::class, 'resync'])->name('withdrawal-phones.resync');
     Route::delete('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'destroy'])->name('withdrawal-phones.destroy');
 
     // Report Routes

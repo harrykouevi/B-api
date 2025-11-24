@@ -596,17 +596,14 @@ class WalletAPIController extends Controller
 
 
     /**
+     * Retrait sur wallet avec fallback automatique vers PayDunya en cas d'échec CinetPay
+     *
      * @throws RepositoryException
-     * @throws \PHPUnit\Exception
-     */
-    /**
-     * @throws RepositoryException
-     * @throws \PHPUnit\Exception
      */
     public function withdrawOnWallet(Request $request): JsonResponse
     {
-        // Validation des données
         Log::info('Début du retrait - Validation des données', ['request_data' => $request->all()]);
+
         $validatedData = $request->validate([
             'amount' => 'required|numeric|min:500',
             'description' => 'nullable|string|max:255',
@@ -614,188 +611,331 @@ class WalletAPIController extends Controller
             'wallet_id' => 'required|string|exists:wallets,id',
             'phone_number' => 'required|string',
             'country_prefix' => 'required|string',
-            'payment_method' => 'nullable|string|in:WAVECI,WAVESN', // Selon le pays
+            'payment_method' => 'nullable|string|in:WAVECI,WAVESN',
         ]);
-        Log::info('Validation des données réussie', ['validated_data' => $validatedData]);
+
+        $userId = (int)$validatedData['user_id'];
+        $walletId = $validatedData['wallet_id'];
+        $amount = (float)$validatedData['amount'];
+        $phoneNumber = $validatedData['phone_number'];
+        $countryPrefix = $validatedData['country_prefix'];
+        $paymentMethod = $validatedData['payment_method'] ?? null;
+        $description = $validatedData['description'] ?? 'Demande de retrait';
+
+        // Validation du wallet et du solde
+        $walletValidation = $this->validateWalletForWithdrawal($userId, $walletId, $amount);
+        if ($walletValidation['error']) {
+            return response()->json($walletValidation['response'], $walletValidation['status']);
+        }
+        $wallet = $walletValidation['wallet'];
+
+        // Contexte pour les tentatives de retrait
+        $withdrawalContext = [
+            'userId' => $userId,
+            'walletId' => $walletId,
+            'wallet' => $wallet,
+            'amount' => $amount,
+            'phoneNumber' => $phoneNumber,
+            'countryPrefix' => $countryPrefix,
+            'paymentMethod' => $paymentMethod,
+            'description' => $description,
+        ];
+
+        // Tentative via CinetPay avec fallback vers PayDunya
+        return $this->executeWithdrawalWithFallback($withdrawalContext, $request);
+    }
+
+    /**
+     * Valide le wallet et le solde pour un retrait
+     */
+    private function validateWalletForWithdrawal(int $userId, string $walletId, float $amount): array
+    {
+        Log::info('Vérification du wallet utilisateur', ['user_id' => $userId, 'wallet_id' => $walletId]);
+
+        $this->walletRepository->pushCriteria(new EnabledCriteria());
+        $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
+        $wallet = $this->walletRepository->find($walletId);
+
+        if (!$wallet) {
+            Log::warning('Wallet non trouvé ou non autorisé', ['user_id' => $userId, 'wallet_id' => $walletId]);
+            return [
+                'error' => true,
+                'status' => 404,
+                'response' => ['error' => 'Wallet non trouvé ou non autorisé'],
+                'wallet' => null,
+            ];
+        }
+
+        Log::info('Vérification du solde du wallet', ['wallet_balance' => $wallet->balance, 'requested_amount' => $amount]);
+
+        if (!WalletTransaction::canWithdraw($wallet, $amount)) {
+            Log::warning('Montant invalide ou solde insuffisant', [
+                'wallet_balance' => $wallet->balance,
+                'requested_amount' => $amount,
+            ]);
+            return [
+                'error' => true,
+                'status' => 400,
+                'response' => [
+                    'error' => 'Montant invalide ou solde insuffisant',
+                    'message' => 'Le montant doit être un multiple de 5 et supérieur ou égal à 500. Vérifiez également que votre solde est suffisant.',
+                ],
+                'wallet' => null,
+            ];
+        }
+
+        return ['error' => false, 'wallet' => $wallet];
+    }
+
+    /**
+     * Exécute le retrait via CinetPay avec fallback automatique vers PayDunya
+     */
+    private function executeWithdrawalWithFallback(array $context, Request $request): JsonResponse
+    {
+        $cinetPayResult = $this->attemptCinetPayWithdrawal($context);
+
+        if ($cinetPayResult['success']) {
+            return response()->json($cinetPayResult['response'], 200);
+        }
+
+        // Fallback vers PayDunya si CinetPay échoue
+        Log::info('Bascule vers PayDunya après échec CinetPay pour le retrait', [
+            'user_id' => $context['userId'],
+            'amount' => $context['amount'],
+            'cinetpay_error' => $cinetPayResult['error_message'] ?? 'Erreur inconnue',
+        ]);
+
+        return $this->attemptPaydunyaWithdrawal($context, $request);
+    }
+
+    /**
+     * Tentative de retrait via CinetPay
+     */
+    private function attemptCinetPayWithdrawal(array $context): array
+    {
+        $withdrawal = null;
 
         try {
-            $userId = $validatedData['user_id'];
-            $walletId = $validatedData['wallet_id'];
-            $amount = (float)$validatedData['amount'];
-            $phoneNumber = $validatedData['phone_number'];
-            $countryPrefix = $validatedData['country_prefix'];
-            $paymentMethod = $validatedData['payment_method'] ?? null;
+            $operatorLabel = $context['paymentMethod'] ? " ({$context['paymentMethod']})" : '';
+            $description = $context['description'] . $operatorLabel . ' [CinetPay]';
 
-            Log::info('Paramètres extraits', [
-                'user_id' => $userId,
-                'wallet_id' => $walletId,
-                'amount' => $amount,
-                'phone_number' => $phoneNumber,
-                'country_prefix' => $countryPrefix,
-                'payment_method' => $paymentMethod
-            ]);
-
-            // Vérifier que le wallet appartient à l'utilisateur et est actif
-            Log::info('Vérification du wallet utilisateur', ['user_id' => $userId, 'wallet_id' => $walletId]);
-            $this->walletRepository->pushCriteria(new EnabledCriteria());
-            $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
-            $wallet = $this->walletRepository->find($walletId);
-
-            if (!$wallet) {
-                Log::warning('Wallet non trouvé ou non autorisé', ['user_id' => $userId, 'wallet_id' => $walletId]);
-                return response()->json([
-                    'error' => 'Wallet non trouvé ou non autorisé'
-                ], 404);
-            }
-            Log::info('Wallet trouvé avec succès', ['wallet' => $wallet]);
-
-            // Vérifier que le montant est valide et que le solde est suffisant
-            Log::info('Vérification du solde du wallet', ['wallet_balance' => $wallet->balance, 'requested_amount' => $amount]);
-            if (!WalletTransaction::canWithdraw($wallet, $amount)) {
-                Log::warning('Montant invalide ou solde insuffisant', [
-                    'wallet_balance' => $wallet->balance,
-                    'requested_amount' => $amount,
-                    'can_withdraw' => WalletTransaction::canWithdraw($wallet, $amount)
-                ]);
-                return response()->json([
-                    'error' => 'Montant invalide ou solde insuffisant',
-                    'message' => 'Le montant doit être un multiple de 5 et supérieur ou égal à 500. Vérifiez également que votre solde est suffisant.'
-                ], 400);
-            }
-            Log::info('Solde suffisant pour le retrait');
-
-            // Créer la transaction de retrait (statut initial: pending)
-            $operatorLabel = $paymentMethod ? " ({$paymentMethod})" : '';
-            $description = ($validatedData['description'] ?? 'Demande de retrait') . $operatorLabel;
-            Log::info('Création de la transaction de retrait', [
-                'wallet_id' => $wallet->id,
-                'user_id' => $userId,
-                'amount' => $amount,
-                'description' => $description
+            Log::info('Création de la transaction de retrait CinetPay', [
+                'wallet_id' => $context['wallet']->id,
+                'user_id' => $context['userId'],
+                'amount' => $context['amount'],
             ]);
 
             $withdrawal = WalletTransaction::createWithdrawal([
-                'wallet_id' => $wallet->id,
-                'user_id' => $userId,
-                'amount' => $amount,
+                'wallet_id' => $context['wallet']->id,
+                'user_id' => $context['userId'],
+                'amount' => $context['amount'],
                 'description' => $description,
-                'status' => WalletTransaction::STATUS_PENDING
+                'status' => WalletTransaction::STATUS_PENDING,
             ]);
-            Log::info('Transaction de retrait créée', ['withdrawal_id' => $withdrawal->id]);
 
-            // Vérifier le solde CinetPay
-            Log::info('Vérification du solde CinetPay', ['amount' => $amount]);
-            $balanceResponse = $this->cinetPayService->checkBalanceAndAuthorizeWithdrawal($amount);
-            Log::info('Réponse de vérification du solde CinetPay', ['response' => $balanceResponse]);
+            // Vérification du solde CinetPay
+            Log::info('Vérification du solde CinetPay', ['amount' => $context['amount']]);
+            $balanceResponse = $this->cinetPayService->checkBalanceAndAuthorizeWithdrawal($context['amount']);
 
-            if (!$balanceResponse['success']) {
-                // Marquer la transaction comme rejetée
-                Log::warning('Erreur lors de la vérification du solde CinetPay', ['response' => $balanceResponse]);
+            if (!$balanceResponse['success'] || !$balanceResponse['authorized']) {
+                Log::warning('CinetPay: solde insuffisant ou erreur', ['response' => $balanceResponse]);
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
-                Log::info('Statut de la transaction mis à jour à REJECTED', ['withdrawal_id' => $withdrawal->id]);
 
-                return response()->json([
-                    'error' => 'Erreur lors de la vérification du solde CinetPay',
-                    'message' => $balanceResponse['message'] ?? 'Erreur inconnue'
-                ], 500);
+                return [
+                    'success' => false,
+                    'error_message' => $balanceResponse['message'] ?? 'Solde CinetPay insuffisant',
+                    'withdrawal' => $withdrawal,
+                ];
             }
 
-            if (!$balanceResponse['authorized']) {
-                // Marquer la transaction comme rejetée
-                Log::warning('Solde CinetPay insuffisant', ['response' => $balanceResponse]);
-                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
-                Log::info('Statut de la transaction mis à jour à REJECTED', ['withdrawal_id' => $withdrawal->id]);
-
-                return response()->json([
-                    'error' => 'Solde CinetPay insuffisant',
-                    'message' => $balanceResponse['message'],
-                    'balance_info' => $balanceResponse['balance_info']
-                ], 400);
-            }
-            Log::info('Solde CinetPay suffisant pour le retrait');
-
-            // Exécuter le transfert via CinetPay (le contact doit déjà exister)
+            // Exécution du transfert
             Log::info('Exécution du transfert via CinetPay', [
                 'withdrawal_id' => $withdrawal->id,
-                'phone_number' => $phoneNumber,
-                'country_prefix' => $countryPrefix,
-                'payment_method' => $paymentMethod
+                'phone_number' => $context['phoneNumber'],
             ]);
+
             $transferResponse = $this->cinetPayService->executeTransfer(
                 $withdrawal,
-                $phoneNumber,
-                $countryPrefix,
-                $userId,
-                $paymentMethod
-
+                $context['phoneNumber'],
+                $context['countryPrefix'],
+                $context['userId'],
+                $context['paymentMethod']
             );
-            Log::info('Réponse de l\'exécution du transfert', ['response' => $transferResponse]);
 
             if (!$transferResponse['success']) {
-                // Marquer la transaction comme rejetée
-                Log::warning('Erreur lors de l\'exécution du transfert', ['response' => $transferResponse]);
+                Log::warning('CinetPay: échec du transfert', ['response' => $transferResponse]);
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
-                Log::info('Statut de la transaction mis à jour à REJECTED', ['withdrawal_id' => $withdrawal->id]);
 
-                // Gérer spécifiquement le cas où le contact n'existe pas
-                if (isset($transferResponse['code']) && $transferResponse['code'] === 723) {
-                    Log::warning('Contact non trouvé dans CinetPay', ['code' => $transferResponse['code']]);
-                    return response()->json([
-                        'error' => 'Contact non trouvé',
-                        'message' => 'Le contact n\'existe pas dans CinetPay. Veuillez contacter le service support.'
-                    ], 400);
-                }
-
-                return response()->json([
-                    'error' => 'Erreur lors de l\'exécution du transfert',
-                    'message' => $transferResponse['message'] ?? 'Erreur inconnue'
-                ], 500);
+                return [
+                    'success' => false,
+                    'error_message' => $transferResponse['message'] ?? 'Erreur lors du transfert CinetPay',
+                    'error_code' => $transferResponse['code'] ?? null,
+                    'withdrawal' => $withdrawal,
+                ];
             }
-            Log::info('Transfert CinetPay exécuté avec succès');
 
-            // Vérifier le statut initial et mettre à jour la transaction si nécessaire
+            // Mise à jour du statut si nécessaire
             $initialTreatmentStatus = $transferResponse['response'][0]['treatment_status'] ?? null;
             if ($initialTreatmentStatus === 'NEW') {
                 $withdrawal->update(['status' => WalletTransaction::STATUS_PENDING]);
-                Log::info('Statut de la transaction mis à jour à PENDING', ['withdrawal_id' => $withdrawal->id]);
             }
 
-            // Log de l'opération
-            Log::info('Retrait initié avec succès', [
-                'user_id' => $userId,
-                'wallet_id' => $walletId,
-                'amount' => $amount,
+            Log::info('Retrait CinetPay initié avec succès', [
+                'user_id' => $context['userId'],
+                'amount' => $context['amount'],
                 'transaction_id' => $transferResponse['transaction_id'],
-                'client_transaction_id' => $transferResponse['client_transaction_id']
+            ]);
+
+            return [
+                'success' => true,
+                'response' => [
+                    'success' => true,
+                    'message' => 'Retrait initié avec succès via CinetPay.',
+                    'provider' => 'cinetpay',
+                    'transaction_id' => $transferResponse['transaction_id'],
+                    'client_transaction_id' => $transferResponse['client_transaction_id'],
+                    'treatment_status' => $transferResponse['treatment_status'],
+                    'sending_status' => $transferResponse['sending_status'],
+                    'withdrawal' => $withdrawal,
+                ],
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Exception CinetPay lors du retrait', [
+                'error' => $e->getMessage(),
+                'user_id' => $context['userId'],
+            ]);
+
+            if ($withdrawal instanceof WalletTransaction) {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+            }
+
+            return [
+                'success' => false,
+                'error_message' => $e->getMessage(),
+                'withdrawal' => $withdrawal,
+            ];
+        }
+    }
+
+    /**
+     * Tentative de retrait via PayDunya (fallback)
+     */
+    private function attemptPaydunyaWithdrawal(array $context, Request $request): JsonResponse
+    {
+        try {
+            $withdrawMode = $request->input('withdraw_mode') ?? $this->paydunyaDisbursementService->getDefaultWithdrawMode();
+            $callbackUrl = $request->input('callback_url') ?? $this->paydunyaDisbursementService->getDefaultCallbackUrl();
+
+            // Utiliser le numéro de téléphone comme account_alias
+            $accountAlias = preg_replace('/\D+/', '', $context['phoneNumber']);
+
+            if (empty($accountAlias)) {
+                return response()->json([
+                    'error' => 'Numéro de compte invalide pour PayDunya',
+                    'message' => 'Le numéro de téléphone fourni est invalide.',
+                ], 422);
+            }
+
+            if (empty($withdrawMode)) {
+                return response()->json([
+                    'error' => 'Mode de retrait PayDunya absent',
+                    'message' => 'Veuillez préciser un withdraw_mode valide.',
+                ], 422);
+            }
+
+            if (empty($callbackUrl)) {
+                return response()->json([
+                    'error' => 'Callback PayDunya manquant',
+                    'message' => 'Définissez PAYDUNYA_DISBURSE_CALLBACK_URL ou transmettez callback_url.',
+                ], 422);
+            }
+
+            $description = $context['description'] . ' [PayDunya - Fallback]';
+
+            $withdrawal = WalletTransaction::createWithdrawal([
+                'wallet_id' => $context['wallet']->id,
+                'user_id' => $context['userId'],
+                'amount' => $context['amount'],
+                'description' => $description,
+                'status' => WalletTransaction::STATUS_PENDING,
+            ]);
+
+            Log::info('Init PayDunya PER (fallback)', [
+                'withdrawal_id' => $withdrawal->id,
+                'account_alias' => $accountAlias,
+                'withdraw_mode' => $withdrawMode,
+            ]);
+
+            $invoiceResponse = $this->paydunyaDisbursementService->createInvoice(
+                $accountAlias,
+                (int)$context['amount'],
+                $withdrawMode,
+                $callbackUrl,
+                (string)$withdrawal->id
+            );
+
+            if (!$invoiceResponse['success']) {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+                return response()->json([
+                    'error' => 'Erreur lors de la création du déboursement PayDunya',
+                    'message' => $invoiceResponse['message'],
+                    'details' => $invoiceResponse['data'] ?? null,
+                ], 400);
+            }
+
+            $disburseInvoice = $invoiceResponse['data']['disburse_invoice'];
+            $withdrawal->description = "{$withdrawal->description} | PayDunya invoice: {$disburseInvoice}";
+            $withdrawal->save();
+
+            $submitResponse = $this->paydunyaDisbursementService->submitInvoice($disburseInvoice, (string)$withdrawal->id);
+
+            if (!$submitResponse['success']) {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+                return response()->json([
+                    'error' => 'Soumission PayDunya échouée',
+                    'message' => $submitResponse['message'],
+                    'details' => $submitResponse['data'] ?? null,
+                ], 400);
+            }
+
+            $status = strtolower($submitResponse['data']['status'] ?? '');
+            if ($status === 'success') {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_COMPLETED]);
+            } elseif ($status === 'failed') {
+                $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+            }
+
+            Log::info('Retrait PayDunya (fallback) initié avec succès', [
+                'user_id' => $context['userId'],
+                'amount' => $context['amount'],
+                'disburse_invoice' => $disburseInvoice,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Retrait initié avec succès.',
-                'transaction_id' => $transferResponse['transaction_id'],
-                'client_transaction_id' => $transferResponse['client_transaction_id'],
-                'treatment_status' => $transferResponse['treatment_status'],
-                'sending_status' => $transferResponse['sending_status'],
-                'withdrawal' => $withdrawal
+                'message' => 'Retrait initié avec succès via PayDunya (fallback).',
+                'provider' => 'paydunya',
+                'status' => $status ?: 'pending',
+                'disburse_invoice' => $disburseInvoice,
+                'transaction_id' => $submitResponse['data']['transaction_id'] ?? null,
+                'provider_ref' => $submitResponse['data']['provider_ref'] ?? null,
+                'withdrawal' => $withdrawal->refresh(),
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Erreur lors du retrait', [
+            Log::error('Exception PayDunya lors du retrait (fallback)', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'user_id' => $request->user_id ?? null,
-                'wallet_id' => $request->wallet_id ?? null
+                'user_id' => $context['userId'],
             ]);
 
-            // Si une transaction a été créée, la marquer comme rejetée
             if (isset($withdrawal) && $withdrawal instanceof WalletTransaction) {
-                Log::info('Marquage de la transaction comme rejetée suite à une exception', ['withdrawal_id' => $withdrawal->id]);
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
             }
 
             return response()->json([
                 'error' => 'Erreur lors du traitement du retrait',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
