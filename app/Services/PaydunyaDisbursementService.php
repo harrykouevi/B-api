@@ -15,6 +15,16 @@ class PaydunyaDisbursementService
     private ?string $defaultCallbackUrl;
     private ?string $defaultWithdrawMode;
 
+    // Modes de retrait pour le Togo
+    public const WITHDRAW_MODE_TMONEY = 't-money-togo';
+    public const WITHDRAW_MODE_MOOV_TOGO = 'moov-togo';
+
+    // Mapping des types de compte vers les modes de retrait PayDunya
+    private array $accountTypeToWithdrawMode = [
+        'yas' => self::WITHDRAW_MODE_TMONEY,      // YAS = T-Money (Togocel)
+        'moov' => self::WITHDRAW_MODE_MOOV_TOGO,  // Moov = Moov Togo
+    ];
+
     /**
      * @var string[]
      */
@@ -37,6 +47,12 @@ class PaydunyaDisbursementService
         'moov-burkina-faso',
     ];
 
+    // Modes de retrait supportés pour le Togo
+    private array $togoWithdrawModes = [
+        't-money-togo',
+        'moov-togo',
+    ];
+
     public function __construct()
     {
         $config = config('services.paydunya.disburse', []);
@@ -45,12 +61,17 @@ class PaydunyaDisbursementService
         $this->token = $config['token'] ?? null;
         $this->baseUrl = rtrim($config['base_url'] ?? 'https://app.paydunya.com/api/v2', '/');
         $this->defaultCallbackUrl = $config['callback_url'] ?? null;
-        $this->defaultWithdrawMode = $config['default_withdraw_mode'] ?? null;
+        $this->defaultWithdrawMode = $config['default_withdraw_mode'] ?? self::WITHDRAW_MODE_TMONEY;
     }
 
     public function getSupportedWithdrawModes(): array
     {
         return $this->supportedWithdrawModes;
+    }
+
+    public function getTogoWithdrawModes(): array
+    {
+        return $this->togoWithdrawModes;
     }
 
     public function getDefaultCallbackUrl(): ?string
@@ -61,6 +82,51 @@ class PaydunyaDisbursementService
     public function getDefaultWithdrawMode(): ?string
     {
         return $this->defaultWithdrawMode;
+    }
+
+    /**
+     * Détermine le mode de retrait basé sur le type de compte
+     */
+    public function getWithdrawModeFromAccountType(?string $accountType): string
+    {
+        if ($accountType && isset($this->accountTypeToWithdrawMode[$accountType])) {
+            return $this->accountTypeToWithdrawMode[$accountType];
+        }
+        return $this->defaultWithdrawMode ?? self::WITHDRAW_MODE_TMONEY;
+    }
+
+    /**
+     * Détermine le mode de retrait basé sur le numéro de téléphone (préfixes togolais)
+     * - 90, 91, 92, 93 = T-Money (Togocel)
+     * - 96, 97, 98, 99 = Moov Togo
+     */
+    public function getWithdrawModeFromPhoneNumber(string $phoneNumber): string
+    {
+        // Nettoyer le numéro
+        $cleanNumber = preg_replace('/\D/', '', $phoneNumber);
+
+        // Enlever le préfixe 228 si présent
+        if (str_starts_with($cleanNumber, '228')) {
+            $cleanNumber = substr($cleanNumber, 3);
+        }
+
+        // Vérifier le premier chiffre pour déterminer l'opérateur
+        if (strlen($cleanNumber) >= 2) {
+            $prefix = substr($cleanNumber, 0, 2);
+
+            // Préfixes Togocel (YAS/T-Money): 90, 91, 92, 93, 70, 71, 72, 73
+            if (in_array($prefix, ['90', '91', '92', '93', '70', '71', '72', '73'])) {
+                return self::WITHDRAW_MODE_TMONEY;
+            }
+
+            // Préfixes Moov Togo: 96, 97, 98, 99, 76, 77, 78, 79
+            if (in_array($prefix, ['96', '97', '98', '99', '76', '77', '78', '79'])) {
+                return self::WITHDRAW_MODE_MOOV_TOGO;
+            }
+        }
+
+        // Par défaut, utiliser T-Money
+        return $this->defaultWithdrawMode ?? self::WITHDRAW_MODE_TMONEY;
     }
 
     public function createInvoice(

@@ -824,11 +824,22 @@ class WalletAPIController extends Controller
     private function attemptPaydunyaWithdrawal(array $context, Request $request): JsonResponse
     {
         try {
-            $withdrawMode = $request->input('withdraw_mode') ?? $this->paydunyaDisbursementService->getDefaultWithdrawMode();
+            // Déterminer le mode de retrait :
+            // 1. Depuis la requête si fourni
+            // 2. Sinon, détecter automatiquement depuis le numéro de téléphone
+            $withdrawMode = $request->input('withdraw_mode');
+            if (empty($withdrawMode)) {
+                $withdrawMode = $this->paydunyaDisbursementService->getWithdrawModeFromPhoneNumber($context['phoneNumber']);
+            }
+
             $callbackUrl = $request->input('callback_url') ?? $this->paydunyaDisbursementService->getDefaultCallbackUrl();
 
-            // Utiliser le numéro de téléphone comme account_alias
+            // Utiliser le numéro de téléphone comme account_alias (sans le préfixe pays)
             $accountAlias = preg_replace('/\D+/', '', $context['phoneNumber']);
+            // Enlever le préfixe 228 si présent
+            if (str_starts_with($accountAlias, '228')) {
+                $accountAlias = substr($accountAlias, 3);
+            }
 
             if (empty($accountAlias)) {
                 return response()->json([
@@ -837,18 +848,18 @@ class WalletAPIController extends Controller
                 ], 422);
             }
 
-            if (empty($withdrawMode)) {
-                return response()->json([
-                    'error' => 'Mode de retrait PayDunya absent',
-                    'message' => 'Veuillez préciser un withdraw_mode valide.',
-                ], 422);
-            }
+            Log::info('PayDunya withdraw_mode déterminé', [
+                'phone_number' => $context['phoneNumber'],
+                'account_alias' => $accountAlias,
+                'withdraw_mode' => $withdrawMode,
+            ]);
 
             if (empty($callbackUrl)) {
-                return response()->json([
-                    'error' => 'Callback PayDunya manquant',
-                    'message' => 'Définissez PAYDUNYA_DISBURSE_CALLBACK_URL ou transmettez callback_url.',
-                ], 422);
+                // Générer une URL de callback par défaut si non configurée
+                $callbackUrl = url('/api/paydunya/disburse/callback');
+                Log::warning('Callback URL PayDunya non configurée, utilisation de la valeur par défaut', [
+                    'callback_url' => $callbackUrl,
+                ]);
             }
 
             $description = $context['description'] . ' [PayDunya - Fallback]';
@@ -959,7 +970,18 @@ class WalletAPIController extends Controller
             $walletId = $validatedData['wallet_id'];
             $amount = (float)$validatedData['amount'];
             $accountAlias = preg_replace('/\D+/', '', $validatedData['account_alias']);
-            $withdrawMode = $validatedData['withdraw_mode'] ?? $this->paydunyaDisbursementService->getDefaultWithdrawMode();
+
+            // Enlever le préfixe 228 si présent
+            if (str_starts_with($accountAlias, '228')) {
+                $accountAlias = substr($accountAlias, 3);
+            }
+
+            // Déterminer le mode de retrait automatiquement si non fourni
+            $withdrawMode = $validatedData['withdraw_mode'] ?? null;
+            if (empty($withdrawMode)) {
+                $withdrawMode = $this->paydunyaDisbursementService->getWithdrawModeFromPhoneNumber($validatedData['account_alias']);
+            }
+
             $callbackUrl = $validatedData['callback_url'] ?? $this->paydunyaDisbursementService->getDefaultCallbackUrl();
             $description = $validatedData['description'] ?? 'Demande de retrait PayDunya';
 
@@ -970,18 +992,17 @@ class WalletAPIController extends Controller
                 ], 422);
             }
 
-            if (empty($withdrawMode)) {
-                return response()->json([
-                    'error' => 'Mode de retrait absent',
-                    'message' => 'Veuillez préciser un withdraw_mode valide.',
-                ], 422);
-            }
+            Log::info('PayDunya withdrawOnWalletPaydunya - withdraw_mode déterminé', [
+                'account_alias' => $accountAlias,
+                'withdraw_mode' => $withdrawMode,
+            ]);
 
             if (empty($callbackUrl)) {
-                return response()->json([
-                    'error' => 'Callback manquant',
-                    'message' => 'Définissez PAYDUNYA_DISBURSE_CALLBACK_URL ou transmettez callback_url.',
-                ], 422);
+                // Générer une URL de callback par défaut si non configurée
+                $callbackUrl = url('/api/paydunya/disburse/callback');
+                Log::warning('Callback URL PayDunya non configurée, utilisation de la valeur par défaut', [
+                    'callback_url' => $callbackUrl,
+                ]);
             }
 
             $this->walletRepository->pushCriteria(new EnabledCriteria());
