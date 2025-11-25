@@ -1339,42 +1339,71 @@ class WalletAPIController extends Controller
     public function handlePaydunyaPaymentCallback(Request $request): JsonResponse
     {
         $payload = $request->all();
-        Log::info('Callback PayDunya Checkout reçu', ['payload' => $payload]);
+        Log::info('🔔 [PayDunya Callback] ========== CALLBACK REÇU ==========');
+        Log::info('🔔 [PayDunya Callback] Payload complet', ['payload' => $payload]);
 
         // Vérifier le hash pour sécurité (selon la doc PayDunya)
         $receivedHash = $payload['data']['hash'] ?? null;
         $masterKey = config('services.paydunya.checkout.master_key');
         $expectedHash = hash('sha512', $masterKey);
 
+        Log::info('🔐 [PayDunya Callback] Vérification du hash', [
+            'has_received_hash' => !empty($receivedHash),
+            'master_key_configured' => !empty($masterKey),
+        ]);
+
         if ($receivedHash && $receivedHash !== $expectedHash) {
-            Log::warning('Hash PayDunya invalide', [
-                'received' => $receivedHash,
-                'expected' => substr($expectedHash, 0, 20) . '...'
+            Log::error('🔴 [PayDunya Callback] Hash invalide - Possible tentative frauduleuse', [
+                'received_hash' => substr($receivedHash, 0, 20) . '...',
+                'expected_hash' => substr($expectedHash, 0, 20) . '...',
             ]);
             return response()->json(['error' => 'invalid_hash'], 403);
         }
+
+        Log::info('✅ [PayDunya Callback] Hash valide');
 
         $invoiceData = $payload['data']['invoice'] ?? null;
         $token = $invoiceData['token'] ?? $payload['token'] ?? null;
         $status = strtolower($payload['data']['status'] ?? $payload['status'] ?? '');
 
+        Log::info('📋 [PayDunya Callback] Extraction des données', [
+            'token' => $token,
+            'status' => $status,
+            'has_invoice_data' => !empty($invoiceData),
+        ]);
+
         if (!$token) {
-            Log::warning('Callback PayDunya sans token', ['payload' => $payload]);
+            Log::error('🔴 [PayDunya Callback] Token manquant dans la payload', [
+                'payload_keys' => array_keys($payload),
+                'data_keys' => isset($payload['data']) ? array_keys($payload['data']) : [],
+            ]);
             return response()->json(['error' => 'missing_token'], 422);
         }
 
         if (empty($status)) {
-            Log::warning('Callback PayDunya sans statut', ['payload' => $payload]);
+            Log::error('🔴 [PayDunya Callback] Statut manquant dans la payload');
             return response()->json(['error' => 'missing_status'], 422);
         }
+
+        Log::info('🔍 [PayDunya Callback] Recherche de la demande de paiement', ['token' => $token]);
 
         /** @var PaydunyaPaymentRequest|null $paymentRequest */
         $paymentRequest = PaydunyaPaymentRequest::where('reference_number', $token)->first();
 
         if (!$paymentRequest) {
-            Log::warning('Callback PayDunya introuvable', ['token' => $token]);
+            Log::error('🔴 [PayDunya Callback] Demande de paiement introuvable en base', [
+                'token' => $token,
+                'searched_in' => 'paydunya_payment_requests.reference_number',
+            ]);
             return response()->json(['error' => 'unknown_reference'], 404);
         }
+
+        Log::info('✅ [PayDunya Callback] Demande de paiement trouvée', [
+            'payment_request_id' => $paymentRequest->id,
+            'user_id' => $paymentRequest->user_id,
+            'amount' => $paymentRequest->amount,
+            'current_status' => $paymentRequest->status,
+        ]);
 
         $normalizedStatus = match ($status) {
             'completed', 'success' => PaydunyaPaymentRequest::STATUS_COMPLETED,
@@ -1382,14 +1411,34 @@ class WalletAPIController extends Controller
             default => PaydunyaPaymentRequest::STATUS_PENDING,
         };
 
+        Log::info('🎯 [PayDunya Callback] Statut normalisé', [
+            'original_status' => $status,
+            'normalized_status' => $normalizedStatus,
+            'needs_processing' => $normalizedStatus === PaydunyaPaymentRequest::STATUS_COMPLETED && $paymentRequest->status !== PaydunyaPaymentRequest::STATUS_COMPLETED,
+        ]);
+
         if ($normalizedStatus === PaydunyaPaymentRequest::STATUS_COMPLETED && $paymentRequest->status !== PaydunyaPaymentRequest::STATUS_COMPLETED) {
+            Log::info('💰 [PayDunya Callback] Début du traitement du paiement complété');
+
             try {
                 DB::transaction(function () use ($paymentRequest, $payload) {
+                    Log::info('🔄 [PayDunya Callback] Transaction DB démarrée');
+
                     $wallet = $paymentRequest->wallet;
                     if (!$wallet) {
+                        Log::error('🔴 [PayDunya Callback] Wallet introuvable', [
+                            'payment_request_id' => $paymentRequest->id,
+                            'wallet_id' => $paymentRequest->wallet_id,
+                        ]);
                         throw new Exception('Wallet introuvable pour la demande PayDunya.');
                     }
 
+                    Log::info('💳 [PayDunya Callback] Wallet trouvé', [
+                        'wallet_id' => $wallet->id,
+                        'current_balance' => $wallet->balance,
+                    ]);
+
+                    Log::info('➕ [PayDunya Callback] Crédit du wallet en cours');
                     $result = $this->paymentService->createPaymentLinkWithExternal(
                         (float)$paymentRequest->amount,
                         $wallet,
@@ -1397,35 +1446,50 @@ class WalletAPIController extends Controller
                     );
 
                     if (!$result) {
+                        Log::error('🔴 [PayDunya Callback] Échec du crédit wallet');
                         throw new Exception('Impossible de créditer le wallet via PaymentService.');
                     }
 
+                    Log::info('✅ [PayDunya Callback] Wallet crédité, mise à jour du statut');
                     $paymentRequest->status = PaydunyaPaymentRequest::STATUS_COMPLETED;
                     $paymentRequest->callback_payload = $payload;
                     $paymentRequest->completed_at = now();
                     $paymentRequest->save();
 
-                    Log::info('Wallet crédité avec succès via PayDunya Checkout', [
+                    Log::info('🎉 [PayDunya Callback] Transaction complétée avec succès', [
                         'token' => $paymentRequest->reference_number,
                         'amount' => $paymentRequest->amount,
                         'wallet_id' => $wallet->id,
+                        'new_balance' => $wallet->fresh()->balance,
                     ]);
                 });
+
+                Log::info('✅ [PayDunya Callback] ========== CALLBACK TRAITÉ AVEC SUCCÈS ==========');
             } catch (Exception $exception) {
-                Log::error('Erreur lors du crédit PayDunya Checkout', [
+                Log::error('💥 [PayDunya Callback] Exception lors du traitement', [
                     'token' => $token,
-                    'exception' => $exception->getMessage(),
+                    'exception_type' => get_class($exception),
+                    'exception_message' => $exception->getMessage(),
+                    'trace' => $exception->getTraceAsString(),
                 ]);
 
                 return response()->json(['error' => 'credit_failed'], 500);
             }
         } else {
+            Log::info('ℹ️ [PayDunya Callback] Mise à jour du statut seulement (pas de crédit)', [
+                'new_status' => $normalizedStatus,
+                'reason' => $paymentRequest->status === PaydunyaPaymentRequest::STATUS_COMPLETED ? 'Déjà complété' : 'Statut non-complété',
+            ]);
+
             if ($paymentRequest->status !== PaydunyaPaymentRequest::STATUS_COMPLETED) {
                 $paymentRequest->update([
                     'status' => $normalizedStatus,
                     'callback_payload' => $payload,
                 ]);
+                Log::info('✅ [PayDunya Callback] Statut mis à jour');
             }
+
+            Log::info('✅ [PayDunya Callback] ========== CALLBACK TRAITÉ ==========');
         }
 
         return response()->json(['status' => 'ok']);

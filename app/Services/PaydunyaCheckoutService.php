@@ -68,12 +68,29 @@ class PaydunyaCheckoutService
      */
     public function createInvoice(float $amount, array $items = [], array $options = []): array
     {
+        Log::info('🔵 [PayDunya Checkout] Début createInvoice', [
+            'amount' => $amount,
+            'items_count' => count($items),
+            'has_options' => !empty($options),
+        ]);
+
         if (!$this->hasCredentials()) {
+            Log::error('🔴 [PayDunya Checkout] Credentials manquantes', [
+                'has_master_key' => !empty($this->masterKey),
+                'has_public_key' => !empty($this->publicKey),
+                'has_private_key' => !empty($this->privateKey),
+                'has_token' => !empty($this->token),
+            ]);
             return [
                 'success' => false,
                 'message' => 'Clés PayDunya Checkout manquantes ou invalides.',
             ];
         }
+
+        Log::info('🟢 [PayDunya Checkout] Credentials OK, préparation du payload', [
+            'store_name' => $this->storeName,
+            'mode' => $this->mode,
+        ]);
 
         $payload = [
             'invoice' => [
@@ -98,40 +115,67 @@ class PaydunyaCheckoutService
         // Ajouter les items si fournis
         if (!empty($items)) {
             $payload['invoice']['items'] = $items;
+            Log::info('📦 [PayDunya Checkout] Items ajoutés', ['items_count' => count($items)]);
         }
 
         // Ajouter les taxes si fournies
         if (isset($options['taxes']) && is_array($options['taxes'])) {
             $payload['invoice']['taxes'] = $options['taxes'];
+            Log::info('💰 [PayDunya Checkout] Taxes ajoutées', ['taxes_count' => count($options['taxes'])]);
         }
 
         // Custom data optionnel
         if (isset($options['custom_data']) && is_array($options['custom_data'])) {
             $payload['custom_data'] = $options['custom_data'];
+            Log::info('📝 [PayDunya Checkout] Custom data ajoutées', [
+                'keys' => array_keys($options['custom_data'])
+            ]);
         }
 
         // Restriction des moyens de paiement si spécifié
         if (isset($options['channels']) && is_array($options['channels'])) {
             $payload['channels'] = $options['channels'];
+            Log::info('🎛️ [PayDunya Checkout] Canaux restreints', ['channels' => $options['channels']]);
         }
+
+        Log::info('📤 [PayDunya Checkout] Envoi de la requête à l\'API', [
+            'endpoint' => '/checkout-invoice/create',
+            'callback_url' => $payload['actions']['callback_url'] ?? 'non défini',
+        ]);
 
         $response = $this->post('/checkout-invoice/create', $payload);
 
         if (!$response['success']) {
+            Log::error('🔴 [PayDunya Checkout] Échec de création de facture', [
+                'message' => $response['message'],
+                'response' => $response,
+            ]);
             return $response;
         }
+
+        Log::info('✅ [PayDunya Checkout] Réponse API reçue avec succès');
 
         $data = $response['data'] ?? [];
         $token = $data['token'] ?? null;
         $responseUrl = $data['response_url'] ?? null;
 
         if (empty($token) || empty($responseUrl)) {
+            Log::error('🔴 [PayDunya Checkout] Token ou URL manquant dans la réponse', [
+                'has_token' => !empty($token),
+                'has_response_url' => !empty($responseUrl),
+                'data_keys' => array_keys($data),
+            ]);
             return [
                 'success' => false,
                 'message' => 'Réponse PayDunya Checkout invalide : token ou URL manquant.',
                 'data' => $data,
             ];
         }
+
+        Log::info('🎉 [PayDunya Checkout] Facture créée avec succès', [
+            'token' => $token,
+            'payment_url' => $responseUrl,
+        ]);
 
         return [
             'success' => true,
@@ -153,7 +197,10 @@ class PaydunyaCheckoutService
      */
     public function confirmInvoice(string $token): array
     {
+        Log::info('🔍 [PayDunya Checkout] Début confirmInvoice', ['token' => $token]);
+
         if (!$this->hasCredentials()) {
+            Log::error('🔴 [PayDunya Checkout] Credentials manquantes pour confirmation');
             return [
                 'success' => false,
                 'message' => 'Clés PayDunya Checkout manquantes ou invalides.',
@@ -161,20 +208,31 @@ class PaydunyaCheckoutService
         }
 
         if (empty($token)) {
+            Log::error('🔴 [PayDunya Checkout] Token manquant');
             return [
                 'success' => false,
                 'message' => 'Token PayDunya manquant.',
             ];
         }
 
+        Log::info('📤 [PayDunya Checkout] Vérification du statut de la facture');
         $response = $this->get("/checkout-invoice/confirm/{$token}");
 
         if (!$response['success']) {
+            Log::error('🔴 [PayDunya Checkout] Échec de confirmation', [
+                'message' => $response['message'],
+            ]);
             return $response;
         }
 
         $data = $response['data'] ?? [];
         $status = $data['status'] ?? null;
+
+        Log::info('✅ [PayDunya Checkout] Statut récupéré', [
+            'status' => $status,
+            'has_customer' => isset($data['customer']),
+            'has_receipt_url' => isset($data['receipt_url']),
+        ]);
 
         return [
             'success' => true,
@@ -205,25 +263,47 @@ class PaydunyaCheckoutService
         $url = "{$this->baseUrl}{$endpoint}";
 
         try {
-            Log::info('PayDunya Checkout POST request', [
+            $headers = $this->buildHeaders();
+
+            Log::info('🌐 [PayDunya Checkout] POST Request Details', [
                 'url' => $url,
+                'endpoint' => $endpoint,
+                'payload_keys' => array_keys($payload),
+                'has_invoice' => isset($payload['invoice']),
+                'has_store' => isset($payload['store']),
+                'has_actions' => isset($payload['actions']),
+                'headers_present' => array_keys($headers),
+            ]);
+
+            Log::debug('📋 [PayDunya Checkout] Payload complet', [
                 'payload' => $payload,
             ]);
 
-            $response = Http::withHeaders($this->buildHeaders())
+            $response = Http::withHeaders($headers)
                 ->acceptJson()
                 ->asJson()
                 ->post($url, $payload);
 
+            $statusCode = $response->status();
             $data = $response->json();
 
-            Log::info('PayDunya Checkout POST response', [
+            Log::info('📥 [PayDunya Checkout] POST Response Received', [
                 'url' => $url,
-                'status' => $response->status(),
+                'status_code' => $statusCode,
+                'success' => $response->successful(),
+                'response_code' => $data['response_code'] ?? 'non défini',
+            ]);
+
+            Log::debug('📋 [PayDunya Checkout] Response body complet', [
                 'body' => $data,
             ]);
 
             if ($response->failed()) {
+                Log::error('❌ [PayDunya Checkout] HTTP Request Failed', [
+                    'status_code' => $statusCode,
+                    'error_message' => $data['response_text'] ?? $data['description'] ?? 'Erreur inconnue',
+                    'full_response' => $data,
+                ]);
                 return [
                     'success' => false,
                     'message' => $data['response_text'] ?? $data['description'] ?? 'Erreur PayDunya Checkout',
@@ -234,15 +314,28 @@ class PaydunyaCheckoutService
             $responseCode = $data['response_code'] ?? null;
             $success = $responseCode === '00';
 
+            if ($success) {
+                Log::info('✅ [PayDunya Checkout] Request Successful', [
+                    'response_code' => $responseCode,
+                ]);
+            } else {
+                Log::warning('⚠️ [PayDunya Checkout] Request Completed but not successful', [
+                    'response_code' => $responseCode,
+                    'message' => $data['response_text'] ?? $data['description'] ?? 'Erreur',
+                ]);
+            }
+
             return [
                 'success' => $success,
                 'message' => $data['response_text'] ?? $data['description'] ?? ($success ? 'Opération PayDunya Checkout réussie' : 'Erreur PayDunya Checkout'),
                 'data' => $data,
             ];
         } catch (Throwable $exception) {
-            Log::error('Erreur PayDunya Checkout POST', [
+            Log::error('💥 [PayDunya Checkout] Exception during POST request', [
                 'endpoint' => $endpoint,
-                'exception' => $exception->getMessage(),
+                'exception_type' => get_class($exception),
+                'exception_message' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
             ]);
 
             return [
@@ -267,23 +360,33 @@ class PaydunyaCheckoutService
         $url = "{$this->baseUrl}{$endpoint}";
 
         try {
-            Log::info('PayDunya Checkout GET request', [
+            Log::info('🌐 [PayDunya Checkout] GET Request', [
                 'url' => $url,
+                'endpoint' => $endpoint,
             ]);
 
             $response = Http::withHeaders($this->buildHeaders())
                 ->acceptJson()
                 ->get($url);
 
+            $statusCode = $response->status();
             $data = $response->json();
 
-            Log::info('PayDunya Checkout GET response', [
+            Log::info('📥 [PayDunya Checkout] GET Response', [
                 'url' => $url,
-                'status' => $response->status(),
+                'status_code' => $statusCode,
+                'success' => $response->successful(),
+            ]);
+
+            Log::debug('📋 [PayDunya Checkout] GET Response body', [
                 'body' => $data,
             ]);
 
             if ($response->failed()) {
+                Log::error('❌ [PayDunya Checkout] GET Request Failed', [
+                    'status_code' => $statusCode,
+                    'error_message' => $data['response_text'] ?? $data['description'] ?? 'Erreur inconnue',
+                ]);
                 return [
                     'success' => false,
                     'message' => $data['response_text'] ?? $data['description'] ?? 'Erreur PayDunya Checkout',
@@ -294,15 +397,21 @@ class PaydunyaCheckoutService
             $responseCode = $data['response_code'] ?? null;
             $success = $responseCode === '00';
 
+            Log::info($success ? '✅ [PayDunya Checkout] GET Successful' : '⚠️ [PayDunya Checkout] GET not successful', [
+                'response_code' => $responseCode,
+            ]);
+
             return [
                 'success' => $success,
                 'message' => $data['response_text'] ?? $data['description'] ?? ($success ? 'Opération PayDunya Checkout réussie' : 'Erreur PayDunya Checkout'),
                 'data' => $data,
             ];
         } catch (Throwable $exception) {
-            Log::error('Erreur PayDunya Checkout GET', [
+            Log::error('💥 [PayDunya Checkout] Exception during GET request', [
                 'endpoint' => $endpoint,
-                'exception' => $exception->getMessage(),
+                'exception_type' => get_class($exception),
+                'exception_message' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
             ]);
 
             return [
