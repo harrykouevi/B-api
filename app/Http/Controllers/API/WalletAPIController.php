@@ -888,12 +888,30 @@ class WalletAPIController extends Controller
 
             $description = $context['description'] . ' [PayDunya - Fallback]';
 
+            // Créer la transaction de retrait
             $withdrawal = WalletTransaction::createWithdrawal([
                 'wallet_id' => $context['wallet']->id,
                 'user_id' => $context['userId'],
                 'amount' => $context['amount'],
                 'description' => $description,
                 'status' => WalletTransaction::STATUS_PENDING,
+            ]);
+
+            Log::info('💳 [PayDunya PER Fallback] Débit du wallet avant envoi', [
+                'withdrawal_id' => $withdrawal->id,
+                'amount' => $context['amount'],
+                'current_balance' => $context['wallet']->balance,
+            ]);
+
+            // Débiter le wallet IMMÉDIATEMENT avant d'envoyer à PayDunya
+            $this->paymentService->createPaymentLinkWithExternal(
+                (float)$context['amount'],
+                $context['wallet'],
+                PaymentType::DEBIT
+            );
+
+            Log::info('✅ [PayDunya PER Fallback] Wallet débité avec succès', [
+                'new_balance' => $context['wallet']->refresh()->balance,
             ]);
 
             Log::info('Init PayDunya PER (fallback)', [
@@ -911,7 +929,21 @@ class WalletAPIController extends Controller
             );
 
             if (!$invoiceResponse['success']) {
+                Log::error('🔴 [PayDunya PER Fallback] Échec création invoice, recréditation du wallet');
+
+                // Recréditer le wallet car la demande a échoué
+                $this->paymentService->createPaymentLinkWithExternal(
+                    (float)$context['amount'],
+                    $context['wallet'],
+                    PaymentType::CREDIT
+                );
+
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                Log::info('✅ [PayDunya PER Fallback] Wallet recrédité', [
+                    'new_balance' => $context['wallet']->refresh()->balance,
+                ]);
+
                 return response()->json([
                     'error' => 'Erreur lors de la création du déboursement PayDunya',
                     'message' => $invoiceResponse['message'],
@@ -926,7 +958,21 @@ class WalletAPIController extends Controller
             $submitResponse = $this->paydunyaDisbursementService->submitInvoice($disburseInvoice, (string)$withdrawal->id);
 
             if (!$submitResponse['success']) {
+                Log::error('🔴 [PayDunya PER Fallback] Échec soumission invoice, recréditation du wallet');
+
+                // Recréditer le wallet car la soumission a échoué
+                $this->paymentService->createPaymentLinkWithExternal(
+                    (float)$context['amount'],
+                    $context['wallet'],
+                    PaymentType::CREDIT
+                );
+
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                Log::info('✅ [PayDunya PER Fallback] Wallet recrédité', [
+                    'new_balance' => $context['wallet']->refresh()->balance,
+                ]);
+
                 return response()->json([
                     'error' => 'Soumission PayDunya échouée',
                     'message' => $submitResponse['message'],
@@ -936,9 +982,25 @@ class WalletAPIController extends Controller
 
             $status = strtolower($submitResponse['data']['status'] ?? '');
             if ($status === 'success') {
+                // Wallet déjà débité, juste mettre à jour le statut
                 $withdrawal->update(['status' => WalletTransaction::STATUS_COMPLETED]);
+
+                Log::info('✅ [PayDunya PER Fallback] Retrait complété avec succès');
             } elseif ($status === 'failed') {
+                Log::error('🔴 [PayDunya PER Fallback] Retrait échoué, recréditation du wallet');
+
+                // Recréditer le wallet car le retrait a échoué
+                $this->paymentService->createPaymentLinkWithExternal(
+                    (float)$context['amount'],
+                    $context['wallet'],
+                    PaymentType::CREDIT
+                );
+
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                Log::info('✅ [PayDunya PER Fallback] Wallet recrédité', [
+                    'new_balance' => $context['wallet']->refresh()->balance,
+                ]);
             }
 
             Log::info('Retrait PayDunya (fallback) initié avec succès', [
@@ -1046,12 +1108,30 @@ class WalletAPIController extends Controller
                 ], 400);
             }
 
+            // Créer la transaction de retrait
             $withdrawal = WalletTransaction::createWithdrawal([
                 'wallet_id' => $wallet->id,
                 'user_id' => $userId,
                 'amount' => $amount,
                 'description' => $description,
                 'status' => WalletTransaction::STATUS_PENDING,
+            ]);
+
+            Log::info('💳 [PayDunya PER] Débit du wallet avant envoi', [
+                'withdrawal_id' => $withdrawal->id,
+                'amount' => $amount,
+                'current_balance' => $wallet->balance,
+            ]);
+
+            // Débiter le wallet IMMÉDIATEMENT avant d'envoyer à PayDunya
+            $this->paymentService->createPaymentLinkWithExternal(
+                (float)$amount,
+                $wallet,
+                PaymentType::DEBIT
+            );
+
+            Log::info('✅ [PayDunya PER] Wallet débité avec succès', [
+                'new_balance' => $wallet->refresh()->balance,
             ]);
 
             Log::info('Init PayDunya PER', [
@@ -1069,7 +1149,21 @@ class WalletAPIController extends Controller
             );
 
             if (!$invoiceResponse['success']) {
+                Log::error('🔴 [PayDunya PER] Échec création invoice, recréditation du wallet');
+
+                // Recréditer le wallet car la demande a échoué
+                $this->paymentService->createPaymentLinkWithExternal(
+                    (float)$amount,
+                    $wallet,
+                    PaymentType::CREDIT
+                );
+
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                Log::info('✅ [PayDunya PER] Wallet recrédité', [
+                    'new_balance' => $wallet->refresh()->balance,
+                ]);
+
                 return response()->json([
                     'error' => 'Erreur lors de la création du déboursement PayDunya',
                     'message' => $invoiceResponse['message'],
@@ -1084,7 +1178,21 @@ class WalletAPIController extends Controller
             $submitResponse = $this->paydunyaDisbursementService->submitInvoice($disburseInvoice, (string)$withdrawal->id);
 
             if (!$submitResponse['success']) {
+                Log::error('🔴 [PayDunya PER] Échec soumission invoice, recréditation du wallet');
+
+                // Recréditer le wallet car la soumission a échoué
+                $this->paymentService->createPaymentLinkWithExternal(
+                    (float)$amount,
+                    $wallet,
+                    PaymentType::CREDIT
+                );
+
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                Log::info('✅ [PayDunya PER] Wallet recrédité', [
+                    'new_balance' => $wallet->refresh()->balance,
+                ]);
+
                 return response()->json([
                     'error' => 'Soumission PayDunya échouée',
                     'message' => $submitResponse['message'],
@@ -1094,9 +1202,25 @@ class WalletAPIController extends Controller
 
             $status = strtolower($submitResponse['data']['status'] ?? '');
             if ($status === 'success') {
+                // Wallet déjà débité, juste mettre à jour le statut
                 $withdrawal->update(['status' => WalletTransaction::STATUS_COMPLETED]);
+
+                Log::info('✅ [PayDunya PER] Retrait complété avec succès');
             } elseif ($status === 'failed') {
+                Log::error('🔴 [PayDunya PER] Retrait échoué, recréditation du wallet');
+
+                // Recréditer le wallet car le retrait a échoué
+                $this->paymentService->createPaymentLinkWithExternal(
+                    (float)$amount,
+                    $wallet,
+                    PaymentType::CREDIT
+                );
+
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
+
+                Log::info('✅ [PayDunya PER] Wallet recrédité', [
+                    'new_balance' => $wallet->refresh()->balance,
+                ]);
             }
 
             return response()->json([
@@ -1329,9 +1453,193 @@ class WalletAPIController extends Controller
     }
 
 
+    /**
+     * Callback PayDunya Disbursement (PER) - IPN pour les retraits
+     */
     public function handlePaydunyaDisburseCallback(Request $request): JsonResponse
     {
-        Log::info('Callback PayDunya PER reçu', ['payload' => $request->all()]);
+        $payload = $request->all();
+        Log::info('🔔 [PayDunya Callback PER] ========== CALLBACK REÇU ==========');
+        Log::info('🔔 [PayDunya Callback PER] Payload complet', ['payload' => $payload]);
+
+        // Extraction des données du callback
+        $token = $payload['token'] ?? null;
+        $status = strtolower($payload['status'] ?? '');
+        $withdrawMode = $payload['withdraw_mode'] ?? null;
+        $amount = $payload['amount'] ?? null;
+        $transactionId = $payload['transaction_id'] ?? null;
+        $disburseId = $payload['disburse_id'] ?? null;
+        $disburseTxId = $payload['disburse_tx_id'] ?? null;
+
+        Log::info('📋 [PayDunya Callback PER] Extraction des données', [
+            'token' => $token,
+            'status' => $status,
+            'withdraw_mode' => $withdrawMode,
+            'amount' => $amount,
+            'transaction_id' => $transactionId,
+            'disburse_id' => $disburseId,
+        ]);
+
+        if (!$token) {
+            Log::error('🔴 [PayDunya Callback PER] Token manquant dans la payload', [
+                'payload_keys' => array_keys($payload),
+            ]);
+            return response()->json(['error' => 'missing_token'], 422);
+        }
+
+        if (empty($status)) {
+            Log::error('🔴 [PayDunya Callback PER] Statut manquant dans la payload');
+            return response()->json(['error' => 'missing_status'], 422);
+        }
+
+        Log::info('🔍 [PayDunya Callback PER] Recherche de la transaction de retrait');
+
+        // Chercher la transaction par disburse_id (description contient le disburse_invoice)
+        // ou par le token dans la description
+        $withdrawal = WalletTransaction::where('description', 'like', "%{$token}%")
+            ->where('type', 'debit')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$withdrawal) {
+            Log::error('🔴 [PayDunya Callback PER] Transaction de retrait introuvable', [
+                'token' => $token,
+                'searched_pattern' => "%{$token}%",
+            ]);
+            return response()->json(['error' => 'unknown_reference'], 404);
+        }
+
+        Log::info('✅ [PayDunya Callback PER] Transaction de retrait trouvée', [
+            'withdrawal_id' => $withdrawal->id,
+            'user_id' => $withdrawal->user_id,
+            'amount' => $withdrawal->amount,
+            'current_status' => $withdrawal->status,
+        ]);
+
+        // Normaliser le statut
+        $normalizedStatus = match ($status) {
+            'success', 'completed' => WalletTransaction::STATUS_COMPLETED,
+            'failed', 'cancelled' => WalletTransaction::STATUS_REJECTED,
+            'pending' => WalletTransaction::STATUS_PENDING,
+            default => WalletTransaction::STATUS_PENDING,
+        };
+
+        Log::info('🎯 [PayDunya Callback PER] Statut normalisé', [
+            'original_status' => $status,
+            'normalized_status' => $normalizedStatus,
+            'needs_processing' => $normalizedStatus !== $withdrawal->status,
+        ]);
+
+        // Si le statut a changé, mettre à jour
+        if ($normalizedStatus !== $withdrawal->status) {
+            if ($normalizedStatus === WalletTransaction::STATUS_COMPLETED) {
+                Log::info('✅ [PayDunya Callback PER] Retrait complété avec succès (wallet déjà débité)');
+
+                try {
+                    DB::transaction(function () use ($withdrawal, $payload, $normalizedStatus, $transactionId, $disburseTxId) {
+                        Log::info('🔄 [PayDunya Callback PER] Transaction DB démarrée');
+
+                        $wallet = $withdrawal->wallet;
+                        if (!$wallet) {
+                            Log::error('🔴 [PayDunya Callback PER] Wallet introuvable', [
+                                'withdrawal_id' => $withdrawal->id,
+                                'wallet_id' => $withdrawal->wallet_id,
+                            ]);
+                            throw new Exception('Wallet introuvable pour le retrait PayDunya.');
+                        }
+
+                        Log::info('💳 [PayDunya Callback PER] Wallet trouvé', [
+                            'wallet_id' => $wallet->id,
+                            'current_balance' => $wallet->balance,
+                        ]);
+
+                        // Wallet déjà débité lors de l'initiation du retrait
+                        // On met juste à jour le statut et les métadonnées
+
+                        $withdrawal->status = $normalizedStatus;
+                        $withdrawal->description .= " | PayDunya TX: {$transactionId}";
+
+                        if ($disburseTxId) {
+                            $withdrawal->description .= " | Provider: {$disburseTxId}";
+                        }
+
+                        $withdrawal->save();
+
+                        Log::info('🎉 [PayDunya Callback PER] Retrait complété avec succès', [
+                            'withdrawal_id' => $withdrawal->id,
+                            'amount' => $withdrawal->amount,
+                            'wallet_id' => $wallet->id,
+                            'wallet_balance' => $wallet->balance,
+                            'transaction_id' => $transactionId,
+                            'disburse_tx_id' => $disburseTxId,
+                        ]);
+                    });
+
+                    Log::info('✅ [PayDunya Callback PER] ========== CALLBACK TRAITÉ AVEC SUCCÈS ==========');
+
+                } catch (Exception $exception) {
+                    Log::error('💥 [PayDunya Callback PER] Exception lors du traitement', [
+                        'token' => $token,
+                        'exception_type' => get_class($exception),
+                        'exception_message' => $exception->getMessage(),
+                        'trace' => $exception->getTraceAsString(),
+                    ]);
+
+                    return response()->json(['error' => 'processing_failed'], 500);
+                }
+
+            } elseif ($normalizedStatus === WalletTransaction::STATUS_REJECTED) {
+                Log::warning('⚠️ [PayDunya Callback PER] Retrait échoué ou annulé, recréditation du wallet');
+
+                try {
+                    DB::transaction(function () use ($withdrawal, $normalizedStatus, $status) {
+                        $wallet = $withdrawal->wallet;
+
+                        if ($wallet) {
+                            // Recréditer le wallet car le retrait a échoué
+                            $this->paymentService->createPaymentLinkWithExternal(
+                                (float)$withdrawal->amount,
+                                $wallet,
+                                PaymentType::CREDIT
+                            );
+
+                            Log::info('✅ [PayDunya Callback PER] Wallet recrédité', [
+                                'amount' => $withdrawal->amount,
+                                'new_balance' => $wallet->refresh()->balance,
+                            ]);
+                        }
+
+                        $withdrawal->update([
+                            'status' => $normalizedStatus,
+                            'description' => $withdrawal->description . " | PayDunya: {$status}",
+                        ]);
+                    });
+                } catch (Exception $exception) {
+                    Log::error('💥 [PayDunya Callback PER] Exception lors de la recréditation', [
+                        'exception_message' => $exception->getMessage(),
+                    ]);
+                }
+
+                Log::info('✅ [PayDunya Callback PER] Statut mis à jour à REJECTED');
+
+            } else {
+                // Status PENDING ou autre
+                Log::info('ℹ️ [PayDunya Callback PER] Mise à jour du statut à PENDING', [
+                    'status' => $normalizedStatus,
+                ]);
+
+                $withdrawal->update([
+                    'status' => $normalizedStatus,
+                ]);
+            }
+
+            Log::info('✅ [PayDunya Callback PER] ========== CALLBACK TRAITÉ ==========');
+
+        } else {
+            Log::info('ℹ️ [PayDunya Callback PER] Statut inchangé, aucune action nécessaire', [
+                'current_status' => $withdrawal->status,
+            ]);
+        }
 
         return response()->json(['status' => 'ok']);
     }

@@ -87,24 +87,65 @@ PAYDUNYA_DISBURSE_CALLBACK_URL=https://votreapi.com/api/paydunya/disburse/callba
 PAYDUNYA_DISBURSE_DEFAULT_MODE=t-money-togo  # Mode de retrait par défaut
 ```
 
-### Modes de retrait supportés (Togo)
+### Modes de retrait supportés
 
-- `t-money-togo` - Pour Togocel/T-Money (préfixes: 90, 91, 92, 93, 70, 71, 72, 73)
-- `moov-togo` - Pour Moov Togo (préfixes: 96, 97, 98, 99, 76, 77, 78, 79)
+#### **Togo** (Détection automatique par préfixe)
+- `t-money-togo` - Togocel/T-Money (préfixes: 90, 91, 92, 93, 70, 71, 72, 73)
+- `moov-togo` - Moov Togo (préfixes: 96, 97, 98, 99, 76, 77, 78, 79)
 
-Le système détecte automatiquement le mode de retrait basé sur le numéro de téléphone.
+#### **Autres pays**
+- `paydunya` - Compte à compte PayDunya
+- `orange-money-senegal` - Orange Money Sénégal
+- `free-money-senegal` - Free Money Sénégal
+- `expresso-senegal` - E-Money Sénégal
+- `wave-senegal` - Wave Sénégal
+- `mtn-benin` - MTN MoMo Bénin
+- `moov-benin` - Moov Bénin
+- `mtn-ci` - MTN MoMo Côte d'Ivoire
+- `orange-money-ci` - Orange Money Côte d'Ivoire
+- `moov-ci` - Moov Côte d'Ivoire
+- `wave-ci` - Wave Côte d'Ivoire
+- `orange-money-mali` - Orange Money Mali
+- `orange-money-burkina` - Orange Money Burkina
+- `moov-burkina-faso` - Moov Burkina Faso
+
+Le système **détecte automatiquement** le mode de retrait basé sur le numéro de téléphone pour le Togo.
 
 ### Flow du retrait Disburse (PER)
 
 1. **Frontend** → Appelle `/api/wallets/withdraw` avec le montant et le numéro
-2. **Backend** → Tente CinetPay en premier
-3. **Si CinetPay échoue** → Fallback vers PayDunya Disburse
-4. **Backend** → Détecte automatiquement le mode de retrait (t-money ou moov)
-5. **Backend** → Crée une facture de décaissement (invoice)
-6. **Backend** → Soumet la facture pour exécution
-7. **PayDunya** → Traite le décaissement
-8. **PayDunya** → Envoie une notification vers `PAYDUNYA_DISBURSE_CALLBACK_URL`
-9. **Backend** → Met à jour le statut de la transaction
+2. **Backend** → Vérifie le solde du wallet
+3. **Backend** → Tente CinetPay en premier
+4. **Si CinetPay échoue** → Fallback automatique vers PayDunya Disburse
+5. **Backend** → Détecte automatiquement le mode de retrait (t-money ou moov)
+6. **Backend** → **Étape 1**: Crée une facture de décaissement (`/disburse/get-invoice`)
+   - Retourne un `disburse_token`
+   - Statut: `created`
+7. **Backend** → **Étape 2**: Soumet la facture pour exécution (`/disburse/submit-invoice`)
+   - Envoie le `disburse_token` obtenu à l'étape 1
+   - Statut possible: `success`, `pending`, ou `failed`
+8. **PayDunya** → Traite le décaissement auprès de l'opérateur
+9. **PayDunya** → Envoie une notification IPN vers `PAYDUNYA_DISBURSE_CALLBACK_URL`
+10. **Backend** → Reçoit le callback et met à jour le statut final de la transaction
+
+### Statuts du retrait
+
+#### **Statuts intermédiaires :**
+- `created` - Facture créée mais pas encore soumise
+- `pending` - Facture soumise, traitement en cours chez l'opérateur
+
+#### **Statuts finaux :**
+- `success` - Transaction réussie
+- `failed` - Transaction échouée
+
+### Gestion des statuts "pending"
+
+Certains opérateurs (Orange Money Mali, Orange Money Burkina) retournent un statut `pending`. Dans ce cas :
+
+1. Le backend enregistre le statut `pending`
+2. PayDunya continue de traiter la transaction
+3. Quand le statut final est disponible, PayDunya envoie un callback
+4. Le backend peut aussi vérifier manuellement le statut avec l'API Check Status
 
 ---
 
