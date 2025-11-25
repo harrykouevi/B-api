@@ -157,7 +157,8 @@ class PaydunyaCheckoutService
 
         $data = $response['data'] ?? [];
         $token = $data['token'] ?? null;
-        $responseUrl = $data['response_url'] ?? null;
+        // PayDunya retourne l'URL dans le champ 'response_text' au lieu de 'response_url'
+        $responseUrl = $data['response_text'] ?? $data['response_url'] ?? null;
 
         if (empty($token) || empty($responseUrl)) {
             Log::error('🔴 [PayDunya Checkout] Token ou URL manquant dans la réponse', [
