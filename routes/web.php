@@ -40,6 +40,10 @@ Route::match(['get', 'post'], '/payment/return', function (Request $request) {
     return view('payments.return');
 })->name('payments.return');
 
+Route::match(['get', 'post'], '/payment/cancel', function (Request $request) {
+    return view('payments.cancel');
+})->name('payments.cancel');
+
 Route::withoutMiddleware(['permissions'])->group(function () {
     Route::match(['get', 'post'], '/payment/paydunya_return', function (Request $request) {
         return view('payments.return_paydunya');
