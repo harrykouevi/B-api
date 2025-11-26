@@ -1803,4 +1803,150 @@ class WalletAPIController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
+    /**
+     * Endpoint PSR (Paiement Sans Redirection) PayDunya
+     * Génère un token de paiement pour l'app mobile
+     */
+    public function getPaydunyaPSRToken(Request $request): JsonResponse
+    {
+        Log::info('🔵 [PayDunya PSR] Début getPaydunyaPSRToken', [
+            'request_data' => $request->all(),
+        ]);
+
+        // Validation
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'wallet_id' => 'required|string|exists:wallets,id',
+            'amount' => 'required|numeric|min:100',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $userId = (int)$validated['user_id'];
+            $walletId = $validated['wallet_id'];
+            $amount = (float)$validated['amount'];
+            $description = $validated['description'] ?? "Recharge de wallet";
+
+            // Vérifier le wallet
+            $this->walletRepository->pushCriteria(new EnabledCriteria());
+            $this->walletRepository->pushCriteria(new WalletsOfUserCriteria($userId));
+            $wallet = $this->walletRepository->find($walletId);
+
+            if (!$wallet) {
+                Log::error('🔴 [PayDunya PSR] Wallet non trouvé', [
+                    'user_id' => $userId,
+                    'wallet_id' => $walletId,
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Wallet non trouvé ou non autorisé',
+                ], 404);
+            }
+
+            Log::info('✅ [PayDunya PSR] Wallet trouvé', [
+                'wallet_id' => $wallet->id,
+                'user_id' => $userId,
+            ]);
+
+            // Créer l'invoice PayDunya Checkout
+            $items = [[
+                'name' => 'Recharge de wallet',
+                'quantity' => 1,
+                'unit_price' => (int)$amount,
+                'total_price' => (int)$amount,
+                'description' => $description,
+            ]];
+
+            $callbackUrl = url('/api/paydunya/checkout/callback');
+
+            $options = [
+                'description' => $description,
+                'callback_url' => $callbackUrl,
+                'return_url' => url('/payment/return'),
+                'cancel_url' => url('/payment/cancel'),
+                'custom_data' => [
+                    'user_id' => $userId,
+                    'wallet_id' => $wallet->id,
+                    'psr' => true,  // Marqueur PSR
+                ],
+            ];
+
+            Log::info('📤 [PayDunya PSR] Création de l\'invoice PayDunya');
+
+            $response = $this->paydunyaCheckoutService->createInvoice($amount, $items, $options);
+
+            if (!$response['success']) {
+                Log::error('🔴 [PayDunya PSR] Échec création invoice', [
+                    'message' => $response['message'],
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => $response['message'],
+                ], 400);
+            }
+
+            $token = $response['data']['token'] ?? null;
+            $paymentUrl = $response['data']['payment_url'] ?? null;
+
+            if (!$token) {
+                Log::error('🔴 [PayDunya PSR] Token manquant dans la réponse');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token PayDunya manquant',
+                ], 500);
+            }
+
+            // Enregistrer la demande de paiement
+            $paymentRequest = PaydunyaPaymentRequest::create([
+                'user_id' => $userId,
+                'wallet_id' => $wallet->id,
+                'amount' => $amount,
+                'reference_number' => $token,
+                'status' => PaydunyaPaymentRequest::STATUS_PENDING,
+                'payment_url' => $paymentUrl,
+            ]);
+
+            Log::info('🎉 [PayDunya PSR] Token généré avec succès', [
+                'token' => $token,
+                'payment_request_id' => $paymentRequest->id,
+            ]);
+
+            // Retourner la réponse selon la doc PSR
+            $mode = $this->paydunyaCheckoutService->getMode();
+
+            $responseData = [
+                'success' => true,
+                'token' => $token,
+            ];
+
+            // Ajouter le mode uniquement en test
+            if ($mode === 'test') {
+                $responseData['mode'] = 'test';
+            }
+
+            return response()->json($responseData);
+
+        } catch (ValidationException $validationException) {
+            Log::error('🔴 [PayDunya PSR] Erreur de validation', [
+                'errors' => $validationException->errors(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validationException->errors(),
+            ], 422);
+        } catch (Exception $exception) {
+            Log::error('💥 [PayDunya PSR] Exception', [
+                'exception_type' => get_class($exception),
+                'exception_message' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de la génération du token',
+            ], 500);
+        }
+    }
+
 }
