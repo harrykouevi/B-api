@@ -1652,7 +1652,7 @@ class WalletAPIController extends Controller
 
         // Vérifier le hash pour sécurité (selon la doc PayDunya)
         $receivedHash = $payload['data']['hash'] ?? null;
-        $masterKey = config('services.paydunya.checkout.master_key');
+        $masterKey = config('services.paydunya.master_key');
         $expectedHash = hash('sha512', $masterKey);
 
         Log::info('🔐 [PayDunya Callback] Vérification du hash', [
