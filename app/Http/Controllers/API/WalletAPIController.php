@@ -565,9 +565,9 @@ class WalletAPIController extends Controller
             // Options pour la création de l'invoice
             $options = [
                 'description' => $context['description'],
-                'callback_url' => $context['notifyUrl'],
-                'return_url' => $context['returnUrl'],
-                'cancel_url' => route('payments.cancel', ['transaction' => $context['transactionId']]),
+               'callback_url' => env('PAYDUNYA_CHECKOUT_CALLBACK_URL', url('/api/paydunya/payment/callback')),
+                'return_url' => env('PAYDUNYA_CHECKOUT_RETURN_URL', url('/api/paydunya/payment/success')),
+                'cancel_url' => env('PAYDUNYA_CHECKOUT_CANCEL_URL', url('/api/paydunya/payment/cancel')),
                 'custom_data' => [
                     'user_id' => $context['userId'],
                     'wallet_id' => $context['wallet']->id,
