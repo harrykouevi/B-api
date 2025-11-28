@@ -1857,7 +1857,7 @@ class WalletAPIController extends Controller
                 'description' => $description,
             ]];
 
-            $callbackUrl = url('/api/paydunya/checkout/callback');
+            $callbackUrl = url('/api/paydunya/payment/callback');
 
             $options = [
                 'description' => $description,
