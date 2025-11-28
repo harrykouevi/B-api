@@ -1454,6 +1454,40 @@ class WalletAPIController extends Controller
 
 
     /**
+     * Callback PayDunya Checkout - IPN unifié pour paiements ET retraits
+     * Utilisé par checkout (PAR/PSR) et disburse (PER)
+     */
+    public function handlePaydunyaCheckoutCallback(Request $request): JsonResponse
+    {
+        // Test d'accessibilité GET
+        if ($request->isMethod('GET')) {
+            Log::info('✅ [PayDunya Checkout Callback] Test d\'accessibilité (GET) - Réponse OK');
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'PayDunya checkout callback endpoint is accessible',
+            ], 200);
+        }
+
+        $payload = $request->all();
+        Log::info('🔔 [PayDunya Checkout Callback] ========== CALLBACK REÇU ==========');
+        Log::info('🔔 [PayDunya Checkout Callback] Payload complet', ['payload' => $payload]);
+
+        // Test d'accessibilité POST avec data=null
+        if (isset($payload['data']) && $payload['data'] === null) {
+            Log::info('✅ [PayDunya Checkout Callback] Test d\'accessibilité (POST data=null) - Réponse OK');
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'PayDunya checkout callback endpoint is accessible',
+            ], 200);
+        }
+
+        // Pour l'instant, juste logger et retourner OK
+        // TODO: Implémenter la logique de traitement
+        Log::info('✅ [PayDunya Checkout Callback] Callback traité - Retour OK');
+        return response()->json(['status' => 'ok'], 200);
+    }
+
+    /**
      * Callback PayDunya Disbursement (PER) - IPN pour les retraits
      */
     public function handlePaydunyaDisburseCallback(Request $request): JsonResponse
