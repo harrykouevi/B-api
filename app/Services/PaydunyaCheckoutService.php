@@ -35,14 +35,14 @@ class PaydunyaCheckoutService
 
     public function __construct()
     {
-        $config = config('services.paydunya.checkout', []);
+        $config = config('services.paydunya', []);
 
         $this->masterKey = $config['master_key'] ?? null;
         $this->publicKey = $config['public_key'] ?? null;
         $this->privateKey = $config['private_key'] ?? null;
         $this->token = $config['token'] ?? null;
         $this->baseUrl = rtrim($config['base_url'] ?? 'https://app.paydunya.com/api/v1', '/');
-        $this->mode = $config['mode'] ?? 'live';
+        $this->mode = $config['mode'] ?? 'test';
 
         // Store configuration
         $this->storeName = $config['store_name'] ?? config('app.name');
