@@ -67,8 +67,14 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
-Route::post('paydunya/disburse/callback', [WalletAPIController::class, 'handlePaydunyaDisburseCallback'])->name('paydunya.disburse.callback');
+
+// PayDunya Disburse Callback (POST pour les vrais callbacks, GET pour le test d'accessibilité)
+Route::match(['get', 'post'], 'paydunya/disburse/callback', [WalletAPIController::class, 'handlePaydunyaDisburseCallback'])->name('paydunya.disburse.callback');
+
+// PayDunya Payment Callback
 Route::post('paydunya/payment/callback', [WalletAPIController::class, 'handlePaydunyaPaymentCallback'])->name('paydunya.payment.callback');
+
+// PayDunya PSR Token
 Route::post('paydunya/psr/token', [WalletAPIController::class, 'getPaydunyaPSRToken'])->name('paydunya.psr.token');
 
 Route::post('register', [UserAPIController::class, 'register']);

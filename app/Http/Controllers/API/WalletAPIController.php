@@ -1458,6 +1458,15 @@ class WalletAPIController extends Controller
      */
     public function handlePaydunyaDisburseCallback(Request $request): JsonResponse
     {
+        // Si c'est une requête GET (test d'accessibilité PayDunya), retourner 200 OK
+        if ($request->isMethod('GET')) {
+            Log::info('✅ [PayDunya Callback PER] Test d\'accessibilité (GET) - Réponse OK');
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'PayDunya disburse callback endpoint is accessible',
+            ], 200);
+        }
+
         $payload = $request->all();
         Log::info('🔔 [PayDunya Callback PER] ========== CALLBACK REÇU ==========');
         Log::info('🔔 [PayDunya Callback PER] Payload complet', ['payload' => $payload]);
