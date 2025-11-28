@@ -59,7 +59,7 @@ class PaydunyaDisbursementService
         $this->masterKey = $config['master_key'] ?? null;
         $this->privateKey = $config['private_key'] ?? null;
         $this->token = $config['token'] ?? null;
-        $this->baseUrl = rtrim($config['base_url'] ?? 'https://app.paydunya.com/api/v2', '/');
+        $this->baseUrl = 'https://app.paydunya.com/api/v2';
         $this->defaultCallbackUrl = $config['callback_url'] ?? null;
         $this->defaultWithdrawMode = $config['default_withdraw_mode'] ?? self::WITHDRAW_MODE_TMONEY;
     }
