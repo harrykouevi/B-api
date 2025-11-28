@@ -1471,6 +1471,15 @@ class WalletAPIController extends Controller
         Log::info('🔔 [PayDunya Callback PER] ========== CALLBACK REÇU ==========');
         Log::info('🔔 [PayDunya Callback PER] Payload complet', ['payload' => $payload]);
 
+        // Si c'est un test POST avec data=null (test d'accessibilité PayDunya), retourner 200 OK
+        if (isset($payload['data']) && $payload['data'] === null) {
+            Log::info('✅ [PayDunya Callback PER] Test d\'accessibilité (POST data=null) - Réponse OK');
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'PayDunya disburse callback endpoint is accessible',
+            ], 200);
+        }
+
         // Extraction des données du callback
         $token = $payload['token'] ?? null;
         $status = strtolower($payload['status'] ?? '');
