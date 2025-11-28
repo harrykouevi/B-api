@@ -1468,7 +1468,7 @@ class WalletAPIController extends Controller
         }
 
         $payload = $request->all();
-        Log::info('🔔 [PayDunya Callback PER] ========== CALLBACK REÇU ==========');
+        Log::info('🔔 [PayDunya Callback PER] ========== CALLBACK REÇU DE PAYDUNYA ==========');
         Log::info('🔔 [PayDunya Callback PER] Payload complet', ['payload' => $payload]);
 
         // Si c'est un test POST avec data=null (test d'accessibilité PayDunya), retourner 200 OK
