@@ -55,7 +55,7 @@ class PaydunyaDisbursementService
 
     public function __construct()
     {
-        $config = config('services.paydunya.disburse', []);
+        $config = config('services.paydunya', []);
         $this->masterKey = $config['master_key'] ?? null;
         $this->privateKey = $config['private_key'] ?? null;
         $this->token = $config['token'] ?? null;
