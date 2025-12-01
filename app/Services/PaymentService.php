@@ -10,6 +10,7 @@ namespace App\Services;
 
 use App\Events\NotifyPaymentEvent;
 use App\Notifications\RechargePayment;
+use App\Notifications\WithdrawPayment;
 use App\Repositories\BookingRepository;
 use App\Repositories\WalletRepository;
 use App\Repositories\CurrencyRepository;
@@ -225,9 +226,14 @@ class PaymentService
             try {
                 if ($payment && $wallet->user) {
                     try {
-                        Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
+                        if($type == PaymentType::CREDIT){
+                            Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
+                        }else{
+                            Notification::send([$wallet->user], new WithdrawPayment($payment, $wallet));
+                        }
+                    
                     } catch (Exception $e) {
-                        Log::error("Error sending booking reported notification to salon: " . $e->getMessage());
+                        Log::error("Erreur lors de l'envoie de notification: " . $e->getMessage());
                     }
                 }
             } catch (Exception $e) {
