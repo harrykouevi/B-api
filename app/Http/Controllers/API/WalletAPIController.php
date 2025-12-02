@@ -909,15 +909,13 @@ class WalletAPIController extends Controller
                     'message' => 'le wallet n\'existe pas',
                 ], 404);
             }
-            $wallet->balance  -= (float)$context['amount'];
-            $wallet->save();
-
+            
             // Débiter le wallet IMMÉDIATEMENT avant d'envoyer à PayDunya
-          /* $this->paymentService->createPaymentLinkWithExternal(
+          $this->paymentService->createPaymentLinkWithExternal(
                 (float)$context['amount'],
                 $context['wallet'],
                 PaymentType::DEBIT
-            ); */
+            );
 
             Log::info('✅ [PayDunya PER Fallback] Wallet débité avec succès', [
                 'new_balance' => $context['wallet']->refresh()->balance,
