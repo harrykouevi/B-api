@@ -902,13 +902,22 @@ class WalletAPIController extends Controller
                 'amount' => $context['amount'],
                 'current_balance' => $context['wallet']->balance,
             ]);
+            $wallet = $this->walletRepository->findByField('user_id',$context['userId'])->first();
+            if(!$wallet){
+                return response()->json([
+                    'error' => 'Aucun wallet trouvé',
+                    'message' => 'le wallet n\'existe pas',
+                ], 404);
+            }
+            $wallet->amount  -= (float)$context['amount'];
+            $wallet->save();
 
             // Débiter le wallet IMMÉDIATEMENT avant d'envoyer à PayDunya
-            $this->paymentService->createPaymentLinkWithExternal(
+          /* $this->paymentService->createPaymentLinkWithExternal(
                 (float)$context['amount'],
                 $context['wallet'],
                 PaymentType::DEBIT
-            );
+            ); */
 
             Log::info('✅ [PayDunya PER Fallback] Wallet débité avec succès', [
                 'new_balance' => $context['wallet']->refresh()->balance,
@@ -932,11 +941,14 @@ class WalletAPIController extends Controller
                 Log::error('🔴 [PayDunya PER Fallback] Échec création invoice, recréditation du wallet');
 
                 // Recréditer le wallet car la demande a échoué
-                $this->paymentService->createPaymentLinkWithExternal(
+
+                $wallet->amount  += (float)$context['amount'];
+                $wallet->save();
+                /*$this->paymentService->createPaymentLinkWithExternal(
                     (float)$context['amount'],
                     $context['wallet'],
                     PaymentType::CREDIT
-                );
+                );*/
 
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
 
