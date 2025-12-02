@@ -909,7 +909,7 @@ class WalletAPIController extends Controller
                     'message' => 'le wallet n\'existe pas',
                 ], 404);
             }
-            $wallet->amount  -= (float)$context['amount'];
+            $wallet->balance  -= (float)$context['amount'];
             $wallet->save();
 
             // Débiter le wallet IMMÉDIATEMENT avant d'envoyer à PayDunya
@@ -942,7 +942,7 @@ class WalletAPIController extends Controller
 
                 // Recréditer le wallet car la demande a échoué
 
-                $wallet->amount  += (float)$context['amount'];
+                $wallet->balance  += (float)$context['amount'];
                 $wallet->save();
                 /*$this->paymentService->createPaymentLinkWithExternal(
                     (float)$context['amount'],
