@@ -67,8 +67,18 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
-Route::post('paydunya/disburse/callback', [WalletAPIController::class, 'handlePaydunyaDisburseCallback'])->name('paydunya.disburse.callback');
+
+// PayDunya Checkout Callback (utilisé par checkout ET disburse)
+Route::match(['get', 'post'], 'paydunya/checkout/callback', [WalletAPIController::class, 'handlePaydunyaCheckoutCallback'])->name('paydunya.checkout.callback');
+
+// PayDunya Disburse Callback (POST pour les vrais callbacks, GET pour le test d'accessibilité)
+Route::match(['get', 'post'], 'paydunya/disburse/callback', [WalletAPIController::class, 'handlePaydunyaDisburseCallback'])->name('paydunya.disburse.callback');
+
+// PayDunya Payment Callback
 Route::post('paydunya/payment/callback', [WalletAPIController::class, 'handlePaydunyaPaymentCallback'])->name('paydunya.payment.callback');
+
+// PayDunya PSR Token
+Route::post('paydunya/psr/token', [WalletAPIController::class, 'getPaydunyaPSRToken'])->name('paydunya.psr.token');
 
 Route::post('register', [UserAPIController::class, 'register']);
 Route::post('v2/register', [UserAPIController::class, 'v2_register']);
@@ -222,6 +232,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('withdrawal-phones', [WithdrawalPhoneController::class, 'index'])->name('withdrawal-phones.index');
     Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
     Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');
+    Route::post('withdrawal-phones/{id}/resync', [WithdrawalPhoneController::class, 'resync'])->name('withdrawal-phones.resync');
     Route::delete('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'destroy'])->name('withdrawal-phones.destroy');
 
     // Report Routes

@@ -84,23 +84,29 @@ return [
     'secret_key' => env('CINETPAY_SECRET_KEY'),
     'base_url' => env('CINETPAY_BASE_URL', 'https://api.cinetpay.com/v1'),
     'transfert_base_url' => env('CINETPAY_TRANSFERT_BASE_URL', 'https://client.cinetpay.com/v1'),
-    'api_password' => env('CINETPAY_PASSWORD')
+    'api_password' => env('CINETPAY_PASSWORD'),
+    'api_password_depot' => env('CINETPAY_PASSWORD_DEPOT')
+   
 ],
     'paydunya' => [
         'master_key' => env('PAYDUNYA_MASTER_KEY'),
         'private_key' => env('PAYDUNYA_PRIVATE_KEY'),
+        'public_key' => env('PAYDUNYA_PUBLIC_KEY', env('PAYDUNYA_PUBLIC_KEY')),
         'token' => env('PAYDUNYA_TOKEN'),
         'base_url' => env('PAYDUNYA_BASE_URL', 'https://app.paydunya.com/api/v1'),
         'support_fees' => env('PAYDUNYA_SUPPORT_FEES', 1),
         'send_notification' => env('PAYDUNYA_SEND_NOTIFICATION', 0),
-        'disburse' => [
-            'master_key' => env('PAYDUNYA_DISBURSE_MASTER_KEY', env('PAYDUNYA_MASTER_KEY')),
-            'private_key' => env('PAYDUNYA_DISBURSE_PRIVATE_KEY', env('PAYDUNYA_PRIVATE_KEY')),
-            'token' => env('PAYDUNYA_DISBURSE_TOKEN', env('PAYDUNYA_TOKEN')),
-            'base_url' => env('PAYDUNYA_DISBURSE_BASE_URL', 'https://app.paydunya.com/api/v2'),
-            'callback_url' => env('PAYDUNYA_DISBURSE_CALLBACK_URL'),
-            'default_withdraw_mode' => env('PAYDUNYA_DISBURSE_DEFAULT_MODE'),
-        ],
+        'mode' => env('PAYDUNYA_MODE', 'test'),
+        'store_name' => env('PAYDUNYA_STORE_NAME', env('APP_NAME')),
+        'store_tagline' => env('PAYDUNYA_STORE_TAGLINE'),
+        'store_phone' => env('PAYDUNYA_STORE_PHONE'),
+        'store_postal_address' => env('PAYDUNYA_STORE_POSTAL_ADDRESS'),
+        'store_website_url' => env('PAYDUNYA_STORE_WEBSITE_URL', env('APP_URL')),
+        'store_logo_url' => env('PAYDUNYA_STORE_LOGO_URL'),
+        'callback_url' => env('PAYDUNYA_CALLBACK_URL'),
+        'return_url' => env('PAYDUNYA_RETURN_URL'),
+        'cancel_url' => env('PAYDUNYA_CANCEL_URL'),
+
     ],
 
 ];
