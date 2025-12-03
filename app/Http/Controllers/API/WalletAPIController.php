@@ -425,7 +425,11 @@ class WalletAPIController extends Controller
             }
 
             $transactionId = uniqid('txn_');
-            $wallet = $wallets->first();
+            $wallet = $wallets->firstWhere('name', 'Igris');
+
+            if (!$wallet) {
+                return $this->sendError("Le wallet 'Igris' est introuvable pour cet utilisateur", 404);
+            }
             $description = "Recharge wallet utilisateur #$transactionId";
 
             $customerData = $this->buildCustomerData($request, $paymentChannel, $userId);
