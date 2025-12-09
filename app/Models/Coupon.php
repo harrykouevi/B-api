@@ -164,14 +164,16 @@ class Coupon extends Model implements Castable
                 } else {
                     $couponValue += $this->discount;
                 }
-
-                $serviceOptions = $options->where('e_service_id', $eService->id);
-                foreach ($serviceOptions as $option) {
-                    $serviceprices += $option->price ;
-                    if ($this->discount_type == 'percent') {
-                        $couponValue += $option->price * $this->discount / 100;
-                    } else {
-                    // $couponValue += $this->discount;
+                
+                if(!is_null($options)){
+                    $serviceOptions = $options->where('e_service_id', $eService->id);
+                    foreach ($serviceOptions as $option) {
+                        $serviceprices += $option->price ;
+                        if ($this->discount_type == 'percent') {
+                            $couponValue += $option->price * $this->discount / 100;
+                        } else {
+                        // $couponValue += $this->discount;
+                        }
                     }
                 }
             }
