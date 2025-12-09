@@ -167,7 +167,7 @@ class SlideController extends Controller
             $slide = $this->slideRepository->update($input, $id);
 
             if (isset($input['image']) && $input['image']) {
-                $cacheUpload = $this->uploadRepository->getByUuid($input['image']);
+                $cacheUpload = $this->uploadRepository->getByUuid($input['image'][0]);
                 $mediaItem = $cacheUpload->getMedia('image')->first();
                 $mediaItem->copy($slide, 'image');
             }
