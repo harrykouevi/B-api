@@ -164,10 +164,11 @@ class SlideController extends Controller
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->slideRepository->model());
         try {
+           
             $slide = $this->slideRepository->update($input, $id);
 
             if (isset($input['image']) && $input['image']) {
-                $cacheUpload = $this->uploadRepository->getByUuid($input['image'][0]);
+                $cacheUpload = $this->uploadRepository->getByUuid($input['image']);
                 $mediaItem = $cacheUpload->getMedia('image')->first();
                 $mediaItem->copy($slide, 'image');
             }
