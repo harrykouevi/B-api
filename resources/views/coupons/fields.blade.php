@@ -60,13 +60,13 @@
     </div>
 
     <!-- EService Id Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+    {{-- <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('eServices[]', trans("lang.coupon_e_service_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
             {!! Form::select('eServices[]', $eService, $eServicesSelected, ['class' => 'select2 form-control', 'multiple'=>'multiple']) !!}
             <div class="form-text text-muted">{{ trans("lang.coupon_e_service_id_help") }}</div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Salon Id Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
@@ -78,13 +78,13 @@
     </div>
 
     <!-- Category Id Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+    {{-- <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('categories[]', trans("lang.coupon_category_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
             {!! Form::select('categories[]', $category, $categoriesSelected, ['class' => 'select2 form-control', 'multiple'=>'multiple']) !!}
             <div class="form-text text-muted">{{ trans("lang.coupon_category_id_help") }}</div>
         </div>
-    </div>
+    </div> --}}
 
     <!-- Start At Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">

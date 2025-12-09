@@ -179,14 +179,14 @@ class BookingAPIController extends Controller
             if (isset($input['e_services'])) {
                 
                 $input['e_services'] = $this->eServiceRepository->findWhereIn('id', $input['e_services']);
-                if (isset($input['options'])) {
+                if ($request->has('options')) {
                     $input['options'] = $this->optionRepository->findWhereIn('id', $input['options']);
                 }
                 // coupon code
                 if (isset($input['code'])) {
                     $this->couponRepository->pushCriteria(new ValidCriteria($request));
                     $coupon = $this->couponRepository->first();
-                    $input['coupon'] = $coupon->getValue($input['e_services'] , $input['options'] instanceof \Illuminate\Support\Collection ? $input['options'] :null );
+                    $input['coupon'] = $coupon->getValue($input['e_services'] , ($request->has('options') && $input['options'] instanceof \Illuminate\Support\Collection) ? $input['options'] :null );
                 }
             }
             $taxes = $salon->taxes;
