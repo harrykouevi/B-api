@@ -15,7 +15,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class RechargePayment extends BaseNotification
+class WithdrawPayment extends BaseNotification
 {
     use Queueable;
 
@@ -67,16 +67,16 @@ class RechargePayment extends BaseNotification
     public function toMail(mixed $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status], 'fr') . " | " . setting('app_name', ''))
+            ->subject(trans('lang.notification_debit', ['payment_id' => $this->payment->id, 'payment_status' => $this->payment->paymentStatus->status], 'fr') . " | " . setting('app_name', ''))
             ->markdown("notifications::wallet", ['wallet' => $this->wallet])
-            ->greeting(trans('lang.notification_recharge', ['payment_id' => $this->payment->id, 'payment_status' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status)],'fr'))
+            ->greeting(trans('lang.notification_debit', ['payment_id' => $this->payment->id, 'payment_status' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status)],'fr'))
             ->action(trans('lang.wallet_details'), route('wallets.show', $this->wallet->id));
     }
 
     public function toFcm($notifiable): FcmMessage
     {
         $title = trans('lang.notification_status_changed_payment', [], 'fr');
-        $body = trans('lang.notification_recharge', [
+        $body = trans('lang.notification_debit', [
             'payment_id' => $this->payment->id, 
             'payment_status' => trans('lang.payment_statuses.'.$this->payment->paymentStatus->status, [], 'fr'),
             'payment_amount' => $this->payment->amount
