@@ -45,8 +45,7 @@ class Controller extends BaseController
      */
     public function sendError($error, int $code = 400): JsonResponse
     {
-        
-        return Response::json(ResponseUtil::makeError($error), $code);
+        return response()->json(ResponseUtil::makeError($error), $code);
     }
 
 

@@ -129,27 +129,56 @@ class Coupon extends Model implements Castable
         return $this->morphedByMany(Category::class, 'discountable');
     }
 
+    public function app_charges(): MorphToMany
+    {
+        $relation = $this->morphedByMany(Wallet::class, 'discountable');
+        $relation->where('wallets.id', setting('app_default_wallet_id'));
+
+        return $relation;
+    }
+
     public function salons(): MorphToMany
     {
         return $this->morphedByMany(Salon::class, 'discountable');
     }
 
-    public function getValue($eServices): Coupon
+    public function getValue($eServices , $options = Null ): Coupon
     {
+       $serviceprices = 0 ;
         $couponValue = 0;
-        $eServicesOfCategories = $this->categories->pluck('eServices')->flatten()->toArray();
-        $eServicesOfSalons = $this->salons->pluck('eServices')->flatten()->toArray();
-        $couponEServices = $this->eServices->concat($eServicesOfCategories)->concat($eServicesOfSalons);
-        $couponEServicesIds = $couponEServices->pluck('id')->toArray();
+        $app_w = $this->app_charges()->first() ;
+        if( is_null($app_w)){
+            $eServicesOfCategories = $this->categories->pluck('eServices')->flatten()->toArray();
+            $eServicesOfSalons = $this->salons->pluck('eServices')->flatten()->toArray();
+            $couponEServices = $this->eServices->concat($eServicesOfCategories)->concat($eServicesOfSalons);
+            $couponEServicesIds = $couponEServices->pluck('id')->toArray();
+        }else{
+            $couponEServicesIds = Eservice::pluck('id')->toArray();
+        }
+
         foreach ($eServices as $eService) {
+            $serviceprices += $eService->getPrice() ;
             if (in_array($eService->id, $couponEServicesIds)) {
                 if ($this->discount_type == 'percent') {
                     $couponValue += $eService->getPrice() * $this->discount / 100;
                 } else {
                     $couponValue += $this->discount;
                 }
+
+                $serviceOptions = $options->where('e_service_id', $eService->id);
+                foreach ($serviceOptions as $option) {
+                    $serviceprices += $option->price ;
+                    if ($this->discount_type == 'percent') {
+                        $couponValue += $option->price * $this->discount / 100;
+                    } else {
+                    // $couponValue += $this->discount;
+                    }
+                }
             }
         }
+
+        
+       
         $this->value = $couponValue;
         unset($this['eServices'], $this['salons'], $this['categories']);
         return $this;

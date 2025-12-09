@@ -45,6 +45,7 @@ class ValidCriteria implements CriteriaInterface
     {
         return $model->join("discountables", "discountables.coupon_id", "=", "coupons.id")
             ->where(function ($query) {
+
                 if ($this->request->has('e_service_id')) {
                     $query->orWhere(function ($query) {
                         $query->where('discountable_type', 'App\\Models\\EService')
@@ -64,7 +65,7 @@ class ValidCriteria implements CriteriaInterface
                     });
                 }
             })
-            ->where('code', $this->request->get('code'))
+            ->orWhere('code', $this->request->get('code'))
             ->where('enabled', '1')->where('expires_at', '>', Carbon::now())->select('coupons.*');
     }
 }

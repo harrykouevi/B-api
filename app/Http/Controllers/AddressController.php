@@ -89,7 +89,7 @@ class AddressController extends Controller
 
         $hasCustomField = in_array($this->addressRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
-            $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->addressRepository->model());
+            $customFields = $this->customFieldRepository->ByField('custom_field_model', $this->addressRepository->model());
             $html = generateCustomField($customFields);
         }
         return view('addresses.create', compact('address'))->with("customFields", $html ?? false);

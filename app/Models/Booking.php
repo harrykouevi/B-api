@@ -171,7 +171,7 @@ class Booking extends Model
     public function getTotal(): float
     {
         $total = $this->getSubtotal();
-        $total += $this->getTaxesValue();
+        // $total += $this->getTaxesValue();
         $total -= $this->getCouponValue();
         return $total;
     }

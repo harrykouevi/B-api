@@ -156,14 +156,14 @@ class UpdateBookingPaymentListener
             
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->paymentStatus_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
-                //le montant de la reservation
+                //faire le remboursement necessaire
                 $purchaseamount = 0  ;
                 $purchasepayment = Null ;
 
                 [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
 
 
-                //si il y a eu achat le montant de l'achat'
+                //si il y a eu achat trouver le montant de l'achat'
                 $this->purchaseRepository->pushCriteria(new PurchasesOfUserCriteria(auth()->id()));
                 $this->purchaseRepository->pushCriteria(new PurchasesByBookingCriteria());
                 $this->purchaseRepository->pushCriteria(new PaidPurchasesCriteria());
@@ -231,7 +231,6 @@ class UpdateBookingPaymentListener
                     if($salonW == Null) throw new \Exception('user dont have a wallet yet');
                     //le coiffeur verse une commision à l'appli
                     array_push($payment_intents ,  ["amount"=>  setting('postpone_charge', 0 ),"payer_wallet"=>$salonW, "user"=> null] );
-                    // array_push($payment_intents ,  ["amount"=> setting('postpone_charge', 1000),"payer_wallet"=>$salonW, "user"=> null] );
                 }
 
                 if(auth()->user()->hasRole('customer') ){ 
@@ -249,7 +248,9 @@ class UpdateBookingPaymentListener
                 $is_pyment_cash = false ;
                 
                 //le montant du service (montant de l'achat)
-                $purchaseamount = $booking->getSubtotal(); 
+                // $purchaseamount = $booking->getSubtotal(); 
+                $purchaseamount = $booking->getTotal(); 
+                // dd( [$booking->getSubtotal() , $booking->getCouponValue() , $booking->getTotal()]) ;
 
                 //et si le booking n'est pas lié à un report
                 if(auth()->user()->hasRole('salon owner') && is_null($booking->reported_from_id) ){
@@ -267,14 +268,15 @@ class UpdateBookingPaymentListener
                                        
                     }else{
                         //si ce n'est pas null c'est pas un paiement cash
-                        
                         $purchase = $this->purchaseRepository->Create([
                             'salon' => $booking->salon ,
                             'booking' => $booking,
                             'e_services' => $booking->e_services ,
+                            'options' => $booking->options ,
                             'quantity' => $booking->quantity,
                             'user_id' => $booking->user_id ,
                             'taxes'=>  $booking->purchase_taxes ,
+                            'coupon'=>  $booking->coupon ,
                             'purchase_status_id' => 1 ,
                             'purchase_at'  => now()  
                         ]);
@@ -284,47 +286,44 @@ class UpdateBookingPaymentListener
                     [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
                     
                     //si il y a eu achat de service
-                    // if($purchase){
-                        if ($is_pyment_cash == false && !is_null($clientW) ) {
+                    if ($is_pyment_cash == false && !is_null($clientW) ) {
 
-                            $currency = json_decode($clientW->currency, true);
+                        $currency = json_decode($clientW->currency, true);
 
-                            if ($currency['code'] == setting('default_currency_code')) {
-
-                                $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes);
-                                $purchasepayment = $purchasepayment[0];
-                                if($purchasepayment){
+                        if ($currency['code'] == setting('default_currency_code')) {
+                            $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes,$this->paymentService->buildCouponData($purchase));
+                            $purchasepayment = $purchasepayment[0];
+                            if($purchasepayment){
+                                
+                                try{ 
+                                    //mise à jour du purchase comme étant payé et validé
+                                    $purchase = $this->purchaseRepository->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
                                     
-                                    try{ 
-                                        
-                                        $purchase = $this->purchaseRepository->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
-                                        
-                                        
-                                    } catch (Exception $e) {
-                                        Log::error($e->getMessage());
-                                    }
+                                    
+                                } catch (Exception $e) {
+                                    Log::error($e->getMessage());
                                 }
                             }
-                        }else if( $is_pyment_cash == true ){
-                             //ne pas retirer le cout du service mais juste la commission
-                            $input = [];
-                            $input['payment']['amount'] = $purchaseamount;
-                            $input['payment']['description'] = "payement done to user : ". strval(auth()->user()->id) ." .  ". strval(auth()->user()->name) ;
-                            $input['payment']['payment_status_id'] = 1; // pending
-                            $input['payment']['payment_method_id'] = 14; // cash
-                            $input['payment']['user_id'] =  $booking->user->id;
-                            $salonW = $this->walletRepository->findByField('user_id' ,auth()->user()->id)->first() ;  
-                            if($salonW == Null) throw new \Exception('salon user dont have a wallet yet');
-                
-                           
-                            $this->paymentService->intentCashPayment( $input,$salonW,$purchase->taxes);
-                            //$payment = $this->paymentService->update(['payment_status_id' => 2 ], $payment->id);
-                            
-                           
-                        } else {
-                            Log::Error(['DebitCustomerForService','no default_currency_code in setting']);
                         }
-                    // }
+                    }else if( $is_pyment_cash == true ){
+                            //ne pas retirer le cout du service mais juste la commission
+                        $input = [];
+                        $input['payment']['amount'] = $purchaseamount;
+                        $input['payment']['description'] = "payement done to user : ". strval(auth()->user()->id) ." .  ". strval(auth()->user()->name) ;
+                        $input['payment']['payment_status_id'] = 1; // pending
+                        $input['payment']['payment_method_id'] = 14; // cash
+                        $input['payment']['user_id'] =  $booking->user->id;
+                        $salonW = $this->walletRepository->findByField('user_id' ,auth()->user()->id)->first() ;  
+                        if($salonW == Null) throw new \Exception('salon user dont have a wallet yet');
+            
+                        
+                        $this->paymentService->intentCashPayment( $input,$salonW,$purchase->taxes);
+                        //$payment = $this->paymentService->update(['payment_status_id' => 2 ], $payment->id);
+                        
+                        
+                    } else {
+                        Log::Error(['DebitCustomerForService','no default_currency_code in setting']);
+                    }
                 }
             }
 

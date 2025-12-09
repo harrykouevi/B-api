@@ -20,6 +20,7 @@ use App\Repositories\CouponRepository;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\EServiceRepository;
 use App\Repositories\SalonRepository;
+use App\Repositories\WalletRepository;
 use Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -117,13 +118,15 @@ class CouponController extends Controller
         $eServicesSelected = [];
         $salonsSelected = [];
         $categoriesSelected = [];
+        $is_app_charge = 0 ;
 
         $hasCustomField = in_array($this->couponRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->couponRepository->model());
             $html = generateCustomField($customFields);
         }
-        return view('coupons.create')->with("customFields", $html ?? false)->with("eService", $eService)->with("salon", $salon)->with("category", $category)->with("eServicesSelected", $eServicesSelected)->with("salonsSelected", $salonsSelected)->with("categoriesSelected", $categoriesSelected);
+        return view('coupons.create')->with("customFields", $html ?? false)->with("eService", $eService)->with("salon", $salon)->with("category", $category)->with("eServicesSelected", $eServicesSelected)->with("salonsSelected", $salonsSelected)
+        ->with("categoriesSelected", $categoriesSelected)->with("is_app_charge", $is_app_charge);
     }
 
     /**
@@ -133,21 +136,28 @@ class CouponController extends Controller
     private function initDiscountables(array $input): array
     {
         $discountables = [];
-        if (isset($input['eServices'])) {
-            foreach ($input['eServices'] as $eServiceId) {
-                $discountables[] = ["discountable_type" => "App\Models\EService", "discountable_id" => $eServiceId];
-            }
+        if (isset($input['app_charge']) && $input['app_charge'] == true) {
+            
+            $discountables[] = ["discountable_type" => "App\Models\Wallet", "discountable_id" =>  setting('app_default_wallet_id')];
+            
         }
-        if (isset($input['salons'])) {
-            foreach ($input['salons'] as $salonId) {
-                $discountables[] = ["discountable_type" => "App\Models\Salon", "discountable_id" => $salonId];
+            if (isset($input['eServices'])) {
+                foreach ($input['eServices'] as $eServiceId) {
+                    $discountables[] = ["discountable_type" => "App\Models\EService", "discountable_id" => $eServiceId];
+                }
             }
-        }
-        if (isset($input['categories'])) {
-            foreach ($input['categories'] as $categoryId) {
-                $discountables[] = ["discountable_type" => "App\Models\Category", "discountable_id" => $categoryId];
+            if (isset($input['salons'])) {
+                foreach ($input['salons'] as $salonId) {
+                    $discountables[] = ["discountable_type" => "App\Models\Salon", "discountable_id" => $salonId];
+                }
             }
-        }
+            if (isset($input['categories'])) {
+                foreach ($input['categories'] as $categoryId) {
+                    $discountables[] = ["discountable_type" => "App\Models\Category", "discountable_id" => $categoryId];
+                }
+            }
+        
+        
         return $discountables;
     }
 
@@ -200,6 +210,7 @@ class CouponController extends Controller
         $category = $this->categoryRepository->pluck('name', 'id');
 
         $eServicesSelected = $coupon->discountables()->where("discountable_type", "App\Models\EService")->pluck('discountable_id');
+        $is_app_charge = $coupon->discountables()->where("discountable_type", "App\Models\Wallet")->exists();
         $salonsSelected = $coupon->discountables()->where("discountable_type", "App\Models\Salon")->pluck('discountable_id');
         $categoriesSelected = $coupon->discountables()->where("discountable_type", "App\Models\Category")->pluck('discountable_id');
 
@@ -210,7 +221,8 @@ class CouponController extends Controller
             $html = generateCustomField($customFields, $customFieldsValues);
         }
 
-        return view('coupons.edit')->with('coupon', $coupon)->with("customFields", $html ?? false)->with("eService", $eService)->with("salon", $salon)->with("category", $category)->with("eServicesSelected", $eServicesSelected)->with("salonsSelected", $salonsSelected)->with("categoriesSelected", $categoriesSelected);
+        return view('coupons.edit')->with('coupon', $coupon)->with("customFields", $html ?? false)->with("eService", $eService)->with("salon", $salon)->with("category", $category)->with("eServicesSelected", $eServicesSelected)->with("salonsSelected", $salonsSelected)
+        ->with("categoriesSelected", $categoriesSelected)->with("is_app_charge", $is_app_charge);
     }
 
     /**

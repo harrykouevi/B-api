@@ -49,6 +49,15 @@
 
 </div>
 <div class="d-flex flex-column col-sm-12 col-md-6">
+    <!-- 'Boolean app_charge Field' -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('app_charge', trans("lang.coupon_app_charge"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        {!! Form::hidden('app_charge', 0, ['id'=>"hidden_app_charge"]) !!}
+        <div class="col-9 icheck-{{setting('theme_color')}}">
+            {!! Form::checkbox('app_charge', 1, !empty($is_app_charge)) !!}
+            <label for="app_charge"></label>
+        </div>
+    </div>
 
     <!-- EService Id Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">

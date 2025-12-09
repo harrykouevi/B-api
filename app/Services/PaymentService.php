@@ -9,6 +9,7 @@
 namespace App\Services;
 
 use App\Events\NotifyPaymentEvent;
+use App\Models\Booking;
 use App\Notifications\RechargePayment;
 use App\Notifications\WithdrawPayment;
 use App\Repositories\BookingRepository;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use App\Models\Payment;
+use App\Models\Purchase;
 use App\Models\Tax;
 use App\Models\User;
 use App\Models\Wallet;
@@ -55,7 +57,14 @@ class PaymentService
         $this->currency = $this->currencyRepository->findWithoutFail(setting('default_currency_id'));
     }
 
-
+    public function buildCouponData(Booking|Purchase $booking){
+        $coupon = $booking->coupon ;
+        $applies_to = 'platform' ;
+        if ($coupon->discountable_type  == "App\Models\Wallet") $applies_to = 'platform' ;
+        if (in_array( $coupon->discountable_type , ["App\Models\EService" , "App\Models\Salon" ,"App\Models\Category" ]))  $applies_to = 'salon' ;
+          
+        return ['applies_to' =>  $applies_to ,'value' => $booking->getCouponValue() ] ;
+    }
  
 
      /**
@@ -71,46 +80,47 @@ class PaymentService
     * @param Tax|Tax[]|null $tax paramètre pour la commission
     * @return Array|Null
     */
-    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() , WalletType $wallettype = Null , $tax = Null ) : array | Null
+    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() , WalletType $wallettype = Null , $tax = Null ,?array $coupon = null  ) : array | Null
     {
         
-        $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
+        $payer_wallet = $this->resolveWallet($payer_wallet);
         
-        if($user->id != null){ 
-            $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
-                                                                    'user_id' => $user->id,
-                                                                    'name'    => $wallettype->value,
-                                                                ])->first() 
-                                : $this->walletRepository->findWhere(['user_id' =>$user->id,
-                                                                    'name' => WalletType::PRINCIPAL->value,
-                                                                ])->first() ;
-        }else{
-            $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
-        }
+        // if($receiver->id != null){ 
+        //     $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
+        //                                                             'user_id' => $receiver->id,
+        //                                                             'name'    => $wallettype->value,
+        //                                                         ])->first() 
+        //                         : $this->walletRepository->findWhere(['user_id' =>$receiver->id,
+        //                                                             'name' => WalletType::PRINCIPAL->value,
+        //                                                         ])->first() ;
+        // }else{
+        //     $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
+        // }
 
-        if($wallet == Null){
-            $wallet = ($wallettype == null )? $this->createWallet($user, 0) : $this->createWallet($user, 0, $wallettype->value);
-        }
+        // if($wallet == Null){
+        //     $wallet = ($wallettype == null )? $this->createWallet($receiver, 0) : $this->createWallet($receiver, 0, $wallettype->value);
+        // }
 
-        $user = $wallet->user ;
-        $currency = json_decode($wallet->currency, true);
+        $receiverWallet = $this->resolveReceiverWallet($receiver, $wallettype);
+
+        $currency = json_decode($receiverWallet->currency, true);
         $payment = Null ;
         if ($currency['code'] == setting('default_currency_code')) {
            
             if($amount >= 0) { 
                 try{
-                    $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet] , $tax) ;
-                    Log::info(['Padsdfffee-createPayment']);
-                    if($amount > 0) event(new NotifyPaymentEvent($payment ,$payer_wallet ,$user ));
+                    $payment = $this->toWalletFromWallet($this->buildInternalPaymentData($amount,$payer_wallet,$receiverWallet->user), [$receiverWallet , $payer_wallet] , $tax , $coupon) ;
+                    if($amount == 30150) Log::info(['Padsdfffee-createPayment', $payment]);
+                    if($amount > 0) event(new NotifyPaymentEvent($payment ,$payer_wallet ,$receiverWallet->user ));
 
-                    return [$payment , $wallet] ;
+                    return [$payment , $receiverWallet] ;
                 } catch (Exception $e) {
-                    Log::error($e->getMessage());
+                    Log::error( $e->getTraceAsString()  ) ;
                 }
             }
            
         }
-        return [$payment , $wallet] ; 
+        return [$payment , $receiverWallet] ; 
     }
 
      /**
@@ -125,39 +135,39 @@ class PaymentService
     * @param string $wallettype Paramètre optionnel pour le type de portefeuille
     * @return Array|Null
     */
-    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $user = new User() ,  string $wallettype = null ) : array | Null
+    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() ,  string $wallettype = null ) : array | Null
     {
         
-        $payer_wallet = ($payer_wallet instanceof Wallet ) ? $payer_wallet  : $this->walletRepository->find($payer_wallet)  ;
-        if($user->id != null){ 
-            $wallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $user->id)
-                                                                    ->findByField('name',  $wallettype)->first() 
-                                : $this->walletRepository->findByField('user_id',  $user->id)
-                                ->findByField('name',  $wallettype)->first() ;
-        }else{
-            $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
-        }
+        $payer_wallet = $this->resolveWallet($payer_wallet);
 
-        if($wallet == Null){
-            $wallet = $this->createWallet($user , 0 , $wallettype) ;
-        }
+        // if($receiver->id != null){ 
+        //     $receiverWallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $receiver->id)
+        //                                                             ->findByField('name',  $wallettype)->first() 
+        //                         : $this->walletRepository->findByField('user_id',  $receiver->id)
+        //                         ->findByField('name',  $wallettype)->first() ;
+        // }else{
+        //     $receiverWallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
+        // }
 
+        // if($receiverWallet == Null){
+        //     $receiverWallet = $this->createWallet($receiver , 0 , $wallettype) ;
+        // }
+        $receiverWallet = $this->resolveReceiverWallet($receiver, $wallettype);
 
-        $user = $wallet->user ;
-        $currency = json_decode($wallet->currency, true);
+        $currency = json_decode($receiverWallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
          
             if($amount != 0) { 
                 try{
-                    $payment = $this->toWalletFromWallet($this->getPaymentDetail($amount,$payer_wallet,$user), [$wallet , $payer_wallet]) ;
-                    event(new NotifyPaymentEvent( $payment , $payer_wallet,$user  ));
+                    $payment = $this->toWalletFromWallet($this->buildInternalPaymentData($amount,$payer_wallet,$receiverWallet->user), [$receiverWallet , $payer_wallet]) ;
+                    event(new NotifyPaymentEvent( $payment , $payer_wallet,$receiver  ));
                 
                 } catch (Exception $e) {
                     Log::error($e->getMessage());
                 }
             }
            
-            return [$payment , $wallet] ;
+            return [$payment , $receiverWallet] ;
         }
         return Null ;
     }
@@ -218,7 +228,7 @@ class PaymentService
             }
 
             $payment = $this->withExternalTransaction(
-                $this->getWithExternalPaymentDetail($amount, $user, $type),
+                $this->buildExternalPaymentData($amount, $user, $type),
                 $wallet,
                 $type
             );
@@ -249,98 +259,158 @@ class PaymentService
     }
 
 
+  
     /**
      * make Payment .
      * @param Array $input
      * @param Array $wallets
-     * @param Tax|Tax[]|null $tax paramètre pour la commission
+     * @param Tax|array|null $tax paramètre pour la commission
      * 
      * @return Payment | Null
      */
-    private function toWalletFromWallet(Array $input , array $wallets, $tax = null):Payment | Null
-    {
+    private function toWalletFromWallet(Array $input , array $wallets, Tax|array|null $tax = null ,?array $coupon = null ){
         
-        $wallet =  $wallets[0] ;
+        $receiverWallet =  $wallets[0] ;
         $payer_wallet =  $wallets[1] ;
-        $currency = json_decode($wallet->currency, true);
+        $currency = json_decode($receiverWallet->currency, true);
+        $amount = $input['payment']['amount'];
+        // Wallet plateforme
+        $platformWallet = $this->walletRepository->find(setting('app_default_wallet_id'));
+
         if ($currency['code'] == setting('default_currency_code')) {
-            $amount = $input['payment']['amount'];
 
             $payment = $this->paymentRepository->create($input['payment']);
 
-        
-            // Calcul de la commission si elle existe
+           
+            
+            $discount = 0;
+            $couponForSalon =  'platform' ;
+            if ($coupon && $coupon['value'] > 0) {
+                // Coupon applicable au salon ?
+                $couponForSalon = $coupon['applies_to'] ?? 'platform'; // 'salon' ou 'platform'
+                $discount       = $coupon['value'] ?? 0 ;
+            }
+
+
+             // Calcul de la commission si elle existe
             $commission = 0 ;
             if ($tax !== null && $amount > 0 ) {
-                $commission = self::getCommission($amount , $tax) ;
-            }   
+                $commission = self::getCommission($amount + $discount , $tax) ;
+            }  
 
-            for ($i=0; $i <= 2  ; $i++) { 
+
+            for ($i=0; $i <= 3  ; $i++) { 
+                
                 $transaction = [];
                 $transaction['payment_id'] = $payment->id;
                 if($i == 0){
-
-                    $transaction['user_id'] = $wallet->user_id;
+                    
+                    $transaction['user_id'] = $receiverWallet->user_id;
                     $transaction['status'] = "completed" ;
-                    $transaction['wallet_id'] = $wallet->id;
+                    $transaction['wallet_id'] = $receiverWallet->id;
                     $transaction['description'] = 'compte credité';
                     $transaction['action'] =  'credit';
                     $transaction['amount'] = $amount ;
                     
-                    if(  $commission > 0 &&  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                    if(   $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner') ){
+                        
+
+                        if ($discount > 0) {
+                           
+                            if ($couponForSalon === 'salon') {
+                                // Le salon prend en charge la réduction → on réduit le crédit du salon
+                                $transaction['amount'] -= $discount ;
+                            } else {
+                                // Coupon non pour le salon → la réduction vient de la plateforme
+                                $transaction['amount']  += $discount;
+
+                            }
+                        }
+
                         //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
                         //de l'argent provenant du client 
-                        $transaction['amount'] = $amount - $commission;
+                        if(  $commission > 0 ) {
+                            $transaction['amount'] -= $commission;
+                        }
                     }
+
                 }
+                
                 if($i == 1){
+                    
                     $transaction['user_id'] = $payer_wallet->user_id;
                     $transaction['status'] = "completed" ;
                     $transaction['wallet_id'] = $payer_wallet->id;
                     $transaction['description'] = 'compte débité';
                     $transaction['action'] =  'debit';
                     $transaction['amount'] = $amount ;
-                    
-                    if(  $commission > 0 &&  $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
+
+                 
+                    if(  $commission > 0 &&  $payer_wallet->user->hasRole('salon owner') && $receiverWallet->user->hasRole('customer') ){
                         //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
                         //de l'argent provenant du client 
-                        $transaction['amount'] = $amount - $commission;
+                        $transaction['amount'] -=  $commission;
+                       
                     }
-
+                       
                 }
                 if($i == 2){
                     
                     if(  $commission > 0 ){ 
 
                         $transaction['amount'] = $commission ;
-                        $w= $this->walletRepository->find(setting('app_default_wallet_id'));
-                        $transaction['user_id'] = $w->user_id;
+                        $transaction['user_id'] = $platformWallet->user_id;
                         $transaction['status'] = "completed" ;
-                        $transaction['wallet_id'] = $w->id;
+                        $transaction['wallet_id'] = $platformWallet->id;
 
 
-                        if(  $payer_wallet->user->hasRole('customer') && $wallet->user->hasRole('salon owner') ){
+                        if(  $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner') ){
                             //il y a t'il une commission prise chez le coiffeur parce qu'il recoit
                             //de l'argent provenant du client 
                             $transaction['description'] = 'compte crédité';
                             $transaction['action'] =  'credit';
 
-                        }else if( $payer_wallet->user->hasRole('salon owner') && $wallet->user->hasRole('customer') ){
+                        }else if( $payer_wallet->user->hasRole('salon owner') && $receiverWallet->user->hasRole('customer') ){
                             //y a t'il une commission à rembourser au client  parce qu'il avait payé
                             //de l'argent au coiffeur 
                             $transaction['description'] = 'compte débité';
                             $transaction['action'] =  'debit';
-                        }else{
-                            $transaction = [];
                         }
-                    }else{
-                        break ;
+
+                    }
+                    
+                }
+
+                if( $i == 3){
+                    
+                    
+                    if ($discount > 0) {
+                        
+                        if(  $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner') ){
+                            // Coupon non pour le salon → la réduction vient de la plateforme
+                            $transaction['amount']  = $discount ;
+                            $transaction['user_id'] = $platformWallet->user_id;
+                            $transaction['status'] = "completed" ;
+                            $transaction['wallet_id'] = $platformWallet->id;
+                            //y a t'il une commission à rembourser au client  parce qu'il avait payé
+                            //de l'argent au coiffeur 
+                            $transaction['description'] = 'compte débité';
+                            $transaction['action'] =  'debit';
+                        }
+
                     }
                 }
 
-                $this->walletTransactionRepository->create($transaction);
+                try{
+                    if(count($transaction) > 1) $o = $this->walletTransactionRepository->create($transaction);
+
+                } catch (\Exception $e) {
+                    Log::error('FAIL:'. $e->getMessage() , [
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+
             }
-            
             return $payment ;
         }
         return Null ;
@@ -352,10 +422,10 @@ class PaymentService
      * @param Array $input
      * @param Wallet $wallet The wallet identifier or wallet of salon .
      * @param Tax|Tax[]|null $tax paramètre pour la commission
-     * 
+     * @param ?array $coupon = null
      * @return Payment | Null
      */
-    public function intentCashPayment(Array $input , $wallet, $tax = null):Payment | Null
+    public function intentCashPayment(Array $input , $wallet, $tax = null , ?array $coupon = null):Payment | Null
     {
         //si l'intension de payement est pour le coiffeur
         $amount = $input['payment']['amount'] ;
@@ -366,14 +436,23 @@ class PaymentService
 
             if($amount > 0){
                 $payment = $this->paymentRepository->create($input['payment']);
+
+                $discount = 0;
+                $couponForSalon =  'platform' ;
+                if ($coupon && $coupon['value'] > 0) {
+                    // Coupon applicable au salon ?
+                    $couponForSalon = $coupon['applies_to'] ?? 'platform'; // 'salon' ou 'platform'
+                    $discount       = $coupon['value'] ?? 0 ;
+                }
+
                 // Calcul de la commission si elle existe
                 $commission = 0 ;
                 if (!is_null($tax)) {
-                    $commission = self::getCommission($amount , $tax) ;
+                    $commission = self::getCommission($amount + $discount, $tax) ;
                    
                 }        
                 
-                for ($i=0; $i <= 1  ; $i++) { 
+                for ($i=0; $i <= 3  ; $i++) { 
                     $transaction = [];
                     $transaction['payment_id'] = $payment->id;
 
@@ -408,6 +487,42 @@ class PaymentService
                         }
                         
                     }
+                    if( $discount > 0  ){
+                        if($i == 2){
+                            
+                            if ($couponForSalon === 'salon') {
+                                // Le salon prend en charge la réduction → on réduit le crédit du salon
+                                //aucune action n'est faite
+                            } else {
+                                // Coupon non pour le salon → la réduction vient de la plateforme
+                                $transaction['amount']  = $discount;
+                                $w= $this->walletRepository->find(setting('app_default_wallet_id'));
+                                $transaction['user_id'] = $w->user_id;
+                                $transaction['status'] = "completed" ;
+                                $transaction['wallet_id'] = $w->id;
+                                $transaction['description'] = 'compte débité';
+                                $transaction['action'] =  'debit';
+
+                            }
+                         
+                        }
+
+                        if($i == 3){
+                            
+                            if ($couponForSalon === 'salon') {
+                                // Le salon prend en charge la réduction → on réduit le crédit du salon
+                            //aucune action n'est faite
+                            } else {
+                                // Coupon non pour le salon → la réduction vient de la plateforme
+                                $transaction['user_id'] = $wallet->user_id;
+                                $transaction['status'] = "completed" ;
+                                $transaction['wallet_id'] = $wallet->id;
+                                $transaction['description'] = 'compte crédité';
+                                $transaction['action'] =  'credit';
+                                $transaction['amount']  = $discount;
+                            }
+                        }
+                    }
                     
                     $this->walletTransactionRepository->create($transaction);
                 }
@@ -415,6 +530,29 @@ class PaymentService
             }
         }
         return Null ;
+    }
+
+
+    private function resolveWallet(int|string|Wallet $wallet): Wallet
+    {
+        return $wallet instanceof Wallet
+            ? $wallet
+            : $this->walletRepository->find($wallet);
+    }
+
+
+    private function resolveReceiverWallet(User $user, ?string $walletType): Wallet
+    {
+        if (!$user->id) {
+            return $this->walletRepository->find(setting('app_default_wallet_id'));
+        }
+
+        $wallet = $this->walletRepository->findWhere([
+            'user_id' => $user->id,
+            'name'    => $walletType ?? WalletType::PRINCIPAL->value,
+        ])->first();
+
+        return $wallet ?: $this->createWallet($user, 0, $walletType);
     }
 
     /**
@@ -491,21 +629,22 @@ class PaymentService
     * Génère les détails d'un paiement entre wallet
     *
     * @param float $amount The amount of the payment.
-    * @param Wallet $wallet The wallet of the payer initiating the payment.
+    * @param Wallet $payer_wallet The wallet of the payer initiating the payment.
     * @param User  $user The user receiving the payment.
     * 
     * @return Array
     */
-    private function getPaymentDetail(float $amount ,Wallet $wallet, User $user){
+    private function buildInternalPaymentData(float $amount ,Wallet $payer_wallet, User $receiver): array{
 
-        $input = [];
-        $input['payment']['amount'] = $amount;
-        $input['payment']['description'] = "payement done to user : ". strval($user->id) ." .  ". strval($user->name) ;
-        $input['payment']['payment_status_id'] = 2; // done
-        $input['payment']['payment_method_id'] = 11; // done
-        $input['payment']['user_id'] =  $wallet->user->id;
-  
-        return $input;
+        return [
+            'payment' => [
+                'amount' => $amount ,
+                'description' => "payement done to user : ". strval($receiver->id) ." .  ". strval($receiver->name)  ,
+                'payment_status_id' => 2 , // done
+                'payment_method_id' => 11 , // done
+                'user_id' =>  $payer_wallet->user->id ,
+            ]
+        ] ;
     }
 
     /**
@@ -517,16 +656,18 @@ class PaymentService
      *
      * @return array Détails structurés du paiement à utiliser pour un enregistrement externe.
      */
-    private function getWithExternalPaymentDetail(float $amount ,User $user , PaymentType $type){
+    private function buildExternalPaymentData(float $amount ,User $user , PaymentType $type){
 
-        $input = [];
-        $input['payment']['amount'] = $amount;
-        $input['payment']['description'] =( ($type == PaymentType::CREDIT) ? "credit made to " : " débit from"   ). " user #". strval($user->id) ." .  ". strval($user->name)." wallet" ;
-        $input['payment']['payment_status_id'] = 2; // done
-        $input['payment']['payment_method_id'] = 12;
-        $input['payment']['user_id'] =  $user->id;
-
-        return $input;
+        return [
+            'payment' => [
+                'amount' => $amount,
+                // 'description' =>( ($type == PaymentType::CREDIT) ? "credit made to " : " débit from"   ). " user #". strval($user->id) ." .  ". strval($user->name)." wallet" ,
+                'description' =>( ($type == PaymentType::CREDIT) ? "Credit" : " Debit"   ). " for user #". strval($user->id) ." .  ". strval($user->name) ,
+                'payment_status_id' => 2, // done
+                'payment_method_id' => 12,
+                'user_id' =>  $user->id,
+            ]
+        ] ;
     }
 
 

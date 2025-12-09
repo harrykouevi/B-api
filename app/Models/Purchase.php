@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @property Salon salon
  * @property Booking booking
  * @property EService[] e_services
+ * @property Option[] options
  * @property integer quantity
  * @property integer user_id
  * @property integer purchase_status_id
@@ -66,6 +67,7 @@ class Purchase extends Model
         'salon',
         'booking',
         'e_services',
+        'options',
         'quantity',
         'user_id',
         'purchase_status_id',
@@ -84,6 +86,7 @@ class Purchase extends Model
         'salon' => Salon::class,
         'booking' => BookingCast::class,
         'e_services' => EServiceCollectionCast::class,
+        'options' => OptionCollectionCast::class,
         'coupon' => Coupon::class,
         'taxes' => TaxCollectionCast::class,
         'purchase_status_id' => 'integer',
@@ -140,7 +143,7 @@ class Purchase extends Model
     public function getTotal(): float
     {
         $total = $this->getSubtotal();
-        $total += $this->getTaxesValue();
+        // $total += $this->getTaxesValue();
         $total -= $this->getCouponValue();
         return $total;
     }
@@ -151,9 +154,9 @@ class Purchase extends Model
         foreach ($this->e_services as $eService) {
             $total += $eService->getPrice() * ($this->quantity >= 1 ? $this->quantity : 1);
         }
-        // foreach ($this->options as $option) {
-        //     $total += $option->price * ($this->quantity >= 1 ? $this->quantity : 1);
-        // }
+        foreach ($this->options as $option) {
+            $total += $option->price * ($this->quantity >= 1 ? $this->quantity : 1);
+        }
         return $total;
     }
 

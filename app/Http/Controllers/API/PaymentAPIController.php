@@ -155,9 +155,11 @@ class PaymentAPIController extends Controller
                             'salon' => $booking->salon ,
                             'booking' => $booking,
                             'e_services' => $booking->e_services ,
+                            'options' => $booking->options ,
                             'quantity' => $booking->quantity,
                             'user_id' => $booking->user_id ,
                             'taxes'=>  $booking->purchase_taxes ,
+                            'coupon'=>  $booking->coupon ,
                             'purchase_status_id' => 1 ,
                             'hint' => 'cash' ,
                             'purchase_at'  => now()  
@@ -236,22 +238,18 @@ class PaymentAPIController extends Controller
             $wallet = $this->walletRepository->find($walletId);
             $currency = json_decode($wallet->currency, true);
             
-            
             $booking = $this->bookingRepository->find($input['id']);
-            $servicesAmountIntentToDebit = $booking->getSubtotal();
-           
-
+            $servicesAmountIntentToDebit = $booking->getTotal();
             $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
             $waitingAmountToDebit = $this->bookingRepository->findByField('booking_status_id', 1)->sum(function ($booking) {
-                                        return $booking->getSubtotal();
+                                        return $booking->getTotal();
                                     });
-            Log::info(["verification du terrain", $wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $wallet->balance]);
-            
+            // Log::info(["verification du terrain", $wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $wallet->balance]);
             
             if ($wallet && $currency['code'] == setting('default_currency_code')) {
 
                 //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
-                // if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount', ['operator' => __('lang.wallet')]));
+                if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount'),400);
                     //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
                 
                 $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
@@ -265,12 +263,9 @@ class PaymentAPIController extends Controller
                     if (isset($input['payment']['amount']) && $input['payment']['amount'] <= 0) {
                         return $this->sendResponse([], 'Aucun paiement requis pour cette réservation');
                     }
-
                     throw new Exception('failed booking payment');
-
                 }
                 
-
             } else {
                 return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
             }
