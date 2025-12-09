@@ -31,7 +31,7 @@ class PermissionsTableSeeder extends Seeder
         // Réactiver les clés étrangères
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        DB::table('permissions')->insert(array(
+        DB::table('permissions')->insertOrIgnore(array(
             // array(
             //     'id' => 1,
             //     'name' => 'dashboard',
@@ -1152,48 +1152,48 @@ class PermissionsTableSeeder extends Seeder
             //     'created_at' => now(),
             //     'updated_at' => now(),
             // ),
-            // array(
-            //     'id' => 167,
-            //     'name' => 'slides.index',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 168,
-            //     'name' => 'slides.create',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 169,
-            //     'name' => 'slides.store',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 170,
-            //     'name' => 'slides.edit',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 171,
-            //     'name' => 'slides.update',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 172,
-            //     'name' => 'slides.destroy',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
+            array(
+                'id' => 167,
+                'name' => 'slides.index',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 168,
+                'name' => 'slides.create',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 169,
+                'name' => 'slides.store',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 170,
+                'name' => 'slides.edit',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 171,
+                'name' => 'slides.update',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 172,
+                'name' => 'slides.destroy',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
             // array(
             //     'id' => 173,
             //     'name' => 'notifications.index',

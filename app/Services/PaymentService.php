@@ -110,7 +110,6 @@ class PaymentService
             if($amount >= 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->buildInternalPaymentData($amount,$payer_wallet,$receiverWallet->user), [$receiverWallet , $payer_wallet] , $tax , $coupon) ;
-                    if($amount == 30150) Log::info(['Padsdfffee-createPayment', $payment]);
                     if($amount > 0) event(new NotifyPaymentEvent($payment ,$payer_wallet ,$receiverWallet->user ));
 
                     return [$payment , $receiverWallet] ;

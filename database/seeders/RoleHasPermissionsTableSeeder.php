@@ -29,7 +29,7 @@ class RoleHasPermissionsTableSeeder extends Seeder
          // Réactiver les clés étrangères
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        DB::table('role_has_permissions')->insert(array(
+        DB::table('role_has_permissions')->insertOrIgnore(array(
 
             // array(
             //     'permission_id' => 1,
@@ -1213,35 +1213,35 @@ class RoleHasPermissionsTableSeeder extends Seeder
             //     'role_id' => 3,
             // ),
 
-            // array(
-            //     'permission_id' => 167,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 167,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 168,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 168,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 169,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 169,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 170,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 170,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 171,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 171,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 172,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 172,
+                'role_id' => 1,
+            ),
 
             // array(
             //     'permission_id' => 173,
