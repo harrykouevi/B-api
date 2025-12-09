@@ -425,7 +425,11 @@ class WalletAPIController extends Controller
             }
 
             $transactionId = uniqid('txn_');
-            $wallet = $wallets->first();
+            $wallet = $wallets->firstWhere('name', 'Igris');
+
+            if (!$wallet) {
+                return $this->sendError("Le wallet 'Igris' est introuvable pour cet utilisateur", 404);
+            }
             $description = "Recharge wallet utilisateur #$transactionId";
 
             $customerData = $this->buildCustomerData($request, $paymentChannel, $userId);
@@ -902,9 +906,16 @@ class WalletAPIController extends Controller
                 'amount' => $context['amount'],
                 'current_balance' => $context['wallet']->balance,
             ]);
-
+            $wallet = $this->walletRepository->findByField('user_id',$context['userId'])->first();
+            if(!$wallet){
+                return response()->json([
+                    'error' => 'Aucun wallet trouvé',
+                    'message' => 'le wallet n\'existe pas',
+                ], 404);
+            }
+            
             // Débiter le wallet IMMÉDIATEMENT avant d'envoyer à PayDunya
-            $this->paymentService->createPaymentLinkWithExternal(
+          $this->paymentService->createPaymentLinkWithExternal(
                 (float)$context['amount'],
                 $context['wallet'],
                 PaymentType::DEBIT
@@ -932,11 +943,14 @@ class WalletAPIController extends Controller
                 Log::error('🔴 [PayDunya PER Fallback] Échec création invoice, recréditation du wallet');
 
                 // Recréditer le wallet car la demande a échoué
-                $this->paymentService->createPaymentLinkWithExternal(
+
+                $wallet->balance  += (float)$context['amount'];
+                $wallet->save();
+                /*$this->paymentService->createPaymentLinkWithExternal(
                     (float)$context['amount'],
                     $context['wallet'],
                     PaymentType::CREDIT
-                );
+                );*/
 
                 $withdrawal->update(['status' => WalletTransaction::STATUS_REJECTED]);
 
