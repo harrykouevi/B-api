@@ -80,7 +80,7 @@ class InfoBipService{
                     'from' => $this->sender,
                     'to' => $phone,
                     'content' => [
-                        'templateName' => 'Otp',
+                        'templateName' => 'otp',
                         'templateData' => [
                             'body' => [
                                 'placeholders' => [$code],
