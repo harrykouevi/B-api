@@ -493,21 +493,24 @@ class UserAPIController extends Controller
                 'phone_number' => 'required|max:255',
                 'channel' => 'required|in:sms,whatsapp'
             ]);
-
+            Log::info('Send Phone Verification OTP', ["request" => $request] );
             $phoneNumber = $request->input('phone_number');
             $channel = $request->input('channel');
 
             // Generate OTP code
             $currentOTP = (string) $this->otpService->gen();
+            Log::info('code géneré', ["request" => $currentOTP] );
 
             // Send OTP via selected channel
             if ($channel === 'sms') {
+                Log::info('code envoyé', ["request" => $currentOTP] );
+
                 $this->otpService->sendSMS($currentOTP, $phoneNumber);
             } else {
                 $this->otpService->sendByWhatsapp($currentOTP, $phoneNumber);
             }
 
-            return $this->sendResponse(true, 'OTP code sent successfully via ' . strtoupper($channel));
+            return $this->sendResponse(true, 'OTP code envoyé avec succès: ' . strtoupper($channel));
 
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);

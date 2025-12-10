@@ -16,6 +16,7 @@ use Exception;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class OtpService
 {
@@ -61,7 +62,8 @@ class OtpService
     {
         // Stocker dans le cache avec expiration de 5 minutes
         Cache::put('otp_' . $phoneNumber, Hash::make($code), now()->addMinutes(5));
-          
+        Log::info('code envoyé via sms', ["request" => $code] );
+
         event(new SendOtpByInfoBipEvent($code , $phoneNumber));
         return 'If an account exists with this phone number, a reset link will be sent.' ;
     }
