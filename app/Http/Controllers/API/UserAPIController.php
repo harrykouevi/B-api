@@ -481,6 +481,107 @@ class UserAPIController extends Controller
     }
 
     /**
+     * Send OTP code via SMS or WhatsApp for phone verification during registration.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function sendPhoneVerificationOtp(Request $request): JsonResponse
+    {
+        try {
+            $this->validate($request, [
+                'phone_number' => 'required|max:255',
+                'channel' => 'required|in:sms,whatsapp'
+            ]);
+
+            $phoneNumber = $request->input('phone_number');
+            $channel = $request->input('channel');
+
+            // Generate OTP code
+            $currentOTP = (string) $this->otpService->gen();
+
+            // Send OTP via selected channel
+            if ($channel === 'sms') {
+                $this->otpService->sendSMS($currentOTP, $phoneNumber);
+            } else {
+                $this->otpService->sendByWhatsapp($currentOTP, $phoneNumber);
+            }
+
+            return $this->sendResponse(true, 'OTP code sent successfully via ' . strtoupper($channel));
+
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()), 422);
+        } catch (Exception $e) {
+            Log::error('FAIL sendPhoneVerificationOtp: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError("An unexpected error occurred. Please try again later.", 500);
+        }
+    }
+
+    /**
+     * Verify OTP code for phone verification.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function verifyPhoneOtp(Request $request): JsonResponse
+    {
+        try {
+            $this->validate($request, [
+                'phone_number' => 'required|max:255',
+                'otp_code' => 'required|min:6|max:6'
+            ]);
+
+            $phoneNumber = $request->input('phone_number');
+            $otpCode = $request->input('otp_code');
+
+            // Check if OTP exists in cache
+            if (!Cache::has('otp_' . $phoneNumber)) {
+                return $this->sendError('Le code OTP a expiré. Veuillez demander un nouveau code.', 400);
+            }
+
+            $hashedOtp = Cache::get('otp_' . $phoneNumber);
+
+            // Rate limiting: max 5 attempts
+            $attemptsKey = 'otp_attempts_' . $phoneNumber;
+            $attempts = Cache::get($attemptsKey, 0);
+
+            if ($attempts >= 5) {
+                Cache::forget('otp_' . $phoneNumber);
+                Cache::forget($attemptsKey);
+                return $this->sendError('Nombre maximal de tentatives atteint. Veuillez demander un nouveau code.', 429);
+            }
+
+            // Verify OTP hash
+            if (!Hash::check($otpCode, $hashedOtp)) {
+                Cache::put($attemptsKey, $attempts + 1, now()->addMinutes(5));
+                return $this->sendError('Code OTP incorrect.', 400);
+            }
+
+            // Success: clear OTP and attempts counter
+            Cache::forget('otp_' . $phoneNumber);
+            Cache::forget($attemptsKey);
+
+            // Update user's phone_verified_at timestamp
+            $user = $this->userRepository->findByField('phone_number', $phoneNumber)->first();
+            if ($user) {
+                $this->userRepository->update(['phone_verified_at' => Carbon::now()], $user->id);
+            }
+
+            return $this->sendResponse(true, 'Numéro de téléphone vérifié avec succès.');
+
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()), 422);
+        } catch (Exception $e) {
+            Log::error('FAIL verifyPhoneOtp: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError("An unexpected error occurred. Please try again later.", 500);
+        }
+    }
+
+    /**
      * Send otp code via email.
      *
      * @param Request $request
