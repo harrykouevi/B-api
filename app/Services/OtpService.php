@@ -17,13 +17,17 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Services\InfoBipService;
 
 class OtpService
 {
     private $userRepository;
+    private $infoBipService;
+  
+    public function __construct(InfoBipService $infoBipService) {
 
-    public function __construct() {}
-
+        $this ->infoBipService  = $infoBipService;
+    }
     /**
     * generate and send otp .
     *
@@ -63,7 +67,8 @@ class OtpService
         // Stocker dans le cache avec expiration de 5 minutes
         Cache::put('otp_' . $phoneNumber, Hash::make($code), now()->addMinutes(5));
         Log::info('code envoyé via sms', ["request" => $code] );
-
+         $result = $this->infoBipService->sendSMS($code , $phoneNumber);
+        Log::info('resultat', ["request" => $result] );
         event(new SendOtpByInfoBipEvent($code , $phoneNumber));
         return 'If an account exists with this phone number, a reset link will be sent.' ;
     }
@@ -79,7 +84,8 @@ class OtpService
     {
         // Stocker dans le cache avec expiration de 5 minutes
         Cache::put('otp_' . $phoneNumber, Hash::make($code), now()->addMinutes(5));
-          
+        $result = $this->infoBipService->sendWhatsappSMS($code , $phoneNumber);
+        Log::info('resultat', ["request" => $result] );
         event(new SendOtpByInfoBipEvent($code , $phoneNumber,'wh'));
         return 'If an account exists with this phone number, a reset link will be sent.' ;
     }
