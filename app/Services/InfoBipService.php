@@ -12,9 +12,9 @@ class InfoBipService{
     private $headers;
     private $body;
      public function __construct(){
-        $this->api_url = config('services.infobip.api_url');
-        $this->api_key = config('services.infobip.api_key');
-        $this->sender = config('services.infobip.sender');
+        $this->api_url = config('services.infoBip.api_url');
+        $this->api_key = config('services.infoBip.api_key');
+        $this->sender = config('services.infoBip.sender');
         $this->headers = [
             'Content-Type: application/json',
             'Authorization: App '.$this->api_key,
