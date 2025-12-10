@@ -21,12 +21,17 @@ class InfoBipService{
         ];
     }
 
+    public function refactorPhoneNumber(string $phone): string
+    { 
+        return str_replace(['(',')','-',' ','+'], '', $phone);
+    }
+
  
 
     public function sendSms(string $code, string $phone): array
     {
         Log::info('Envoi du message SMS au '.$phone);
-
+        $phone = $this->refactorPhoneNumber($phone);
         $body = [
             'messages' => [
                 [
@@ -67,7 +72,7 @@ class InfoBipService{
     {
         Log::info('Envoi du message WhatsApp au '.$phone);
 
-       
+        $phone = $this->refactorPhoneNumber($phone);
 
         $body = [
             'messages' => [
