@@ -80,7 +80,7 @@ class InfoBipService{
                     'from' => $this->sender,
                     'to' => $phone,
                     'content' => [
-                        'templateName' => 'Code de confirmation',
+                        'templateName' => 'Otp',
                         'templateData' => [
                             'body' => [
                                 'placeholders' => [$code],
