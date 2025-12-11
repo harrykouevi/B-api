@@ -87,7 +87,7 @@ class InfoBipService{
                             ],
                             'buttons' => [
                                 'type' => "COPY_CODE",
-                                'parameter'=> "",
+                                'parameter'=> [$code],
                             ],
                             
                         ],
