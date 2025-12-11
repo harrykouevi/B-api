@@ -80,11 +80,16 @@ class InfoBipService{
                     'from' => $this->sender,
                     'to' => $phone,
                     'content' => [
-                        'templateName' => 'otp',
+                        'templateName' => 'charm',
                         'templateData' => [
                             'body' => [
                                 'placeholders' => [$code],
                             ],
+                            'buttons' => [
+                                'type' => "COPY_CODE",
+                                'parameter'=> "",
+                            ],
+                            
                         ],
                         'language' => 'fr',
                     ],
