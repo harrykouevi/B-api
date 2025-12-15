@@ -32,8 +32,8 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
-         $dataTable = new EloquentDataTable($query);
-        dd($query->get()->toArray()) ;
+        //  $dataTable = new EloquentDataTable($query);
+        // dd($query->get()->toArray()) ;
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
@@ -53,12 +53,12 @@ class WalletDataTable extends DataTable
                     return "";
                 }
             })
-            // ->editColumn('user.name', function ($wallet) {
-            //     if (!isset($wallet->user)) {
-            //         return ''; 
-            //     }
-            //     return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
-            // })
+            ->editColumn('user', function ($wallet) {
+                if (is_null($wallet->user)) {
+                    return ''; 
+                }
+                return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
+            })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
     }
