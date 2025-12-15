@@ -127,7 +127,7 @@
 @endif
 <!-- Submit Field -->
 <div class="form-group col-12 d-flex flex-column flex-md-row justify-content-md-end justify-content-sm-center border-top pt-4">
-    @if($id !== 1 )
+    @if(isset($user) && $user->id !== 1 )
     
     <button type="submit" class="btn bg-{{setting('theme_color')}} mx-md-3 my-lg-0 my-xl-0 my-md-0 my-2">
         <i class="fas fa-save"></i> {{trans('lang.save')}} {{trans('lang.user')}}</button>
