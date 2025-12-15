@@ -51,12 +51,12 @@ class WalletDataTable extends DataTable
             //         return "";
             //     }
             // })
-            ->editColumn('user.name', function ($wallet) {
-                if (!isset($wallet->user)) {
-                    return ''; 
-                }
-                return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'id');
-            })
+            // ->editColumn('user.name', function ($wallet) {
+            //     if (!isset($wallet->user)) {
+            //         return ''; 
+            //     }
+            //     return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'id');
+            // })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
     }
