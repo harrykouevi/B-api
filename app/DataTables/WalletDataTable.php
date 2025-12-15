@@ -44,19 +44,19 @@ class WalletDataTable extends DataTable
             ->editColumn('balance', function ($wallet) {
                 return getPriceColumn($wallet, 'balance', $wallet->currency);
             })
-            // ->editColumn('currency.name', function ($wallet) {
-            //     if (isset($wallet->currency)) {
-            //         return $wallet->currency->name;
-            //     } else {
-            //         return "";
-            //     }
-            // })
-            // ->editColumn('user.name', function ($wallet) {
-            //     if (!isset($wallet->user)) {
-            //         return ''; 
-            //     }
-            //     return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
-            // })
+            ->editColumn('currency.name', function ($wallet) {
+                if (isset($wallet->currency)) {
+                    return $wallet->currency->name;
+                } else {
+                    return "";
+                }
+            })
+            ->editColumn('user.name', function ($wallet) {
+                if (!isset($wallet->user)) {
+                    return ''; 
+                }
+                return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
+            })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
     }
@@ -69,26 +69,26 @@ class WalletDataTable extends DataTable
     protected function getColumns(): array
     {
         $columns = [
-            [
-                'data' => 'name',
-                'title' => trans('lang.wallet_name'),
+            // [
+            //     'data' => 'name',
+            //     'title' => trans('lang.wallet_name'),
 
-            ],
+            // ],
             [
                 'data' => 'balance',
                 'title' => trans('lang.wallet_balance'),
 
             ],
-            // [
-            //     'data' => 'currency.name',
-            //     'name' => 'currency',
-            //     'title' => trans('lang.wallet_currency'),
-            // ],
-            // (auth()->check() && auth()->user()->hasRole('admin')) ? [
-            //     'data' => 'user.name',
-            //     'title' => trans('lang.wallet_user_id'),
+            [
+                'data' => 'currency.name',
+                'name' => 'currency',
+                'title' => trans('lang.wallet_currency'),
+            ],
+            (auth()->check() && auth()->user()->hasRole('admin')) ? [
+                'data' => 'user.name',
+                'title' => trans('lang.wallet_user_id'),
 
-            // ] : null,
+            ] : null,
             [
                 'data' => 'enabled',
                 'title' => trans('lang.wallet_enabled'),
