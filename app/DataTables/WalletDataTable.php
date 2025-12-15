@@ -32,9 +32,7 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
-        dd($query->get()) ;
         $dataTable = new EloquentDataTable($query);
-        
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
             ->editColumn('updated_at', function ($wallet) {
@@ -127,9 +125,9 @@ class WalletDataTable extends DataTable
     public function query(Wallet $model): \Illuminate\Database\Eloquent\Builder
     {
         if (auth()->check() && !auth()->user()->hasRole('admin')) {
-            return $model->newQuery()->where('wallets.user_id', auth()->id())->with("user")->select("$model->table.*");
+            return $model->newQuery()->where('wallets.user_id', auth()->id())->with(["user","currency"])->select("$model->table.*");
         } else {
-            return $model->newQuery()->with("user")->select("$model->table.*");
+            return $model->newQuery()->with(["user","currency"])->select("$model->table.*");
         }
 
     }
