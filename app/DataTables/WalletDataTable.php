@@ -70,7 +70,8 @@ class WalletDataTable extends DataTable
     {
         $columns = [
             [
-                'data' => 'name',
+                'data' => 'user.name',
+                'name' => 'user.name',
                 'title' => trans('lang.wallet_name'),
 
             ],
@@ -81,7 +82,7 @@ class WalletDataTable extends DataTable
             ],
             [
                 'data' => 'currency.name',
-                'name' => 'currency',
+                'name' => 'currency.name',
                 'title' => trans('lang.wallet_currency'),
             ],
             (auth()->check() && auth()->user()->hasRole('admin')) ? [
