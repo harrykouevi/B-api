@@ -32,9 +32,6 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
-         $wallets = $query->with(['currency', 'user'])->get();
-
-    dd($wallets); // 🔴 STOP ici, tu vois TOUT
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
@@ -47,12 +44,10 @@ class WalletDataTable extends DataTable
             ->editColumn('balance', function ($wallet) {
                 return getPriceColumn($wallet, 'balance', $wallet->currency);
             })
-            ->editColumn('currency.name', function ($wallet) {
-                if (isset($wallet->currency)) {
-                    return $wallet->currency->name;
-                } else {
-                    return "";
-                }
+            ->editColumn('currency', function ($wallet) {
+               
+                    return $wallet->currency;
+                
             })
             ->editColumn('user.name', function ($wallet) {
                 if (!isset($wallet->user)) {
@@ -73,8 +68,7 @@ class WalletDataTable extends DataTable
     {
         $columns = [
             [
-                'data' => 'user.name',
-                'name' => 'user.name',
+                'data' => 'name',
                 'title' => trans('lang.wallet_name'),
 
             ],
@@ -84,8 +78,8 @@ class WalletDataTable extends DataTable
 
             ],
             [
-                'data' => 'currency.name',
-                'name' => 'currency.name',
+                'data' => 'currency',
+                'name' => 'currency',
                 'title' => trans('lang.wallet_currency'),
             ],
             (auth()->check() && auth()->user()->hasRole('admin')) ? [
@@ -108,14 +102,14 @@ class WalletDataTable extends DataTable
         $hasCustomField = in_array(Wallet::class, setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFieldsCollection = CustomField::where('custom_field_model', Wallet::class)->where('in_table', '=', true)->get();
-            // foreach ($customFieldsCollection as $key => $field) {
-            //     array_splice($columns, $field->order - 1, 0, [[
-            //         'data' => 'custom_fields.' . $field->name . '.view',
-            //         'title' => trans('lang.wallet_' . $field->name),
-            //         'orderable' => false,
-            //         'searchable' => false,
-            //     ]]);
-            // }
+            foreach ($customFieldsCollection as $key => $field) {
+                array_splice($columns, $field->order - 1, 0, [[
+                    'data' => 'custom_fields.' . $field->name . '.view',
+                    'title' => trans('lang.wallet_' . $field->name),
+                    'orderable' => false,
+                    'searchable' => false,
+                ]]);
+            }
         }
         return $columns;
     }
@@ -129,9 +123,9 @@ class WalletDataTable extends DataTable
     public function query(Wallet $model): \Illuminate\Database\Eloquent\Builder
     {
         if (auth()->check() && !auth()->user()->hasRole('admin')) {
-            return $model->newQuery()->where('wallets.user_id', auth()->id())->with(["user","currency"])->select("$model->table.*");
+            return $model->newQuery()->where('wallets.user_id', auth()->id())->with("user")->select("$model->table.*");
         } else {
-            return $model->newQuery()->with(["user","currency"])->select("$model->table.*");
+            return $model->newQuery()->with("user")->select("$model->table.*");
         }
 
     }
