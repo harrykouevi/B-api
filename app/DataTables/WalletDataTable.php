@@ -32,6 +32,9 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
+         $wallets = $query->with(['currency', 'user'])->get();
+
+    dd($wallets); // 🔴 STOP ici, tu vois TOUT
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
