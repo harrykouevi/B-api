@@ -455,16 +455,23 @@ class AppSettingsTableSeeder extends Seeder
             //     'value' => 0,
             // )
             // ,
-            array(
-                // 'id' => 160,
-                'key' => 'purchase_taxe',
-                'value' => '{"value":10,"type":"percent"}',
-            ),
+            // array(
+            //     // 'id' => 160,
+            //     'key' => 'purchase_taxe',
+            //     'value' => '{"value":10,"type":"percent"}',
+            // ),
+            // array(
+            //     // 'id' => 161,
+            //     'key' => 'postpone_charge',
+            //     'value' => 0,
+            // ),
+            
             array(
                 // 'id' => 161,
-                'key' => 'postpone_charge',
-                'value' => 0,
+                'key' => 'max_partener_rewards',
+                'value' => 2,
             ),
+            
            
         ));
 

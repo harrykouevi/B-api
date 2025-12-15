@@ -131,10 +131,10 @@ class PaymentService
     * @param float $amount The amount of the payment.
     * @param Int|String|Wallet $payer_wallet The wallet identifier or wallet of the payer initiating the payment.
     * @param User  $user The user receiving the payment.
-    * @param string $wallettype Paramètre optionnel pour le type de portefeuille
+    * @param WalletType  $wallettype Paramètre optionnel pour le type de portefeuille
     * @return Array|Null
     */
-    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() ,  string $wallettype = null ) : array | Null
+    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() ,  WalletType  $wallettype = null ) : array | Null
     {
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
@@ -156,7 +156,7 @@ class PaymentService
         $currency = json_decode($receiverWallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
          
-            if($amount != 0) { 
+            if($amount > 0) { 
                 try{
                     $payment = $this->toWalletFromWallet($this->buildInternalPaymentData($amount,$payer_wallet,$receiverWallet->user), [$receiverWallet , $payer_wallet]) ;
                     event(new NotifyPaymentEvent( $payment , $payer_wallet,$receiver  ));
@@ -180,10 +180,10 @@ class PaymentService
      * @param float       $amount Montant du paiement.
      * @param User|Wallet       $data   Utilisateur ou wallet impliqué dans le paiement.
      * @param PaymentType $type   Type de paiement : 'credit' (l'utilisateur est le payeur) ou 'debit' (la plateforme est le payeur).
-     *
+     * @param WalletType $wallettype
      * @return array|null Détails de la transaction ou null en cas d’échec.
      */
-    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type, string $wallettype = null): ?array
+    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type, WalletType $wallettype = null): ?array
     {
         try {
 
@@ -540,7 +540,7 @@ class PaymentService
     }
 
 
-    private function resolveReceiverWallet(User $user, ?string $walletType): Wallet
+    private function resolveReceiverWallet(User $user, WalletType $walletType): Wallet
     {
         if (!$user->id) {
             return $this->walletRepository->find(setting('app_default_wallet_id'));

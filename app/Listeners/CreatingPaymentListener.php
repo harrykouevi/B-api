@@ -36,8 +36,7 @@ class CreatingPaymentListener
                 $payment = $this->paymentService->createPayment($event->amount,$event->payer_wallet,$event->user , $event->walletType , $event->taxes );
                 $payment = $payment[0];  
 
-                // Déclencher la notification de paiement (débit/crédit)
-                event(new NotifyPaymentEvent($payment, $event->payer_wallet, $event->user));
+                
             }
         } catch (\Exception $e) {
             // Gestion de l'exception
