@@ -34,7 +34,7 @@ class WalletDataTable extends DataTable
     {
         $wallets = $query->with(['user'])->get();
 
-    dd($wallets); // 🔴 STOP ici, tu vois TOUT
+    dd($wallets->pluck('user')); // 🔴 STOP ici, tu vois TOUT
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
