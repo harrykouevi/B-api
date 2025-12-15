@@ -70,11 +70,11 @@ class WalletDataTable extends DataTable
     protected function getColumns(): array
     {
         $columns = [
-            [
-                'data' => 'name',
-                'title' => trans('lang.wallet_name'),
+            // [
+            //     'data' => 'name',
+            //     'title' => trans('lang.wallet_name'),
 
-            ],
+            // ],
             [
                 'data' => 'balance',
                 'title' => trans('lang.wallet_balance'),
