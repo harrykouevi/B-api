@@ -32,9 +32,9 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
-        $wallets = $query->with(['user'])->get();
+    //     $wallets = $query->with(['user'])->get();
 
-    dd($wallets->pluck('user')->toArray()); // 🔴 STOP ici, tu vois TOUT
+    // dd($wallets->pluck('user')->toArray()); // 🔴 STOP ici, tu vois TOUT
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
@@ -53,8 +53,8 @@ class WalletDataTable extends DataTable
                 
             })
             ->editColumn('user.name', function ($wallet) {
-                if (is_null($wallet->user)) {
-                    return ''; 
+                if (!$wallet->user) {
+                    return '';
                 }
                 return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
             })
@@ -85,11 +85,11 @@ class WalletDataTable extends DataTable
                 'name' => 'currency',
                 'title' => trans('lang.wallet_currency'),
             ],
-            // [
-            //     'name' => 'user.name',
-            //     'title' => trans('lang.wallet_user_id'),
+            [
+                'data' => 'user',
+                'title' => trans('lang.wallet_user_id'),
 
-            // ],
+            ],
             [
                 'data' => 'enabled',
                 'title' => trans('lang.wallet_enabled'),
