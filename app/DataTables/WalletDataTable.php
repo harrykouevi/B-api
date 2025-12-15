@@ -34,7 +34,6 @@ class WalletDataTable extends DataTable
     {
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
-        dd($columns) ;
 
         return $dataTable
             ->editColumn('updated_at', function ($wallet) {
@@ -60,7 +59,7 @@ class WalletDataTable extends DataTable
                 return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
             })
             ->addColumn('action', 'wallets.datatables_actions')
-            ->rawColumns(array_merge($columns, ['action']));
+            ->rawColumns(['action']);
     }
 
     /**
