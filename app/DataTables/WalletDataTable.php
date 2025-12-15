@@ -44,13 +44,13 @@ class WalletDataTable extends DataTable
             ->editColumn('balance', function ($wallet) {
                 return getPriceColumn($wallet, 'balance', $wallet->currency);
             })
-            ->editColumn('currency.name', function ($wallet) {
-                if (isset($wallet->currency)) {
-                    return $wallet->currency->name;
-                } else {
-                    return "";
-                }
-            })
+            // ->editColumn('currency.name', function ($wallet) {
+            //     if (isset($wallet->currency)) {
+            //         return $wallet->currency->name;
+            //     } else {
+            //         return "";
+            //     }
+            // })
             ->editColumn('user.name', function ($wallet) {
                 if (!isset($wallet->user)) {
                     return ''; 
