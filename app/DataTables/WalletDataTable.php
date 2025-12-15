@@ -52,8 +52,8 @@ class WalletDataTable extends DataTable
                     return $wallet->currency;
                 
             })
-            ->editColumn('user.name', function ($wallet) {
-                if (!$wallet->user) {
+            ->editColumn('user', function ($wallet) {
+                if ($wallet->user === Null) {
                     return '';
                 }
                 return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
