@@ -71,7 +71,7 @@ class WalletDataTable extends DataTable
     {
         $columns = [
             [
-                'data' => 'name',
+                'data' => 'name_y',
                 'title' => trans('lang.wallet_name'),
 
             ],
