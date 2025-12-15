@@ -101,7 +101,7 @@ class WalletDataTable extends DataTable
                 'searchable' => false,
             ]
         ];
-        $columns = array_filter($columns);
+        // $columns = array_filter($columns);
         $hasCustomField = in_array(Wallet::class, setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFieldsCollection = CustomField::where('custom_field_model', Wallet::class)->where('in_table', '=', true)->get();
