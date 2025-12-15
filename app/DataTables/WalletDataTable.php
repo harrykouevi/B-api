@@ -52,12 +52,12 @@ class WalletDataTable extends DataTable
                     return $wallet->currency;
                 
             })
-            ->editColumn('user_name', function ($wallet) {
-                if (is_null($wallet->user)) {
-                    return ''; 
-                }
-                return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'updated_at');
-            })
+            // ->editColumn('user_name', function ($wallet) {
+            //     if (is_null($wallet->user)) {
+            //         return ''; 
+            //     }
+            //     return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'updated_at');
+            // })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
     }
@@ -85,11 +85,11 @@ class WalletDataTable extends DataTable
                 'name' => 'currency',
                 'title' => trans('lang.wallet_currency'),
             ],
-            [
-                'data' => 'user_name',
-                'title' => trans('lang.wallet_user_id'),
+            // [
+            //     'data' => 'user_name',
+            //     'title' => trans('lang.wallet_user_id'),
 
-            ],
+            // ],
             [
                 'data' => 'enabled',
                 'title' => trans('lang.wallet_enabled'),
@@ -126,9 +126,9 @@ class WalletDataTable extends DataTable
     public function query(Wallet $model): \Illuminate\Database\Eloquent\Builder
     {
         if (auth()->check() && !auth()->user()->hasRole('admin')) {
-            return $model->newQuery()->where('wallets.user_id', auth()->id())->with("user")->select("$model->table.*");
+            return $model->newQuery()->where('wallets.user_id', auth()->id())->select("$model->table.*");
         } else {
-            return $model->newQuery()->with("user")->select("$model->table.*");
+            return $model->newQuery()->select("$model->table.*");
         }
 
     }
