@@ -85,7 +85,9 @@ class WalletDataTable extends DataTable
                 'title' => trans('lang.wallet_currency'),
             ],
             (auth()->check() && auth()->user()->hasRole('admin')) ? [
-                'data' => 'user.name',
+                // 'data' => 'user.name',
+                'name' => 'user.name',
+
                 'title' => trans('lang.wallet_user_id'),
 
             ] : null,
