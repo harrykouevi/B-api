@@ -32,8 +32,9 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
-        $dataTable = new EloquentDataTable($query);
+         $dataTable = new EloquentDataTable($query);
         dd($query->get()->toArray()) ;
+        $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
             ->editColumn('updated_at', function ($wallet) {
@@ -47,7 +48,7 @@ class WalletDataTable extends DataTable
             })
             ->editColumn('currency', function ($wallet) {
                 if (isset($wallet->currency)) {
-                    return $wallet->currency;
+                    return $wallet->currency->name;
                 } else {
                     return "";
                 }
@@ -85,11 +86,11 @@ class WalletDataTable extends DataTable
                 'name' => 'currency',
                 'title' => trans('lang.wallet_currency'),
             ],
-            // (auth()->check() && auth()->user()->hasRole('admin')) ? [
-            //     'data' => 'user.name',
-            //     'title' => trans('lang.wallet_user_id'),
+            (auth()->check() && auth()->user()->hasRole('admin')) ? [
+                'data' => 'user.name',
+                'title' => trans('lang.wallet_user_id'),
 
-            // ] : null,
+            ] : null,
             [
                 'data' => 'enabled',
                 'title' => trans('lang.wallet_enabled'),
@@ -126,9 +127,9 @@ class WalletDataTable extends DataTable
     public function query(Wallet $model): \Illuminate\Database\Eloquent\Builder
     {
         if (auth()->check() && !auth()->user()->hasRole('admin')) {
-            return $model->newQuery()->where('wallets.user_id', auth()->id())->select("$model->table.*");
+            return $model->newQuery()->where('wallets.user_id', auth()->id())->with("user")->select("$model->table.*");
         } else {
-            return $model->newQuery()->select("$model->table.*");
+            return $model->newQuery()->with("user")->select("$model->table.*");
         }
 
     }
