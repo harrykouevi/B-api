@@ -79,16 +79,16 @@ class WalletDataTable extends DataTable
                 'title' => trans('lang.wallet_balance'),
 
             ],
-            [
-                'data' => 'currency.name',
-                'name' => 'currency',
-                'title' => trans('lang.wallet_currency'),
-            ],
-            (auth()->check() && auth()->user()->hasRole('admin')) ? [
-                'data' => 'user.name',
-                'title' => trans('lang.wallet_user_id'),
+            // [
+            //     'data' => 'currency.name',
+            //     'name' => 'currency',
+            //     'title' => trans('lang.wallet_currency'),
+            // ],
+            // (auth()->check() && auth()->user()->hasRole('admin')) ? [
+            //     'data' => 'user.name',
+            //     'title' => trans('lang.wallet_user_id'),
 
-            ] : null,
+            // ] : null,
             [
                 'data' => 'enabled',
                 'title' => trans('lang.wallet_enabled'),
