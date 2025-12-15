@@ -33,8 +33,9 @@ class WalletDataTable extends DataTable
     public function dataTable(mixed $query): DataTableAbstract
     {
         $dataTable = new EloquentDataTable($query);
-        dd($dataTable) ;
         $columns = array_column($this->getColumns(), 'data');
+        dd($columns) ;
+
         return $dataTable
             ->editColumn('updated_at', function ($wallet) {
                 return getDateColumn($wallet, 'updated_at');
