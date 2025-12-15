@@ -92,7 +92,7 @@
             <div class="input-group colorpicker-component">
                 {!! Form::text('background_color', null,  ['class' => 'form-control','placeholder'=>  trans("lang.slide_background_color_placeholder"),'autocomplete' => 'off']) !!}
                 <div class=" input-group-append ">
-                    <span class="input-group-addon input-group-text"><i class="fas fa-square" style="color: {{ isset($slide) ? $slide['background_color'] : '#000'}}"></i></span>
+                    <span class="input-group-addon input-group-text"><i class="fas fa-square" style="color: {{ isset($slide) ? $slide['background_color'] : '#fff'}}"></i></span>
                 </div>
             </div>
             <div class="form-text text-muted">
@@ -201,7 +201,17 @@
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('e_service_id', trans("lang.slide_e_service_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::select('e_service_id', $eService, null, ['data-empty'=>trans("lang.slide_e_service_id_placeholder"), 'class' => 'select2 not-required form-control']) !!}
+            {{-- {!! Form::select('e_service_id', $eService, null, ['data-empty'=>trans("lang.slide_e_service_id_placeholder"), 'class' => 'select2 not-required form-control']) !!} --}}
+            <select name="e_service_id"  class="select2 form-control not-required" >
+            	<option value=""> {{ trans("lang.slide_e_service_id_placeholder") }} </option>
+                @foreach($eService as $id => $cat)
+                    <option value="{{ $id }}"
+                        @if( $id == null)  selected @endif>
+                        {{ $cat}}
+                    </option>
+                @endforeach
+            </select>
+            
             <div class="form-text text-muted">{{ trans("lang.slide_e_service_id_help") }}</div>
         </div>
     </div>
@@ -210,7 +220,17 @@
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('salon_id', trans("lang.slide_salon_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::select('salon_id', $salon, null, ['data-empty'=>trans("lang.slide_salon_id_placeholder"), 'class' => 'select2 not-required form-control']) !!}
+            {{-- {!! Form::select('salon_id', $salon, null, ['data-empty'=>trans("lang.slide_salon_id_placeholder"), 'class' => 'select2 not-required form-control']) !!} --}}
+            <select name="e_service_id"  class="select2 form-control not-required" >
+            	<option value=""> {{trans("lang.slide_salon_id_placeholder") }} </option>
+                @foreach($salon as $id => $cat)
+                    <option value="{{ $id }}"
+                        @if( $id == null)  selected @endif>
+                        {{ $cat}}
+                    </option>
+                @endforeach
+            </select>
+            
             <div class="form-text text-muted">{{ trans("lang.slide_salon_id_help") }}</div>
         </div>
     </div>
