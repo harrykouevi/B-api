@@ -32,9 +32,6 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
-    //     $wallets = $query->with(['user'])->get();
-
-    // dd($wallets->pluck('user')->toArray()); // 🔴 STOP ici, tu vois TOUT
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
@@ -48,15 +45,17 @@ class WalletDataTable extends DataTable
                 return getPriceColumn($wallet, 'balance', $wallet->currency);
             })
             ->editColumn('currency', function ($wallet) {
-               
-                    return $wallet->currency;
-                
+                if (isset($wallet->currency)) {
+                    return $wallet->currency->name;
+                } else {
+                    return "";
+                }
             })
-            // ->editColumn('user_name', function ($wallet) {
-            //     if (is_null($wallet->user)) {
+            // ->editColumn('user.name', function ($wallet) {
+            //     if (!isset($wallet->user)) {
             //         return ''; 
             //     }
-            //     return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'updated_at');
+            //     return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
             // })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
@@ -85,11 +84,11 @@ class WalletDataTable extends DataTable
                 'name' => 'currency',
                 'title' => trans('lang.wallet_currency'),
             ],
-            // [
-            //     'data' => 'user_name',
-            //     'title' => trans('lang.wallet_user_id'),
+            (auth()->check() && auth()->user()->hasRole('admin')) ? [
+                'data' => 'user.name',
+                'title' => trans('lang.wallet_user_id'),
 
-            // ],
+            ] : null,
             [
                 'data' => 'enabled',
                 'title' => trans('lang.wallet_enabled'),
@@ -101,7 +100,7 @@ class WalletDataTable extends DataTable
                 'searchable' => false,
             ]
         ];
-        // $columns = array_filter($columns);
+        $columns = array_filter($columns);
         $hasCustomField = in_array(Wallet::class, setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFieldsCollection = CustomField::where('custom_field_model', Wallet::class)->where('in_table', '=', true)->get();
