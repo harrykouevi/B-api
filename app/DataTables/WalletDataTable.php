@@ -46,7 +46,7 @@ class WalletDataTable extends DataTable
             })
             ->editColumn('currency', function ($wallet) {
                 if (isset($wallet->currency)) {
-                    return $wallet->currency->name;
+                    return $wallet->currency;
                 } else {
                     return "";
                 }
