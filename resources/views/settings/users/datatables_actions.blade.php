@@ -2,6 +2,7 @@
 <div class='btn-group btn-group-sm'>
     {{--<a data-toggle="tooltip" data-placement="left" title="{{trans('lang.user_edit')}}" href="{{ route('users.show', $id) }}" class='btn btn-link'>--}}
     {{--<i class="fas fa-eye"></i> </a>--}}
+     @if($id !== 1 )
     <a data-toggle="tooltip" data-placement="left" title="{{trans('lang.user_edit')}}" href="{{ route('users.edit', $id) }}" class='btn btn-link'>
         <i class="fas fa-edit"></i> </a>
     {!! Form::button('<i class="fas fa-trash"></i>', [
@@ -26,6 +27,6 @@
 
         </div>
     </div>
-
+    @endif
 </div>
 {!! Form::close() !!}
