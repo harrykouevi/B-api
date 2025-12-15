@@ -59,6 +59,12 @@ class WalletDataTable extends DataTable
                 }
                 return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
             })
+            ->addColumn('user_id', function($wallet) {
+                if (is_null($wallet->user)) {
+                    return ''; 
+                }
+                return $wallet->user_id;
+            })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
     }
