@@ -52,11 +52,11 @@ class WalletDataTable extends DataTable
                     return $wallet->currency;
                 
             })
-            ->editColumn('user', function ($wallet) {
-                if ($wallet->user === Null) {
-                    return '';
+            ->editColumn('user.name', function ($wallet) {
+                if (is_null($wallet->user)) {
+                    return ''; 
                 }
-                return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'id');
+                return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'updated_at');
             })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
@@ -71,7 +71,7 @@ class WalletDataTable extends DataTable
     {
         $columns = [
             [
-                'data' => 'id',
+                'data' => 'name',
                 'title' => trans('lang.wallet_name'),
 
             ],
@@ -86,7 +86,7 @@ class WalletDataTable extends DataTable
                 'title' => trans('lang.wallet_currency'),
             ],
             [
-                'data' => 'user',
+                'data' => 'user_name',
                 'title' => trans('lang.wallet_user_id'),
 
             ],
