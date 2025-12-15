@@ -52,7 +52,7 @@ class WalletDataTable extends DataTable
                     return $wallet->currency;
                 
             })
-            ->editColumn('user.name', function ($wallet) {
+            ->editColumn('user_name', function ($wallet) {
                 if (is_null($wallet->user)) {
                     return ''; 
                 }
