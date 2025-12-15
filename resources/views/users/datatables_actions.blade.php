@@ -5,10 +5,10 @@
         <i class="fas fa-eye"></i> 
     </a>
     @endcan
-    @if($id == 1 )
+    @if($id !== 1 )
         @can('users.edit')
         <a data-toggle="tooltip" data-placement="left" title="{{trans('lang.user_edit')}}" href="{{ route('users.edit', $id) }}" class='btn btn-link'>
-            <i class="fas fa-edit"></i> 
+             $id <i class="fas fa-edit"></i> 
         </a>
         @endcan
         @can('users.destroy')
