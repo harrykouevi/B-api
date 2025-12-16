@@ -332,14 +332,47 @@ class Booking extends Model
 
     public function canBeCancelled(): bool
     {
-        return !$this->cancel && 
+        return !$this->cancel &&
                !in_array($this->booking_status_id, [6, 7]); // Done, Failed
     }
 
     /**
-     * 
+     *
      *  REPORT SECTION ENDS HERE
-     * 
+     *
      */
+
+    /**
+     * Calculate booking total before creation
+     *
+     * @param \Illuminate\Support\Collection $eServices Collection of EService models
+     * @param \Illuminate\Support\Collection|null $options Collection of Option models
+     * @param int $quantity Quantity of services
+     * @param Coupon|null $coupon Coupon object with value property
+     * @return float Total amount
+     */
+    public static function calculateTotalBeforeCreation($eServices, $options = null, int $quantity = 1, $coupon = null): float
+    {
+        $total = 0;
+
+        // Calculate services total
+        foreach ($eServices as $eService) {
+            $total += $eService->getPrice() * ($quantity >= 1 ? $quantity : 1);
+        }
+
+        // Calculate options total
+        if ($options && $options instanceof \Illuminate\Support\Collection) {
+            foreach ($options as $option) {
+                $total += $option->price * ($quantity >= 1 ? $quantity : 1);
+            }
+        }
+
+        // Apply coupon discount
+        if ($coupon && isset($coupon->value)) {
+            $total -= $coupon->value;
+        }
+
+        return max(0, $total); // Ensure non-negative total
+    }
 
 }
