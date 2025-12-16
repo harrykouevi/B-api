@@ -282,17 +282,37 @@ class UpdateBookingPaymentListener
                         ]);
                     }
 
-                   
+
                     [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
-                    
+
+                    Log::info('UpdateBookingPaymentListener - Acceptation:', [
+                        'booking_id' => $booking->id,
+                        'purchaseamount' => $purchaseamount,
+                        'clientW' => $clientW ? $clientW->id : 'NULL',
+                        'walletType' => $walletType ? $walletType->value : 'NULL',
+                        'is_pyment_cash' => $is_pyment_cash,
+                        'taxes' => $purchase->taxes
+                    ]);
+
                     //si il y a eu achat de service
                     if ($is_pyment_cash == false && !is_null($clientW) ) {
 
                         $currency = json_decode($clientW->currency, true);
 
                         if ($currency['code'] == setting('default_currency_code')) {
-                            $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes,$this->paymentService->buildCouponData($purchase));
+                            Log::info('Creating payment from client to salon', [
+                                'amount' => $purchaseamount,
+                                'from_wallet' => $clientW->id,
+                                'to_user' => auth()->user()->id,
+                                'wallet_type' => $walletType->value
+                            ]);
+
+                            $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),$walletType,$purchase->taxes,$this->paymentService->buildCouponData($purchase));
                             $purchasepayment = $purchasepayment[0];
+
+                            Log::info('Payment created:', [
+                                'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
+                            ]);
                             if($purchasepayment){
                                 
                                 try{ 
