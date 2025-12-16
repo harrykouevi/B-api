@@ -237,7 +237,8 @@ class PaymentAPIController extends Controller
             $wallet = $this->walletRepository->find($walletId);
             $currency = json_decode($wallet->currency, true);
 
-            $booking = $this->bookingRepository->find($input['id']);
+            // Charger le booking avec les relations nécessaires
+            $booking = $this->bookingRepository->with(['salon.user', 'e_services', 'options'])->find($input['id']);
 
             // Vérification de base du wallet et de la devise
             if (!$wallet || $currency['code'] != setting('default_currency_code')) {
