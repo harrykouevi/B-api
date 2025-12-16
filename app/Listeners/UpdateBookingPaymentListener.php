@@ -258,8 +258,14 @@ class UpdateBookingPaymentListener
                    
                     //dans le cas de paiement par cash jai crée un purchase à pending
                     //je verifie sil y en a pour savoir si cest un paiement cash
+                    // IMPORTANT: Ne pas confondre avec les purchases créés pour wallet (hint='wallet')
                     $is_pending_purchase_for_booking = is_null( $purchase = $this->purchaseRepository ->scopeQuery(function ($query) use ($booking) {
-                            return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])->where("purchase_status_id", 1);
+                            return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
+                                        ->where("purchase_status_id", 1)
+                                        ->where(function($q) {
+                                            $q->where('hint', '!=', 'wallet')
+                                              ->orWhereNull('hint');
+                                        });
                         })->first()) ? false : true ;
                     
                     if($is_pending_purchase_for_booking ){ 
