@@ -256,6 +256,22 @@ class UpdateBookingPaymentListener
                 if(auth()->user()->hasRole('salon owner') && is_null($booking->reported_from_id) ){
                     // si acceptation de la reservation est faite par le coiffeur
                    
+                    // Chercher TOUS les purchases pour ce booking pour debug
+                    $allPurchases = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
+                        return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id]);
+                    })->get();
+
+                    Log::info('Tous les purchases pour booking '.$booking->id.':', [
+                        'count' => $allPurchases->count(),
+                        'purchases' => $allPurchases->map(function($p) {
+                            return [
+                                'id' => $p->id,
+                                'hint' => $p->hint,
+                                'purchase_status_id' => $p->purchase_status_id
+                            ];
+                        })->toArray()
+                    ]);
+
                     // Chercher d'abord un purchase avec hint='wallet' (créé lors du paiement initial)
                     $walletPurchase = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
                         return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
@@ -269,6 +285,7 @@ class UpdateBookingPaymentListener
                         $purchase = $walletPurchase;
                         Log::info('Purchase wallet trouvé:', ['purchase_id' => $purchase->id, 'hint' => $purchase->hint]);
                     } else {
+                        Log::info('Aucun purchase wallet trouvé, recherche purchase cash...');
                         // Chercher un purchase cash (sans hint ou hint != 'wallet')
                         $cashPurchase = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
                             return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
