@@ -256,36 +256,43 @@ class UpdateBookingPaymentListener
                 if(auth()->user()->hasRole('salon owner') && is_null($booking->reported_from_id) ){
                     // si acceptation de la reservation est faite par le coiffeur
                    
-                    //dans le cas de paiement par cash jai crée un purchase à pending
-                    //je verifie sil y en a pour savoir si cest un paiement cash
-                    // IMPORTANT: Ne pas confondre avec les purchases créés pour wallet (hint='wallet')
-                    $is_pending_purchase_for_booking = is_null( $purchase = $this->purchaseRepository ->scopeQuery(function ($query) use ($booking) {
+                    // Chercher d'abord un purchase avec hint='wallet' (créé lors du paiement initial)
+                    $walletPurchase = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
+                        return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
+                                    ->where("purchase_status_id", 1)
+                                    ->where('hint', 'wallet');
+                    })->first();
+
+                    if($walletPurchase) {
+                        // C'est un paiement wallet - utiliser le purchase existant
+                        $is_pyment_cash = false;
+                        $purchase = $walletPurchase;
+                        Log::info('Purchase wallet trouvé:', ['purchase_id' => $purchase->id, 'hint' => $purchase->hint]);
+                    } else {
+                        // Chercher un purchase cash (sans hint ou hint != 'wallet')
+                        $cashPurchase = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
                             return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
-                                        ->where("purchase_status_id", 1)
-                                        ->where(function($q) {
-                                            $q->where('hint', '!=', 'wallet')
-                                              ->orWhereNull('hint');
-                                        });
-                        })->first()) ? false : true ;
-                    
-                    if($is_pending_purchase_for_booking ){ 
-                        $is_pyment_cash = true ;
-                        $purchase = $this->purchaseRepository->update(['taxes'=>  $booking->purchase_taxes], $purchase->id);
-                                       
-                    }else{
-                        //si ce n'est pas null c'est pas un paiement cash
-                        $purchase = $this->purchaseRepository->Create([
-                            'salon' => $booking->salon ,
-                            'booking' => $booking,
-                            'e_services' => $booking->e_services ,
-                            'options' => $booking->options ,
-                            'quantity' => $booking->quantity,
-                            'user_id' => $booking->user_id ,
-                            'taxes'=>  $booking->purchase_taxes ,
-                            'coupon'=>  $booking->coupon ,
-                            'purchase_status_id' => 1 ,
-                            'purchase_at'  => now()  
-                        ]);
+                                        ->where("purchase_status_id", 1);
+                        })->first();
+
+                        if($cashPurchase) {
+                            $is_pyment_cash = true;
+                            $purchase = $this->purchaseRepository->update(['taxes'=>  $booking->purchase_taxes], $cashPurchase->id);
+                        } else {
+                            //Aucun purchase existant - créer un nouveau
+                            $purchase = $this->purchaseRepository->Create([
+                                'salon' => $booking->salon ,
+                                'booking' => $booking,
+                                'e_services' => $booking->e_services ,
+                                'options' => $booking->options ,
+                                'quantity' => $booking->quantity,
+                                'user_id' => $booking->user_id ,
+                                'taxes'=>  $booking->purchase_taxes ,
+                                'coupon'=>  $booking->coupon ,
+                                'purchase_status_id' => 1 ,
+                                'purchase_at'  => now()
+                            ]);
+                        }
                     }
 
 
