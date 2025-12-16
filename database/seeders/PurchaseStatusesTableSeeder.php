@@ -20,8 +20,13 @@ class PurchaseStatusesTableSeeder extends Seeder
      */
     public function run(): void
     {
+         // Désactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('purchase_statuses')->truncate();
+        // Réactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // DB::table('purchase_statuses')->truncate();
+        //
 
 
         DB::table('purchase_statuses')->insert(array(
