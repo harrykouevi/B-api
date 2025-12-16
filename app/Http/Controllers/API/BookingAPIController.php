@@ -214,6 +214,13 @@ class BookingAPIController extends Controller
                 $paymentMethodId = $input['payment_method_id'];
             }
 
+            // IMPORTANT: Retirer le champ 'payment' de l'input avant la création
+            // Le payment_id sera assigné plus tard lors du paiement effectif via PaymentAPIController
+            // Sinon Laravel essaie de sauvegarder l'objet payment entier dans payment_id (erreur SQL)
+            if (isset($input['payment'])) {
+                unset($input['payment']);
+            }
+
             if ($paymentMethodId == 11) {
                 // Calculer le montant total de la nouvelle réservation
                 $newBookingTotal = Booking::calculateTotalBeforeCreation(
