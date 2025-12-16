@@ -27,6 +27,9 @@ use App\Repositories\AddressRepository;
 use App\Repositories\BookingRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\EServiceRepository;
+use App\Repositories\WalletRepository;
+use App\Criteria\Wallets\EnabledCriteria;
+use App\Criteria\Wallets\WalletsOfUserCriteria;
 use App\Events\BookingStatusChangedEvent;
 use App\Services\BookingCancellationService;
 use Illuminate\Support\Facades\Notification;
@@ -82,11 +85,15 @@ class BookingAPIController extends Controller
 
     private BookingCancellationService $cancellationService;
 
-
+    /**
+     * @var WalletRepository
+     */
+    private WalletRepository $walletRepository;
 
     public function __construct(BookingRepository $bookingRepo, BookingStatusRepository $bookingStatusRepo,
     PaymentRepository $paymentRepo, AddressRepository $addressRepository, EServiceRepository $eServiceRepository,
     SalonRepository $salonRepository, CouponRepository $couponRepository, OptionRepository $optionRepository,
+    WalletRepository $walletRepository
     )
     {
         parent::__construct();
@@ -98,6 +105,7 @@ class BookingAPIController extends Controller
         $this->salonRepository = $salonRepository;
         $this->couponRepository = $couponRepository;
         $this->optionRepository = $optionRepository;
+        $this->walletRepository = $walletRepository;
         $this->reportService = app(BookingReportService::class);
         $this->cancellationService = app(BookingCancellationService::class);
     }
@@ -193,8 +201,70 @@ class BookingAPIController extends Controller
             $input['salon'] = $salon;
             $input['taxes'] = $taxes;
 
-            
+
             $input['booking_status_id'] = $this->bookingStatusRepository->find(1)->id;
+
+            // Vérification des fonds du wallet avant création du booking
+            // Payment method ID 11 correspond au paiement par wallet
+            // Vérifier dans payment array OU directement dans input
+            $paymentMethodId = null;
+            if (isset($input['payment']['payment_method_id'])) {
+                $paymentMethodId = $input['payment']['payment_method_id'];
+            } elseif (isset($input['payment_method_id'])) {
+                $paymentMethodId = $input['payment_method_id'];
+            }
+
+            if ($paymentMethodId == 11) {
+                // Calculer le montant total de la nouvelle réservation
+                $newBookingTotal = Booking::calculateTotalBeforeCreation(
+                    $input['e_services'],
+                    isset($input['options']) ? $input['options'] : null,
+                    isset($input['quantity']) ? $input['quantity'] : 1,
+                    isset($input['coupon']) ? $input['coupon'] : null
+                );
+
+                // Récupérer le wallet de l'utilisateur
+                $this->walletRepository->pushCriteria(new EnabledCriteria());
+                $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
+
+                $userWallet = null;
+                if (isset($input['wallet_id'])) {
+                    // Si un wallet_id est spécifié, le récupérer directement
+                    $userWallet = $this->walletRepository->find($input['wallet_id']);
+                } else {
+                    // Sinon, récupérer le premier wallet disponible avec suffisamment de fonds
+                    $userWallet = $this->walletRepository->all()->first(function ($wallet) use ($newBookingTotal) {
+                        $currency = json_decode($wallet->currency, true);
+                        return $currency['code'] == setting('default_currency_code') &&
+                               $wallet->balance >= $newBookingTotal;
+                    });
+                }
+
+                if (!$userWallet) {
+                    return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]), 404);
+                }
+
+                // Vérifier que le wallet a la bonne devise
+                $currency = json_decode($userWallet->currency, true);
+                if ($currency['code'] != setting('default_currency_code')) {
+                    return $this->sendError(__('lang.wallet_invalid_currency'), 400);
+                }
+
+                // Calculer le total des réservations en attente (booking_status_id = 1)
+                $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
+                $waitingBookingsTotal = $this->bookingRepository->findByField('booking_status_id', 1)->sum(function ($booking) {
+                    return $booking->getTotal();
+                });
+
+                // Vérifier si le solde est suffisant
+                $requiredAmount = $newBookingTotal + $waitingBookingsTotal;
+                if ($userWallet->balance < $requiredAmount) {
+                    return $this->sendError(__('lang.wallet_insufficient_amount'), 400);
+                }
+
+                // Stocker le wallet_id dans l'input pour l'utiliser plus tard
+                $input['wallet_id'] = $userWallet->id;
+            }
 
             $booking = $this->bookingRepository->create($input);
             

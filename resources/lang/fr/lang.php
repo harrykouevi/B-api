@@ -1463,6 +1463,7 @@ return [
     'wallet_balance' => 'Solde',
     'wallet_balance_insufficient' => 'Solde Google Wallet insuffisant',
     'wallet_insufficient_amount' => 'Solde de votre portefeuille est insuffisant pour effectuer cette transaction.',
+    'wallet_invalid_currency' => 'La devise de votre portefeuille n\'est pas valide pour cette transaction.',
     'wallet_currency' => 'Devise',
     'wallet_currency_help' => 'Sélectionnez la devise de ce portefeuille',
     'wallet_currency_placeholder' => 'Insérer la devise',

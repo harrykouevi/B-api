@@ -233,41 +233,36 @@ class PaymentAPIController extends Controller
     public function wallets(string $walletId, Request $request): JsonResponse
     {
         $input = $request->all();
-        $transaction = [];
         try {
             $wallet = $this->walletRepository->find($walletId);
             $currency = json_decode($wallet->currency, true);
-            
-            $booking = $this->bookingRepository->find($input['id']);
-            $servicesAmountIntentToDebit = $booking->getTotal();
-            $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
-            $waitingAmountToDebit = $this->bookingRepository->findByField('booking_status_id', 1)->sum(function ($booking) {
-                                        return $booking->getTotal();
-                                    });
-            // Log::info(["verification du terrain", $wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $wallet->balance]);
-            
-            if ($wallet && $currency['code'] == setting('default_currency_code')) {
 
-                //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
-                if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount'),400);
-                    //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
-                
-                $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
-                $payment = $payment[0];
-                if($payment){
-                    $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-                    event(new BookingStatusChangedEvent($booking));
-                
-                }else{
-                    // If there's no payment required, return a successful response
-                    if (isset($input['payment']['amount']) && $input['payment']['amount'] <= 0) {
-                        return $this->sendResponse([], 'Aucun paiement requis pour cette réservation');
-                    }
-                    throw new Exception('failed booking payment');
-                }
-                
-            } else {
+            $booking = $this->bookingRepository->find($input['id']);
+
+            // Vérification de base du wallet et de la devise
+            if (!$wallet || $currency['code'] != setting('default_currency_code')) {
                 return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
+            }
+
+            // Vérification optionnelle supplémentaire du solde (en cas de changement entre création et paiement)
+            $bookingTotal = $booking->getTotal();
+            if ($wallet->balance < $bookingTotal) {
+                return $this->sendError(__('lang.wallet_insufficient_amount'), 400);
+            }
+
+            // Créer le paiement
+            $payment = $this->paymentService->createPayment($input['payment']['amount'], $wallet);
+            $payment = $payment[0];
+
+            if ($payment) {
+                $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+                event(new BookingStatusChangedEvent($booking));
+            } else {
+                // If there's no payment required, return a successful response
+                if (isset($input['payment']['amount']) && $input['payment']['amount'] <= 0) {
+                    return $this->sendResponse([], 'Aucun paiement requis pour cette réservation');
+                }
+                throw new Exception('failed booking payment');
             }
 
             return $this->sendResponse($payment->toArray(), 'Payement par portefeuil succès');
@@ -280,7 +275,7 @@ class PaymentAPIController extends Controller
             ]);
             return $this->sendError($e->getMessage());
         }
-        
+
     }
 
     public function byMonth(): JsonResponse

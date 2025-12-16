@@ -1354,6 +1354,7 @@ return [
     'wallet_balance' => 'Balance',
     'wallet_balance_insufficient' => 'Wallet Balance Insufficient',
     'wallet_insufficient_amount' => 'Wallet balance is insufficient to complete this transaction.',
+    'wallet_invalid_currency' => 'Your wallet currency is not valid for this transaction.',
 
     'wallet_currency' => 'Currency',
     'wallet_currency_help' => 'Select the currency of this wallet',
