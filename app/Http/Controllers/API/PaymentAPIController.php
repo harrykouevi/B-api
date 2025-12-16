@@ -251,11 +251,50 @@ class PaymentAPIController extends Controller
             }
 
             // Créer le paiement
-            $payment = $this->paymentService->createPayment($input['payment']['amount'], $wallet);
+            $transactionAmount = $input['payment']['amount'];
+
+            // Déterminer le type de wallet en fonction du nom
+            $walletType = $wallet->name === WalletType::BONUS->value
+                ? WalletType::BONUS
+                : WalletType::PRINCIPAL;
+
+            // Le salon reçoit le paiement
+            $receiver = $booking->salon->user;
+
+            // Récupérer les taxes et le coupon si présents
+            $tax = $booking->taxes ?? null;
+            $coupon = $booking->coupon ? $this->paymentService->buildCouponData($booking) : null;
+
+            $payment = $this->paymentService->createPayment(
+                $transactionAmount,
+                $wallet,
+                $receiver,
+                $walletType,
+                $tax,
+                $coupon
+            );
             $payment = $payment[0];
 
             if ($payment) {
+                if($transactionAmount > 0) event(new NotifyPaymentEvent($payment, $wallet, new User()));
                 $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+
+                // Créer le Purchase
+                $purchase = $this->purchaseRepository->Create([
+                    'salon' => $booking->salon,
+                    'booking' => $booking,
+                    'e_services' => $booking->e_services,
+                    'options' => $booking->options,
+                    'quantity' => $booking->quantity,
+                    'user_id' => $booking->user_id,
+                    'taxes' => $booking->purchase_taxes,
+                    'coupon' => $booking->coupon,
+                    'purchase_status_id' => 1,
+                    'hint' => 'wallet',
+                    'purchase_at' => now()
+                ]);
+
+                event(new NotifyBookingEvent($booking));
                 event(new BookingStatusChangedEvent($booking));
             } else {
                 // If there's no payment required, return a successful response
