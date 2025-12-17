@@ -201,6 +201,25 @@ class BookingAPIController extends Controller
             $input['salon'] = $salon;
             $input['taxes'] = $taxes;
 
+            // Si le frontend n'a pas envoyé purchase_taxes (via 'taxe'),
+            // récupérer depuis les settings
+            if (!isset($input['purchase_taxes'])) {
+                $purchaseTaxeSetting = setting('purchase_taxe');
+                if ($purchaseTaxeSetting) {
+                    // Le setting est un JSON string, le décoder
+                    $purchaseTaxeData = json_decode($purchaseTaxeSetting, true);
+                    if ($purchaseTaxeData) {
+                        $input['purchase_taxes'] = [
+                            [
+                                'name' => 'commission',
+                                'type' => $purchaseTaxeData['type'] ?? 'percent',
+                                'value' => $purchaseTaxeData['value'] ?? 10
+                            ]
+                        ];
+                    }
+                }
+            }
+
             // CORRECTION: Si payment est un objet, extraire payment_id
             if (isset($input['payment']) && is_array($input['payment'])) {
                 Log::info('Payment reçu comme objet, extraction du payment_id', [
