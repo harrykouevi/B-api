@@ -261,8 +261,9 @@ class UpdateBookingPaymentListener
                         return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id]);
                     })->get();
 
-                    Log::info('Tous les purchases pour booking '.$booking->id.':', [
+                    Log::info('UpdateBookingPaymentListener - Tous les purchases pour booking '.$booking->id.':', [
                         'count' => $allPurchases->count(),
+                        'payment_method' => $booking->payment->paymentMethod->name ?? 'NULL',
                         'purchases' => $allPurchases->map(function($p) {
                             return [
                                 'id' => $p->id,
@@ -283,20 +284,32 @@ class UpdateBookingPaymentListener
                         // C'est un paiement wallet - utiliser le purchase existant
                         $is_pyment_cash = false;
                         $purchase = $walletPurchase;
-                        Log::info('Purchase wallet trouvé:', ['purchase_id' => $purchase->id, 'hint' => $purchase->hint]);
+                        Log::info('UpdateBookingPaymentListener - Purchase wallet trouvé:', [
+                            'purchase_id' => $purchase->id,
+                            'hint' => $purchase->hint
+                        ]);
                     } else {
-                        Log::info('Aucun purchase wallet trouvé, recherche purchase cash...');
-                        // Chercher un purchase cash (sans hint ou hint != 'wallet')
+                        Log::info('UpdateBookingPaymentListener - Aucun purchase wallet trouvé, recherche purchase cash...');
+                        // Chercher un purchase cash (hint='cash' ou sans hint)
                         $cashPurchase = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
                             return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
-                                        ->where("purchase_status_id", 1);
+                                        ->where("purchase_status_id", 1)
+                                        ->where(function($q) {
+                                            $q->where('hint', 'cash')
+                                              ->orWhereNull('hint');
+                                        });
                         })->first();
 
                         if($cashPurchase) {
                             $is_pyment_cash = true;
                             $purchase = $this->purchaseRepository->update(['taxes'=>  $booking->purchase_taxes], $cashPurchase->id);
+                            Log::info('UpdateBookingPaymentListener - Purchase cash trouvé et mis à jour:', [
+                                'purchase_id' => $purchase->id,
+                                'hint' => $purchase->hint
+                            ]);
                         } else {
-                            //Aucun purchase existant - créer un nouveau
+                            //Aucun purchase existant - créer un nouveau (cas rare)
+                            Log::warning('UpdateBookingPaymentListener - Aucun purchase trouvé, création d\'un nouveau');
                             $purchase = $this->purchaseRepository->Create([
                                 'salon' => $booking->salon ,
                                 'booking' => $booking,

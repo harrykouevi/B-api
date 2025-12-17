@@ -162,8 +162,16 @@ class PaymentAPIController extends Controller
                             'coupon'=>  $booking->coupon ,
                             'purchase_status_id' => 1 ,
                             'hint' => 'cash' ,
-                            'purchase_at'  => now()  
+                            'purchase_at'  => now()
                         ]);
+
+                        Log::info('Purchase créé dans cash():', [
+                            'purchase_id' => $purchase->id,
+                            'hint' => $purchase->hint,
+                            'booking_id' => $booking->id,
+                            'purchase_status_id' => $purchase->purchase_status_id
+                        ]);
+
                         event( new NotifyBookingEvent($booking)) ;
 
                     } catch (Exception $e) {
@@ -278,7 +286,7 @@ class PaymentAPIController extends Controller
                 if($transactionAmount > 0) event(new NotifyPaymentEvent($payment, $wallet, new User()));
                 $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
 
-                // Créer le Purchase
+                // Créer le Purchase AVANT de déclencher les événements
                 $purchase = $this->purchaseRepository->Create([
                     'salon' => $booking->salon,
                     'booking' => $booking,
@@ -293,8 +301,19 @@ class PaymentAPIController extends Controller
                     'purchase_at' => now()
                 ]);
 
+                // S'assurer que le Purchase est bien enregistré avant de déclencher les événements
+                Log::info('Purchase créé dans wallets():', [
+                    'purchase_id' => $purchase->id,
+                    'hint' => $purchase->hint,
+                    'booking_id' => $booking->id,
+                    'purchase_status_id' => $purchase->purchase_status_id
+                ]);
+
                 event(new NotifyBookingEvent($booking));
-                event(new BookingStatusChangedEvent($booking));
+                // Ne PAS déclencher BookingStatusChangedEvent ici
+                // car le payment n'est pas encore validé (status != 3)
+                // Il sera géré quand le salon accepte la réservation
+                // event(new BookingStatusChangedEvent($booking));
             } else {
                 // If there's no payment required, return a successful response
                 if (isset($input['payment']['amount']) && $input['payment']['amount'] <= 0) {
