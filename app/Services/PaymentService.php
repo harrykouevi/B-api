@@ -339,7 +339,14 @@ class PaymentService
              // Calcul de la commission si elle existe
             $commission = 0 ;
             if ($tax !== null && $amount > 0 ) {
-                $commission = self::getCommission($amount + $discount , $tax) ;
+                // Convertir les objets Tax en array si nécessaire
+                $taxArray = is_array($tax)
+                    ? array_map(function($t) {
+                        return is_object($t) ? $t->toArray() : $t;
+                      }, $tax)
+                    : (is_object($tax) ? $tax->toArray() : $tax);
+
+                $commission = self::getCommission($amount + $discount , $taxArray) ;
             }  
 
             Log::info('PaymentService::toWalletFromWallet commission', [
@@ -525,8 +532,22 @@ class PaymentService
                 // Calcul de la commission si elle existe
                 $commission = 0 ;
                 if (!is_null($tax)) {
-                    $commission = self::getCommission($amount + $discount, $tax) ;
-                   
+                    // Convertir les objets Tax en array si nécessaire
+                    $taxArray = is_array($tax)
+                        ? array_map(function($t) {
+                            return is_object($t) ? $t->toArray() : $t;
+                          }, $tax)
+                        : (is_object($tax) ? $tax->toArray() : $tax);
+
+                    Log::info('PaymentService::intentCashPayment tax before getCommission', [
+                        'tax_original' => $tax,
+                        'tax_converted' => $taxArray,
+                        'amount' => $amount,
+                        'discount' => $discount,
+                    ]);
+
+                    $commission = self::getCommission($amount + $discount, $taxArray) ;
+
                 }
 
                 Log::info('PaymentService::intentCashPayment commission/discount', [
