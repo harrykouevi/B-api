@@ -6,6 +6,8 @@ use App\Criteria\Purchases\PaidPurchasesCriteria;
 use App\Criteria\Purchases\PurchasesByBookingCriteria;
 use App\Criteria\Purchases\PurchasesOfUserCriteria;
 use App\Events\DoPaymentEvent;
+use App\Events\NotifyPaymentEvent;
+use App\Events\NotifyBookingEvent;
 use App\Models\User;
 use App\Models\Booking;
 use App\Models\Tax;
@@ -440,12 +442,17 @@ class UpdateBookingPaymentListener
                                 'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
                             ]);
                             if($purchasepayment){
-                                
-                                try{ 
+
+                                try{
                                     //mise à jour du purchase comme étant payé et validé
                                     $purchase = $this->purchaseRepository->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
-                                    
-                                    
+
+                                    // ✅ Déclencher les notifications de paiement (client + salon)
+                                    event(new NotifyPaymentEvent($purchasepayment, $clientW, auth()->user()));
+
+                                    // ✅ Déclencher la notification de changement de status du booking (accepté)
+                                    event(new NotifyBookingEvent($booking));
+
                                 } catch (Exception $e) {
                                     Log::error($e->getMessage());
                                 }
