@@ -447,11 +447,16 @@ class UpdateBookingPaymentListener
                                     //mise à jour du purchase comme étant payé et validé
                                     $purchase = $this->purchaseRepository->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
 
+                                    // ✅ Charger les transactions pour les notifications
+                                    $purchasepayment->load('transactions');
+
                                     // ✅ Déclencher les notifications de paiement (client + salon)
                                     event(new NotifyPaymentEvent($purchasepayment, $clientW, auth()->user()));
 
-                                    // ✅ Déclencher la notification de changement de status du booking (accepté)
-                                    event(new NotifyBookingEvent($booking));
+                                    Log::info('Notifications de paiement déclenchées', [
+                                        'payment_id' => $purchasepayment->id,
+                                        'transactions_count' => $purchasepayment->transactions->count()
+                                    ]);
 
                                 } catch (Exception $e) {
                                     Log::error($e->getMessage());
