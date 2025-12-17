@@ -66,7 +66,7 @@ class WalletAPIController extends Controller
     private PaymentMethodRepository $paymentMethodRepository;
 
     public function __construct(
-        CinetPayService $cinetPayService,
+        // CinetPayService $cinetPayService,
         PaymentService $paymentService,
         PaydunyaService $paydunyaService,
         PaydunyaCheckoutService $paydunyaCheckoutService,
@@ -79,7 +79,7 @@ class WalletAPIController extends Controller
         $this->walletRepository = $walletRepo;
         $this->currencyRepository = $currencyRepository;
         $this->paymentService = $paymentService;
-        $this->cinetPayService = $cinetPayService;
+        // $this->cinetPayService = $cinetPayService;
         $this->paymentMethodRepository = $paymentMethodRepository;
         $this->paydunyaService = $paydunyaService;
         $this->paydunyaCheckoutService = $paydunyaCheckoutService;
@@ -158,6 +158,7 @@ class WalletAPIController extends Controller
                 $resp[1],
                 $resp_[1],
             ]);
+            
             return $this->sendResponse($wallets, __('lang.saved_successfully', ['operator' => __('lang.wallet')]));
 
         } catch (ValidationException $e) {
@@ -505,7 +506,8 @@ class WalletAPIController extends Controller
      */
     private function attemptCinetPay(array $context): ?array
     {
-        $cinetPayTokenResponse = $this->cinetPayService->getAuthTokenForPayment();
+        $cinetPayService = app(cinetPayService::class) ;
+        $cinetPayTokenResponse = $cinetPayService->getAuthTokenForPayment();
 
         if (!isset($cinetPayTokenResponse['success']) || !$cinetPayTokenResponse['success']) {
             Log::warning('CinetPay indisponible', [
@@ -517,7 +519,7 @@ class WalletAPIController extends Controller
 
         try {
             Log::info("Début d'envoi via CinetPay", ['transaction_id' => $context['transactionId']]);
-            $response = $this->cinetPayService->initPayment(
+            $response = $cinetPayService->initPayment(
                 $context['amount'],
                 'XOF',
                 $context['transactionId'],
@@ -742,6 +744,7 @@ class WalletAPIController extends Controller
     private function attemptCinetPayWithdrawal(array $context): array
     {
         $withdrawal = null;
+        $cinetPayService = app(cinetPayService::class) ;
 
         try {
             $operatorLabel = $context['paymentMethod'] ? " ({$context['paymentMethod']})" : '';
@@ -763,7 +766,7 @@ class WalletAPIController extends Controller
 
             // Vérification du solde CinetPay
             Log::info('Vérification du solde CinetPay', ['amount' => $context['amount']]);
-            $balanceResponse = $this->cinetPayService->checkBalanceAndAuthorizeWithdrawal($context['amount']);
+            $balanceResponse = $cinetPayService->checkBalanceAndAuthorizeWithdrawal($context['amount']);
 
             if (!$balanceResponse['success'] || !$balanceResponse['authorized']) {
                 Log::warning('CinetPay: solde insuffisant ou erreur', ['response' => $balanceResponse]);
@@ -782,7 +785,7 @@ class WalletAPIController extends Controller
                 'phone_number' => $context['phoneNumber'],
             ]);
 
-            $transferResponse = $this->cinetPayService->executeTransfer(
+            $transferResponse = $cinetPayService->executeTransfer(
                 $withdrawal,
                 $context['phoneNumber'],
                 $context['countryPrefix'],

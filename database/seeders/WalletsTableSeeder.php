@@ -19,7 +19,7 @@ class WalletsTableSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('wallets')->truncate();
+        // DB::table('wallets')->truncate();
         DB::table('wallets')->insert(array(
             array(
                 'id' => '01194a4f-f302-47af-80b2-ceb2075d36dc',

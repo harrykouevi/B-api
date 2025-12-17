@@ -53,6 +53,7 @@ class MakeBookingTest extends TestCase
             ]);
 
             $user2->assignRole(3);
+            
 
             $booking_resp =  $this->actingAs($user2, 'api')->postJson(route('api.bookings.store'), [
                  "duration"=> "0.0", 

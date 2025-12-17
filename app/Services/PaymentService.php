@@ -80,11 +80,11 @@ class PaymentService
     * @param Tax|Tax[]|null $tax paramètre pour la commission
     * @return Array|Null
     */
-    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() , WalletType $wallettype = Null , $tax = Null ,?array $coupon = null  ) : array | Null
+    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() , WalletType|Null $wallettype = Null , $tax = Null ,?array $coupon = null  ) : array | Null
     {
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
-        
+        $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
         // if($receiver->id != null){ 
         //     $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
         //                                                             'user_id' => $receiver->id,
@@ -134,10 +134,12 @@ class PaymentService
     * @param WalletType  $wallettype Paramètre optionnel pour le type de portefeuille
     * @return Array|Null
     */
-    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() ,  WalletType  $wallettype = null ) : array | Null
+    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() ,  WalletType|Null  $wallettype = null ) : array | Null
     {
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
+        $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
+
 
         // if($receiver->id != null){ 
         //     $receiverWallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $receiver->id)
@@ -183,9 +185,11 @@ class PaymentService
      * @param WalletType $wallettype
      * @return array|null Détails de la transaction ou null en cas d’échec.
      */
-    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type, WalletType $wallettype = null): ?array
+    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type, WalletType|Null $wallettype = null): ?array
     {
         try {
+            
+            $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
 
             $user = null;
             $wallet = null;
@@ -212,6 +216,7 @@ class PaymentService
                 }
             }
 
+            
             // S'assurer qu'on a un utilisateur
             if (!$user && $wallet) {
                 $user = $wallet->user;
@@ -226,33 +231,35 @@ class PaymentService
                 return [null, $wallet];
             }
 
+
+
             $payment = $this->withExternalTransaction(
                 $this->buildExternalPaymentData($amount, $user, $type),
                 $wallet,
                 $type
             );
 
-            try {
-                if ($payment && $wallet->user) {
-                    try {
-                        if($type == PaymentType::CREDIT){
-                            Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
-                        }else{
-                            Notification::send([$wallet->user], new WithdrawPayment($payment, $wallet));
-                        }
-                    
-                    } catch (Exception $e) {
-                        Log::error("Erreur lors de l'envoie de notification: " . $e->getMessage());
-                    }
-                }
-            } catch (Exception $e) {
-                Log::error('Notification failed: ' . $e->getMessage());
-            }
 
+
+         
+            if ($payment && $wallet->user) {
+                try {
+                    if($type == PaymentType::CREDIT){
+                        Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
+                    }else{
+                        Notification::send([$wallet->user], new WithdrawPayment($payment, $wallet));
+                    }
+                
+                } catch (Exception $e) {
+                    Log::error("Erreur lors de l'envoie de notification: " . $e->getMessage());
+                }
+            }
+           
             return [$payment, $wallet];
 
         } catch (Exception $e) {
             Log::error('Payment processing failed: ' . $e->getMessage());
+           
             return null;
         }
     }
@@ -540,7 +547,7 @@ class PaymentService
     }
 
 
-    private function resolveReceiverWallet(User $user, WalletType $walletType): Wallet
+    private function resolveReceiverWallet(User $user, string|Null $walletType): Wallet
     {
         if (!$user->id) {
             return $this->walletRepository->find(setting('app_default_wallet_id'));
@@ -548,10 +555,10 @@ class PaymentService
 
         $wallet = $this->walletRepository->findWhere([
             'user_id' => $user->id,
-            'name'    => $walletType ?? WalletType::PRINCIPAL->value,
+            'name'    => !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value,
         ])->first();
 
-        return $wallet ?: $this->createWallet($user, 0, $walletType);
+        return $wallet ?: $this->createWallet($user, 0, !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value);
     }
 
     /**
@@ -569,10 +576,7 @@ class PaymentService
      */
     private function withExternalTransaction(Array $input , Wallet $wallet , PaymentType $type ):Payment | Null
     {
-        
-        // $wallet =  $wallets[0] ;
         $ptf_wallet =  $this->walletRepository->find(setting('app_default_wallet_id')) ; 
-
         if (!isset($ptf_wallet)) {
             throw new \Exception("Le portefeuille plateforme est introuvable.");
         }
@@ -584,7 +588,7 @@ class PaymentService
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
             if($input['payment']['amount'] != 0){
-                    
+                
                 if (empty($input['payment']['payment_method_id']) || !app(PaymentMethodRepository::class)->find($input['payment']['payment_method_id'])) {
                     throw new \Exception("payment_method_id invalide ou manquant.");
                 }
