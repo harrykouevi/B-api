@@ -498,6 +498,22 @@ class PaymentService
             if($amount > 0){
                 $payment = $this->paymentRepository->create($input['payment']);
 
+                $taxLog = is_array($tax)
+                    ? array_map(function ($t) {
+                        return is_object($t) && isset($t->id) ? $t->id : $t;
+                    }, $tax)
+                    : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+
+                Log::info('PaymentService::intentCashPayment start', [
+                    'payment_id' => $payment->id,
+                    'amount' => $amount,
+                    'salon_wallet_id' => $wallet->id,
+                    'salon_user_id' => $wallet->user_id,
+                    'currency_code' => $currency['code'] ?? null,
+                    'tax' => $taxLog,
+                    'coupon' => $coupon,
+                ]);
+
                 $discount = 0;
                 $couponForSalon =  'platform' ;
                 if ($coupon && $coupon['value'] > 0) {
@@ -511,7 +527,13 @@ class PaymentService
                 if (!is_null($tax)) {
                     $commission = self::getCommission($amount + $discount, $tax) ;
                    
-                }        
+                }
+
+                Log::info('PaymentService::intentCashPayment commission/discount', [
+                    'commission' => $commission,
+                    'discount' => $discount,
+                    'couponForSalon' => $couponForSalon,
+                ]);
                 
                 for ($i=0; $i <= 3  ; $i++) { 
                     $transaction = [];
@@ -528,7 +550,7 @@ class PaymentService
                             $transaction['action'] =  'debit';
                             $transaction['amount'] = $commission;
                         }else{
-                            break ;
+                            continue ;
                         }
                     }
                     if($i == 1){
@@ -544,7 +566,7 @@ class PaymentService
                             $transaction['description'] = 'compte crédité';
                             $transaction['action'] =  'credit';
                         }else{
-                            break ;
+                            continue ;
                         }
                         
                     }
@@ -585,11 +607,27 @@ class PaymentService
                         }
                     }
                     
-                    $this->walletTransactionRepository->create($transaction);
+                    if(count($transaction) > 1) {
+                        Log::info('PaymentService::intentCashPayment create transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                        $this->walletTransactionRepository->create($transaction);
+                    } else {
+                        Log::info('PaymentService::intentCashPayment skip empty transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                    }
                 }
                 return $payment ;
             }
         }
+        Log::warning('PaymentService::intentCashPayment currency mismatch or amount invalid', [
+            'amount' => $amount,
+            'currency_code' => $currency['code'] ?? null,
+            'default_currency_code' => setting('default_currency_code'),
+        ]);
         return Null ;
     }
 
