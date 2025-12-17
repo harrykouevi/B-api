@@ -201,70 +201,37 @@ class BookingAPIController extends Controller
             $input['salon'] = $salon;
             $input['taxes'] = $taxes;
 
+            // Si le frontend n'a pas envoyé purchase_taxes (via 'taxe'),
+            // récupérer depuis les settings
+            if (!isset($input['purchase_taxes'])) {
+                $purchaseTaxeSetting = setting('purchase_taxe');
+                if ($purchaseTaxeSetting) {
+                    // Le setting est un JSON string, le décoder
+                    $purchaseTaxeData = json_decode($purchaseTaxeSetting, true);
+                    if ($purchaseTaxeData) {
+                        $input['purchase_taxes'] = [
+                            [
+                                'name' => 'commission',
+                                'type' => $purchaseTaxeData['type'] ?? 'percent',
+                                'value' => $purchaseTaxeData['value'] ?? 10
+                            ]
+                        ];
+                    }
+                }
+            }
+
+            // CORRECTION: Si payment est un objet, extraire payment_id
+            if (isset($input['payment']) && is_array($input['payment'])) {
+                Log::info('Payment reçu comme objet, extraction du payment_id', [
+                    'payment' => $input['payment']
+                ]);
+                // Extraire payment_id si présent, sinon laisser payment_id null
+                $input['payment_id'] = $input['payment']['id'] ?? null;
+                // Ne pas garder l'objet payment dans les données à sauvegarder
+                unset($input['payment']);
+            }
 
             $input['booking_status_id'] = $this->bookingStatusRepository->find(1)->id;
-
-            // Vérification des fonds du wallet avant création du booking
-            // Payment method ID 11 correspond au paiement par wallet
-            // Vérifier dans payment array OU directement dans input
-            $paymentMethodId = null;
-            if (isset($input['payment']['payment_method_id'])) {
-                $paymentMethodId = $input['payment']['payment_method_id'];
-            } elseif (isset($input['payment_method_id'])) {
-                $paymentMethodId = $input['payment_method_id'];
-            }
-
-            if ($paymentMethodId == 11) {
-                // Calculer le montant total de la nouvelle réservation
-                $newBookingTotal = Booking::calculateTotalBeforeCreation(
-                    $input['e_services'],
-                    isset($input['options']) ? $input['options'] : null,
-                    isset($input['quantity']) ? $input['quantity'] : 1,
-                    isset($input['coupon']) ? $input['coupon'] : null
-                );
-
-                // Récupérer le wallet de l'utilisateur
-                $this->walletRepository->pushCriteria(new EnabledCriteria());
-                $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
-
-                $userWallet = null;
-                if (isset($input['wallet_id'])) {
-                    // Si un wallet_id est spécifié, le récupérer directement
-                    $userWallet = $this->walletRepository->find($input['wallet_id']);
-                } else {
-                    // Sinon, récupérer le premier wallet disponible avec suffisamment de fonds
-                    $userWallet = $this->walletRepository->all()->first(function ($wallet) use ($newBookingTotal) {
-                        $currency = json_decode($wallet->currency, true);
-                        return $currency['code'] == setting('default_currency_code') &&
-                               $wallet->balance >= $newBookingTotal;
-                    });
-                }
-
-                if (!$userWallet) {
-                    return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]), 404);
-                }
-
-                // Vérifier que le wallet a la bonne devise
-                $currency = json_decode($userWallet->currency, true);
-                if ($currency['code'] != setting('default_currency_code')) {
-                    return $this->sendError(__('lang.wallet_invalid_currency'), 400);
-                }
-
-                // Calculer le total des réservations en attente (booking_status_id = 1)
-                $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
-                $waitingBookingsTotal = $this->bookingRepository->findByField('booking_status_id', 1)->sum(function ($booking) {
-                    return $booking->getTotal();
-                });
-
-                // Vérifier si le solde est suffisant
-                $requiredAmount = $newBookingTotal + $waitingBookingsTotal;
-                if ($userWallet->balance < $requiredAmount) {
-                    return $this->sendError(__('lang.wallet_insufficient_amount'), 400);
-                }
-
-                // Stocker le wallet_id dans l'input pour l'utiliser plus tard
-                $input['wallet_id'] = $userWallet->id;
-            }
 
             $booking = $this->bookingRepository->create($input);
             
@@ -328,8 +295,18 @@ class BookingAPIController extends Controller
                 // montant_a_reverser
                 // commission_calculee
                 $input["purchase_taxes"] = $input['taxe'] ;
-                unset($input['taxe']);  
+                unset($input['taxe']);
             }
+
+            // CORRECTION: Si payment est un objet, extraire payment_id
+            if (isset($input['payment']) && is_array($input['payment'])) {
+                Log::info('Payment reçu comme objet dans update, extraction du payment_id', [
+                    'payment' => $input['payment']
+                ]);
+                $input['payment_id'] = $input['payment']['id'] ?? null;
+                unset($input['payment']);
+            }
+
             $booking = $this->bookingRepository->update($input, $id);
             
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {

@@ -6,6 +6,8 @@ use App\Criteria\Purchases\PaidPurchasesCriteria;
 use App\Criteria\Purchases\PurchasesByBookingCriteria;
 use App\Criteria\Purchases\PurchasesOfUserCriteria;
 use App\Events\DoPaymentEvent;
+use App\Events\NotifyPaymentEvent;
+use App\Events\NotifyBookingEvent;
 use App\Models\User;
 use App\Models\Booking;
 use App\Models\Tax;
@@ -115,25 +117,97 @@ class UpdateBookingPaymentListener
      */
     private function getWalletUseToPayBooking(Booking $booking): ?array
     {
-        // Vérifie si le paiement est avec le wallet et non encore validé
-        if ($booking->payment && $booking->payment->paymentStatus_id != 3  
-            && $booking->payment->paymentMethod->name === 'Wallet') {
-            
-            $walletTransaction = $this->walletTransactionRepository->findWhere([
-                'user_id'    => $booking->user_id,
-                'payment_id' => $booking->payment_id,
-            ])->first();
+        Log::info('UpdateBookingPaymentListener - getWalletUseToPayBooking start', [
+            'booking_id' => $booking->id,
+            'payment_id' => $booking->payment_id,
+            'payment_method' => $booking->payment->paymentMethod->name ?? null,
+        ]);
 
+        // Vérifie si le paiement est avec le wallet
+        if ($booking->payment && $booking->payment->paymentMethod->name === 'Wallet') {
+
+            // Chercher la dernière transaction wallet du client pour cette réservation
+            // On ne vérifie plus paymentStatus_id car le paiement des frais peut déjà être validé
+            $walletTransaction = $this->walletTransactionRepository
+                ->where('user_id', $booking->user_id)
+                ->where('payment_id', $booking->payment_id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if ($walletTransaction) {
+                Log::info('UpdateBookingPaymentListener - transaction wallet trouvée', [
+                    'wallet_transaction_id' => $walletTransaction->id,
+                    'wallet_id' => $walletTransaction->wallet_id,
+                    'wallet_type' => $walletTransaction->wallet->name ?? null,
+                    'amount' => $walletTransaction->amount,
+                ]);
+            }
+
+            // Si pas de transaction trouvée avec payment_id, chercher le wallet du client directement
             if (!$walletTransaction) {
-                return [ null , null];
+                Log::info('UpdateBookingPaymentListener - Aucune transaction trouvée, récupération du wallet client directement', [
+                    'user_id' => $booking->user_id,
+                    'payment_id' => $booking->payment_id
+                ]);
+
+                // Récupérer les wallets du client (bonus d'abord, puis principal)
+                $clientWallets = $this->walletRepository->findWhere([
+                    'user_id' => $booking->user_id,
+                    'enabled' => true
+                ])->sortByDesc(function($wallet) {
+                    return $wallet->name === WalletType::BONUS->value ? 1 : 0;
+                });
+
+                $wallet = null;
+                $walletType = null;
+
+                // Chercher un wallet avec solde suffisant
+                $requiredAmount = $booking->getTotal();
+                foreach ($clientWallets as $w) {
+                    if ($w->balance >= $requiredAmount) {
+                        $wallet = $w;
+                        $walletType = ($w->name === WalletType::BONUS->value)
+                            ? WalletType::BONUS
+                            : WalletType::PRINCIPAL;
+                        break;
+                    }
+                }
+
+                // Si aucun wallet avec solde suffisant, prendre le principal
+                if (!$wallet) {
+                    $wallet = $clientWallets->firstWhere('name', WalletType::PRINCIPAL->value);
+                    $walletType = WalletType::PRINCIPAL;
+                }
+
+                Log::info('UpdateBookingPaymentListener - wallet client sélectionné', [
+                    'wallet_id' => $wallet?->id,
+                    'wallet_type' => $walletType?->value,
+                    'balance' => $wallet?->balance,
+                    'required_amount' => $requiredAmount,
+                ]);
+
+                if (!$wallet) {
+                    Log::error('UpdateBookingPaymentListener - Aucun wallet trouvé pour le client', [
+                        'user_id' => $booking->user_id
+                    ]);
+                    return [ null , null];
+                }
+
+                return [$wallet, $walletType];
             }
 
             // Déterminer le type de wallet utilisé
             $walletType = $walletTransaction->wallet->name ?? null;
 
-            $walletType = ($walletType === WalletType::BONUS->value) 
-                            ? WalletType::BONUS 
+            $walletType = ($walletType === WalletType::BONUS->value)
+                            ? WalletType::BONUS
                             : WalletType::PRINCIPAL;
+
+            Log::info('UpdateBookingPaymentListener - wallet provenant de la transaction', [
+                'wallet_id' => $walletTransaction->wallet->id ?? null,
+                'wallet_type' => $walletType->value,
+                'wallet_balance' => $walletTransaction->wallet->balance ?? null,
+            ]);
 
             return [
                 $walletTransaction->wallet,
@@ -152,6 +226,14 @@ class UpdateBookingPaymentListener
         try {
             /** @var Booking $booking */
             $booking = $event->booking;
+            Log::info('UpdateBookingPaymentListener - handle', [
+                'booking_id' => $booking->id,
+                'booking_status_id' => $booking->booking_status_id,
+                'payment_id' => $booking->payment_id,
+                'payment_status_id' => $booking->payment->paymentStatus_id ?? null,
+                'payment_method' => $booking->payment->paymentMethod->name ?? null,
+            ]);
+
             $payment_intents =[];
             
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->paymentStatus_id != 3){
@@ -256,50 +338,126 @@ class UpdateBookingPaymentListener
                 if(auth()->user()->hasRole('salon owner') && is_null($booking->reported_from_id) ){
                     // si acceptation de la reservation est faite par le coiffeur
                    
-                    //dans le cas de paiement par cash jai crée un purchase à pending
-                    //je verifie sil y en a pour savoir si cest un paiement cash
-                    $is_pending_purchase_for_booking = is_null( $purchase = $this->purchaseRepository ->scopeQuery(function ($query) use ($booking) {
-                            return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])->where("purchase_status_id", 1);
-                        })->first()) ? false : true ;
-                    
-                    if($is_pending_purchase_for_booking ){ 
-                        $is_pyment_cash = true ;
-                        $purchase = $this->purchaseRepository->update(['taxes'=>  $booking->purchase_taxes], $purchase->id);
-                                       
-                    }else{
-                        //si ce n'est pas null c'est pas un paiement cash
-                        $purchase = $this->purchaseRepository->Create([
-                            'salon' => $booking->salon ,
-                            'booking' => $booking,
-                            'e_services' => $booking->e_services ,
-                            'options' => $booking->options ,
-                            'quantity' => $booking->quantity,
-                            'user_id' => $booking->user_id ,
-                            'taxes'=>  $booking->purchase_taxes ,
-                            'coupon'=>  $booking->coupon ,
-                            'purchase_status_id' => 1 ,
-                            'purchase_at'  => now()  
+                    // Chercher TOUS les purchases pour ce booking pour debug
+                    $allPurchases = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
+                        return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id]);
+                    })->get();
+
+                    Log::info('UpdateBookingPaymentListener - Tous les purchases pour booking '.$booking->id.':', [
+                        'count' => $allPurchases->count(),
+                        'payment_method' => $booking->payment->paymentMethod->name ?? 'NULL',
+                        'purchases' => $allPurchases->map(function($p) {
+                            return [
+                                'id' => $p->id,
+                                'hint' => $p->hint,
+                                'purchase_status_id' => $p->purchase_status_id
+                            ];
+                        })->toArray()
+                    ]);
+
+                    // Chercher d'abord un purchase avec hint='wallet' (créé lors du paiement initial)
+                    $walletPurchase = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
+                        return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
+                                    ->where("purchase_status_id", 1)
+                                    ->where('hint', 'wallet');
+                    })->first();
+
+                    if($walletPurchase) {
+                        // C'est un paiement wallet - utiliser le purchase existant
+                        $is_pyment_cash = false;
+                        $purchase = $walletPurchase;
+                        Log::info('UpdateBookingPaymentListener - Purchase wallet trouvé:', [
+                            'purchase_id' => $purchase->id,
+                            'hint' => $purchase->hint
                         ]);
+                    } else {
+                        Log::info('UpdateBookingPaymentListener - Aucun purchase wallet trouvé, recherche purchase cash...');
+                        // Chercher un purchase cash (hint='cash' ou sans hint)
+                        $cashPurchase = $this->purchaseRepository->scopeQuery(function ($query) use ($booking) {
+                            return $query->whereRaw("JSON_EXTRACT(booking, '$.id') = ?", [$booking->id])
+                                        ->where("purchase_status_id", 1)
+                                        ->where(function($q) {
+                                            $q->where('hint', 'cash')
+                                              ->orWhereNull('hint');
+                                        });
+                        })->first();
+
+                        if($cashPurchase) {
+                            $is_pyment_cash = true;
+                            $purchase = $this->purchaseRepository->update(['taxes'=>  $booking->purchase_taxes], $cashPurchase->id);
+                            Log::info('UpdateBookingPaymentListener - Purchase cash trouvé et mis à jour:', [
+                                'purchase_id' => $purchase->id,
+                                'hint' => $purchase->hint
+                            ]);
+                        } else {
+                            //Aucun purchase existant - créer un nouveau (cas rare)
+                            Log::warning('UpdateBookingPaymentListener - Aucun purchase trouvé, création d\'un nouveau');
+                            $purchase = $this->purchaseRepository->Create([
+                                'salon' => $booking->salon ,
+                                'booking' => $booking,
+                                'e_services' => $booking->e_services ,
+                                'options' => $booking->options ,
+                                'quantity' => $booking->quantity,
+                                'user_id' => $booking->user_id ,
+                                'taxes'=>  $booking->purchase_taxes ,
+                                'coupon'=>  $booking->coupon ,
+                                'purchase_status_id' => 1 ,
+                                'purchase_at'  => now()
+                            ]);
+                        }
                     }
 
-                   
+
                     [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
-                    
+
+                    Log::info('UpdateBookingPaymentListener - Acceptation:', [
+                        'booking_id' => $booking->id,
+                        'purchaseamount' => $purchaseamount,
+                        'clientW' => $clientW ? $clientW->id : 'NULL',
+                        'walletType' => $walletType ? $walletType->value : 'NULL',
+                        'is_pyment_cash' => $is_pyment_cash,
+                        'taxes' => $purchase->taxes
+                    ]);
+
                     //si il y a eu achat de service
                     if ($is_pyment_cash == false && !is_null($clientW) ) {
 
                         $currency = json_decode($clientW->currency, true);
 
                         if ($currency['code'] == setting('default_currency_code')) {
-                            $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),Null,$purchase->taxes,$this->paymentService->buildCouponData($purchase));
+                            Log::info('Creating payment from client to salon', [
+                                'amount' => $purchaseamount,
+                                'from_wallet' => $clientW->id,
+                                'from_wallet_type' => $walletType->value,
+                                'to_user' => auth()->user()->id,
+                                'to_wallet_type' => WalletType::PRINCIPAL->value
+                            ]);
+
+                            // IMPORTANT: Le salon reçoit TOUJOURS sur son wallet PRINCIPAL (Igris)
+                            // Mais le client paie depuis son wallet choisi ($walletType)
+                            $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),WalletType::PRINCIPAL,$purchase->taxes,$this->paymentService->buildCouponData($purchase));
                             $purchasepayment = $purchasepayment[0];
+
+                            Log::info('Payment created:', [
+                                'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
+                            ]);
                             if($purchasepayment){
-                                
-                                try{ 
+
+                                try{
                                     //mise à jour du purchase comme étant payé et validé
                                     $purchase = $this->purchaseRepository->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
-                                    
-                                    
+
+                                    // ✅ Charger les transactions pour les notifications
+                                    $purchasepayment->load('transactions');
+
+                                    // ✅ Déclencher les notifications de paiement (client + salon)
+                                    event(new NotifyPaymentEvent($purchasepayment, $clientW, auth()->user()));
+
+                                    Log::info('Notifications de paiement déclenchées', [
+                                        'payment_id' => $purchasepayment->id,
+                                        'transactions_count' => $purchasepayment->transactions->count()
+                                    ]);
+
                                 } catch (Exception $e) {
                                     Log::error($e->getMessage());
                                 }

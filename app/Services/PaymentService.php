@@ -80,11 +80,25 @@ class PaymentService
     * @param Tax|Tax[]|null $tax paramètre pour la commission
     * @return Array|Null
     */
-    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() , WalletType $wallettype = Null , $tax = Null ,?array $coupon = null  ) : array | Null
+    public function createPayment(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() , WalletType|Null $wallettype = Null , $tax = Null ,?array $coupon = null  ) : array | Null
     {
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
-        
+        $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
+        $taxLog = is_array($tax)
+            ? array_map(function ($t) {
+                return is_object($t) && isset($t->id) ? $t->id : $t;
+            }, $tax)
+            : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+        Log::info('PaymentService::createPayment start', [
+            'amount' => $amount,
+            'payer_wallet_id' => $payer_wallet?->id,
+            'payer_user_id' => $payer_wallet?->user_id,
+            'receiver_id' => $receiver?->id,
+            'wallet_type' => $wallettype,
+            'tax' => $taxLog,
+            'coupon' => $coupon,
+        ]);
         // if($receiver->id != null){ 
         //     $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
         //                                                             'user_id' => $receiver->id,
@@ -114,7 +128,10 @@ class PaymentService
 
                     return [$payment , $receiverWallet] ;
                 } catch (Exception $e) {
-                    Log::error( $e->getTraceAsString()  ) ;
+                    Log::error('PaymentService::createPayment error', [
+                        'message' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
                 }
             }
            
@@ -134,10 +151,12 @@ class PaymentService
     * @param WalletType  $wallettype Paramètre optionnel pour le type de portefeuille
     * @return Array|Null
     */
-    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() ,  WalletType  $wallettype = null ) : array | Null
+    public function createPaymentToWallet(float $amount ,Int|String|Wallet $payer_wallet ,User $receiver = new User() ,  WalletType|Null  $wallettype = null ) : array | Null
     {
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
+        $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
+
 
         // if($receiver->id != null){ 
         //     $receiverWallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $receiver->id)
@@ -183,9 +202,11 @@ class PaymentService
      * @param WalletType $wallettype
      * @return array|null Détails de la transaction ou null en cas d’échec.
      */
-    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type, WalletType $wallettype = null): ?array
+    public function createPaymentLinkWithExternal(float $amount, User|Wallet $data, PaymentType $type, WalletType|Null $wallettype = null): ?array
     {
         try {
+            
+            $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
 
             $user = null;
             $wallet = null;
@@ -212,6 +233,7 @@ class PaymentService
                 }
             }
 
+            
             // S'assurer qu'on a un utilisateur
             if (!$user && $wallet) {
                 $user = $wallet->user;
@@ -226,33 +248,35 @@ class PaymentService
                 return [null, $wallet];
             }
 
+
+
             $payment = $this->withExternalTransaction(
                 $this->buildExternalPaymentData($amount, $user, $type),
                 $wallet,
                 $type
             );
 
-            try {
-                if ($payment && $wallet->user) {
-                    try {
-                        if($type == PaymentType::CREDIT){
-                            Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
-                        }else{
-                            Notification::send([$wallet->user], new WithdrawPayment($payment, $wallet));
-                        }
-                    
-                    } catch (Exception $e) {
-                        Log::error("Erreur lors de l'envoie de notification: " . $e->getMessage());
-                    }
-                }
-            } catch (Exception $e) {
-                Log::error('Notification failed: ' . $e->getMessage());
-            }
 
+
+         
+            if ($payment && $wallet->user) {
+                try {
+                    if($type == PaymentType::CREDIT){
+                        Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
+                    }else{
+                        Notification::send([$wallet->user], new WithdrawPayment($payment, $wallet));
+                    }
+                
+                } catch (Exception $e) {
+                    Log::error("Erreur lors de l'envoie de notification: " . $e->getMessage());
+                }
+            }
+           
             return [$payment, $wallet];
 
         } catch (Exception $e) {
             Log::error('Payment processing failed: ' . $e->getMessage());
+           
             return null;
         }
     }
@@ -275,13 +299,34 @@ class PaymentService
         $amount = $input['payment']['amount'];
         // Wallet plateforme
         $platformWallet = $this->walletRepository->find(setting('app_default_wallet_id'));
+        $taxLog = is_array($tax)
+            ? array_map(function ($t) {
+                return is_object($t) && isset($t->id) ? $t->id : $t;
+            }, $tax)
+            : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+
+        Log::info('PaymentService::toWalletFromWallet start', [
+            'payment_amount' => $amount,
+            'receiver_wallet_id' => $receiverWallet->id,
+            'receiver_user_id' => $receiverWallet->user_id,
+            'payer_wallet_id' => $payer_wallet->id,
+            'payer_user_id' => $payer_wallet->user_id,
+            'currency_code' => $currency['code'] ?? null,
+            'platform_wallet_id' => $platformWallet?->id,
+            'coupon' => $coupon,
+            'tax' => $taxLog,
+        ]);
 
         if ($currency['code'] == setting('default_currency_code')) {
 
             $payment = $this->paymentRepository->create($input['payment']);
 
+            Log::info('PaymentService::toWalletFromWallet payment created', [
+                'payment_id' => $payment->id,
+                'payment_input' => $input['payment'],
+            ]);
            
-            
+           
             $discount = 0;
             $couponForSalon =  'platform' ;
             if ($coupon && $coupon['value'] > 0) {
@@ -294,8 +339,22 @@ class PaymentService
              // Calcul de la commission si elle existe
             $commission = 0 ;
             if ($tax !== null && $amount > 0 ) {
-                $commission = self::getCommission($amount + $discount , $tax) ;
+                // Convertir les objets Tax en array si nécessaire
+                $taxArray = is_array($tax)
+                    ? array_map(function($t) {
+                        return is_object($t) ? $t->toArray() : $t;
+                      }, $tax)
+                    : (is_object($tax) ? $tax->toArray() : $tax);
+
+                $commission = self::getCommission($amount + $discount , $taxArray) ;
             }  
+
+            Log::info('PaymentService::toWalletFromWallet commission', [
+                'commission' => $commission,
+                'tax' => $taxLog,
+                'discount' => $discount,
+                'couponForSalon' => $couponForSalon,
+            ]);
 
 
             for ($i=0; $i <= 3  ; $i++) { 
@@ -401,7 +460,13 @@ class PaymentService
                 }
 
                 try{
-                    if(count($transaction) > 1) $o = $this->walletTransactionRepository->create($transaction);
+                    if(count($transaction) > 1) {
+                        Log::info('PaymentService::toWalletFromWallet create transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                        $o = $this->walletTransactionRepository->create($transaction);
+                    }
 
                 } catch (\Exception $e) {
                     Log::error('FAIL:'. $e->getMessage() , [
@@ -412,6 +477,10 @@ class PaymentService
             }
             return $payment ;
         }
+        Log::warning('PaymentService::toWalletFromWallet currency mismatch', [
+            'currency_code' => $currency['code'] ?? null,
+            'default_currency_code' => setting('default_currency_code'),
+        ]);
         return Null ;
     }
 
@@ -436,6 +505,22 @@ class PaymentService
             if($amount > 0){
                 $payment = $this->paymentRepository->create($input['payment']);
 
+                $taxLog = is_array($tax)
+                    ? array_map(function ($t) {
+                        return is_object($t) && isset($t->id) ? $t->id : $t;
+                    }, $tax)
+                    : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+
+                Log::info('PaymentService::intentCashPayment start', [
+                    'payment_id' => $payment->id,
+                    'amount' => $amount,
+                    'salon_wallet_id' => $wallet->id,
+                    'salon_user_id' => $wallet->user_id,
+                    'currency_code' => $currency['code'] ?? null,
+                    'tax' => $taxLog,
+                    'coupon' => $coupon,
+                ]);
+
                 $discount = 0;
                 $couponForSalon =  'platform' ;
                 if ($coupon && $coupon['value'] > 0) {
@@ -447,9 +532,29 @@ class PaymentService
                 // Calcul de la commission si elle existe
                 $commission = 0 ;
                 if (!is_null($tax)) {
-                    $commission = self::getCommission($amount + $discount, $tax) ;
-                   
-                }        
+                    // Convertir les objets Tax en array si nécessaire
+                    $taxArray = is_array($tax)
+                        ? array_map(function($t) {
+                            return is_object($t) ? $t->toArray() : $t;
+                          }, $tax)
+                        : (is_object($tax) ? $tax->toArray() : $tax);
+
+                    Log::info('PaymentService::intentCashPayment tax before getCommission', [
+                        'tax_original' => $tax,
+                        'tax_converted' => $taxArray,
+                        'amount' => $amount,
+                        'discount' => $discount,
+                    ]);
+
+                    $commission = self::getCommission($amount + $discount, $taxArray) ;
+
+                }
+
+                Log::info('PaymentService::intentCashPayment commission/discount', [
+                    'commission' => $commission,
+                    'discount' => $discount,
+                    'couponForSalon' => $couponForSalon,
+                ]);
                 
                 for ($i=0; $i <= 3  ; $i++) { 
                     $transaction = [];
@@ -466,7 +571,7 @@ class PaymentService
                             $transaction['action'] =  'debit';
                             $transaction['amount'] = $commission;
                         }else{
-                            break ;
+                            continue ;
                         }
                     }
                     if($i == 1){
@@ -482,7 +587,7 @@ class PaymentService
                             $transaction['description'] = 'compte crédité';
                             $transaction['action'] =  'credit';
                         }else{
-                            break ;
+                            continue ;
                         }
                         
                     }
@@ -523,11 +628,27 @@ class PaymentService
                         }
                     }
                     
-                    $this->walletTransactionRepository->create($transaction);
+                    if(count($transaction) > 1) {
+                        Log::info('PaymentService::intentCashPayment create transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                        $this->walletTransactionRepository->create($transaction);
+                    } else {
+                        Log::info('PaymentService::intentCashPayment skip empty transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                    }
                 }
                 return $payment ;
             }
         }
+        Log::warning('PaymentService::intentCashPayment currency mismatch or amount invalid', [
+            'amount' => $amount,
+            'currency_code' => $currency['code'] ?? null,
+            'default_currency_code' => setting('default_currency_code'),
+        ]);
         return Null ;
     }
 
@@ -540,7 +661,7 @@ class PaymentService
     }
 
 
-    private function resolveReceiverWallet(User $user, WalletType $walletType): Wallet
+    private function resolveReceiverWallet(User $user, string|Null $walletType): Wallet
     {
         if (!$user->id) {
             return $this->walletRepository->find(setting('app_default_wallet_id'));
@@ -548,10 +669,10 @@ class PaymentService
 
         $wallet = $this->walletRepository->findWhere([
             'user_id' => $user->id,
-            'name'    => $walletType ?? WalletType::PRINCIPAL->value,
+            'name'    => !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value,
         ])->first();
 
-        return $wallet ?: $this->createWallet($user, 0, $walletType);
+        return $wallet ?: $this->createWallet($user, 0, !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value);
     }
 
     /**
@@ -569,10 +690,7 @@ class PaymentService
      */
     private function withExternalTransaction(Array $input , Wallet $wallet , PaymentType $type ):Payment | Null
     {
-        
-        // $wallet =  $wallets[0] ;
         $ptf_wallet =  $this->walletRepository->find(setting('app_default_wallet_id')) ; 
-
         if (!isset($ptf_wallet)) {
             throw new \Exception("Le portefeuille plateforme est introuvable.");
         }
@@ -584,7 +702,7 @@ class PaymentService
         $currency = json_decode($wallet->currency, true);
         if ($currency['code'] == setting('default_currency_code')) {
             if($input['payment']['amount'] != 0){
-                    
+                
                 if (empty($input['payment']['payment_method_id']) || !app(PaymentMethodRepository::class)->find($input['payment']['payment_method_id'])) {
                     throw new \Exception("payment_method_id invalide ou manquant.");
                 }
@@ -736,4 +854,3 @@ class PaymentService
         return min($commission, $amount);
     }
 }
-
