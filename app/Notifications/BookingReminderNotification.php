@@ -116,7 +116,7 @@ class BookingReminderNotification extends BaseNotification
             'bookingId' => (string) $this->booking->id,
             'reminderType' => $this->reminderType,
             'bookingAt' => $this->booking->booking_at ? \Illuminate\Support\Carbon::parse($this->booking->booking_at)->toIso8601String() : null,
-            'atSalon' => $this->booking->at_salon,
+            'atSalon' => $this->booking->at_salon ? 'true' : 'false',
             'totalPrice' => (string) $this->booking->total,
             'timeUntilHours' => (string) $this->getTimeUntilAppointment()['message'],
             'services' => json_encode(collect($this->booking->e_services)->map(function($service) {
