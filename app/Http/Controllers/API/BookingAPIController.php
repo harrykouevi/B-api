@@ -201,6 +201,16 @@ class BookingAPIController extends Controller
             $input['salon'] = $salon;
             $input['taxes'] = $taxes;
 
+            // CORRECTION: Si payment est un objet, extraire payment_id
+            if (isset($input['payment']) && is_array($input['payment'])) {
+                Log::info('Payment reçu comme objet, extraction du payment_id', [
+                    'payment' => $input['payment']
+                ]);
+                // Extraire payment_id si présent, sinon laisser payment_id null
+                $input['payment_id'] = $input['payment']['id'] ?? null;
+                // Ne pas garder l'objet payment dans les données à sauvegarder
+                unset($input['payment']);
+            }
 
             $input['booking_status_id'] = $this->bookingStatusRepository->find(1)->id;
 
@@ -266,8 +276,18 @@ class BookingAPIController extends Controller
                 // montant_a_reverser
                 // commission_calculee
                 $input["purchase_taxes"] = $input['taxe'] ;
-                unset($input['taxe']);  
+                unset($input['taxe']);
             }
+
+            // CORRECTION: Si payment est un objet, extraire payment_id
+            if (isset($input['payment']) && is_array($input['payment'])) {
+                Log::info('Payment reçu comme objet dans update, extraction du payment_id', [
+                    'payment' => $input['payment']
+                ]);
+                $input['payment_id'] = $input['payment']['id'] ?? null;
+                unset($input['payment']);
+            }
+
             $booking = $this->bookingRepository->update($input, $id);
             
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {
