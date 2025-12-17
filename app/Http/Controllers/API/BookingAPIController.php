@@ -509,20 +509,71 @@ class BookingAPIController extends Controller
         if ($booking->cancel) {
             return 'Le rendez-vous est déjà annulé';
         }
-        
+
         if ($booking->booking_status_id === 6) {
             return 'Le rendez-vous est déjà terminé';
         }
-        
+
         if ($booking->booking_status_id === 7) {
             return 'Le rendez-vous a déjà échoué';
         }
-        
+
         if ($booking->booking_status_id === 8) {
             return 'Le rendez-vous a été reporté';
         }
-        
+
         return 'Conditions non remplies pour l\'annulation';
-    } 
+    }
+
+    /**
+     * Get count of pending bookings (status order = 1)
+     * GET /bookings/pending/count
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function pendingCount(Request $request): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+
+            // Récupérer les bookings avec status order = 1 (Received)
+            $query = Booking::whereHas('bookingStatus', function ($q) {
+                $q->where('order', 1);
+            });
+
+            // Filtrer selon le rôle de l'utilisateur
+            if ($user->hasRole('salon owner') || $user->hasRole('admin')) {
+                // Pour le salon : compter les réservations de ses salons
+                $query->whereHas('salon', function ($q) use ($user) {
+                    $q->whereHas('users', function ($q2) use ($user) {
+                        $q2->where('users.id', $user->id);
+                    });
+                });
+            } else {
+                // Pour le client : compter ses propres réservations
+                $query->where('user_id', $user->id);
+            }
+
+            $count = $query->count();
+
+            Log::info('Pending bookings count', [
+                'user_id' => $user->id,
+                'role' => $user->roles->pluck('name')->toArray(),
+                'count' => $count
+            ]);
+
+            return $this->sendResponse([
+                'count' => $count
+            ], 'Pending bookings count retrieved successfully');
+
+        } catch (Exception $e) {
+            Log::error('Error getting pending bookings count', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError($e->getMessage(), 500);
+        }
+    }
 
 }

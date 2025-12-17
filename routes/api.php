@@ -206,6 +206,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('notifications/count', 'API\NotificationAPIController@count');
     Route::resource('notifications', 'API\NotificationAPIController');
+    Route::get('bookings/pending/count', [BookingAPIController::class, 'pendingCount']);
     Route::resource('bookings', BookingAPIController::class);
 
     Route::resource('earnings', 'API\EarningAPIController');
