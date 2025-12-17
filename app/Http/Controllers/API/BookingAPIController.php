@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use App\Notifications\NewBooking;
 use Illuminate\Http\JsonResponse;
 use App\Events\BookingPaymentUpdatedEvent;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Repositories\SalonRepository;
@@ -551,21 +552,22 @@ class BookingAPIController extends Controller
             // Filtrer selon le rôle de l'utilisateur
             if ($user->hasRole('salon owner') || $user->hasRole('admin')) {
                 // Pour le salon : compter les réservations de ses salons
+                // IMPORTANT: salon est un champ JSON, pas une relation Eloquent
+                // On doit utiliser DB::raw avec json_extract
                 Log::info('📊 Utilisateur est SALON OWNER, filtrage par salons');
 
-                $query->whereHas('salon', function ($q) use ($user) {
-                    $q->whereHas('users', function ($q2) use ($user) {
-                        $q2->where('users.id', $user->id);
-                    });
-                });
+                $salonId = DB::raw("json_extract(salon, '$.id')");
+                $query->join("salon_users", "salon_users.salon_id", "=", $salonId)
+                    ->where('salon_users.user_id', $user->id)
+                    ->select('bookings.*');
 
                 // Debug: voir les bookings trouvés
-                $bookingsDebug = $query->with('salon', 'bookingStatus')->get();
+                $bookingsDebug = $query->with('bookingStatus')->get();
                 Log::info('📊 Bookings trouvés pour le salon', [
                     'count' => $bookingsDebug->count(),
                     'bookings' => $bookingsDebug->map(fn($b) => [
                         'id' => $b->id,
-                        'salon' => $b->salon->name ?? 'N/A',
+                        'salon_name' => $b->salon->name ?? 'N/A',
                         'status' => $b->bookingStatus->status ?? 'N/A',
                         'order' => $b->bookingStatus->order ?? 'N/A'
                     ])->toArray()

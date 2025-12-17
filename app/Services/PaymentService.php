@@ -362,35 +362,74 @@ class PaymentService
                 $transaction = [];
                 $transaction['payment_id'] = $payment->id;
                 if($i == 0){
-                    
+
                     $transaction['user_id'] = $receiverWallet->user_id;
                     $transaction['status'] = "completed" ;
                     $transaction['wallet_id'] = $receiverWallet->id;
                     $transaction['description'] = 'compte credité';
                     $transaction['action'] =  'credit';
                     $transaction['amount'] = $amount ;
-                    
+
+                    Log::info('💰 Transaction SALON (i=0) - AVANT déductions', [
+                        'amount_initial' => $amount,
+                        'discount' => $discount,
+                        'commission' => $commission,
+                        'is_customer_to_salon' => $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner')
+                    ]);
+
                     if(   $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner') ){
-                        
+
+                        // LOGIQUE DES COUPONS ET COMMISSIONS:
+                        // $amount = montant que le client a payé (déjà après réduction coupon)
+                        // $discount = valeur du coupon
+                        // $commission = calculée sur ($amount + $discount) donc sur le prix AVANT coupon
 
                         if ($discount > 0) {
-                           
-                            if ($couponForSalon === 'salon') {
-                                // Le salon prend en charge la réduction → on réduit le crédit du salon
-                                $transaction['amount'] -= $discount ;
-                            } else {
-                                // Coupon non pour le salon → la réduction vient de la plateforme
-                                $transaction['amount']  += $discount;
 
+                            if ($couponForSalon === 'salon') {
+                                // COUPON SALON: Le salon offre la réduction
+                                // - Client paie: $amount (prix réduit)
+                                // - Salon reçoit: $amount - commission
+                                // - Commission calculée sur prix RÉDUIT
+                                // RIEN à faire ici, la logique normale s'applique
+                                Log::info('💰 Coupon SALON', [
+                                    'discount' => $discount,
+                                    'amount_client_paie' => $amount,
+                                    'salon_recevra' => $amount - $commission,
+                                    'explication' => 'Salon offre réduction, commission sur prix réduit'
+                                ]);
+                            } else {
+                                // COUPON PLATFORM: La plateforme offre la réduction
+                                // - Client paie: $amount (prix réduit)
+                                // - Salon DOIT recevoir: (prix_original - commission_sur_original)
+                                // - Donc: ($amount + $discount) - $commission
+                                // - On AJOUTE le discount pour que le salon reçoive le montant complet
+                                $transaction['amount'] += $discount;
+                                Log::info('💰 Coupon PLATFORM', [
+                                    'discount' => $discount,
+                                    'amount_client_paie' => $amount,
+                                    'amount_avant_ajout_discount' => $amount,
+                                    'amount_apres_ajout_discount' => $transaction['amount'],
+                                    'salon_recevra' => $transaction['amount'] - $commission,
+                                    'explication' => 'Platform offre réduction, salon reçoit prix complet moins commission'
+                                ]);
                             }
                         }
 
                         //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
-                        //de l'argent provenant du client 
+                        //de l'argent provenant du client
                         if(  $commission > 0 ) {
                             $transaction['amount'] -= $commission;
+                            Log::info('💰 Commission déduite du SALON', [
+                                'commission' => $commission,
+                                'amount_final' => $transaction['amount']
+                            ]);
                         }
                     }
+
+                    Log::info('💰 Transaction SALON (i=0) - APRÈS déductions', [
+                        'amount_final' => $transaction['amount']
+                    ]);
 
                 }
                 
