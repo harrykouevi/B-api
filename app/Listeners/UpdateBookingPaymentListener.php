@@ -115,24 +115,68 @@ class UpdateBookingPaymentListener
      */
     private function getWalletUseToPayBooking(Booking $booking): ?array
     {
-        // Vérifie si le paiement est avec le wallet et non encore validé
-        if ($booking->payment && $booking->payment->paymentStatus_id != 3  
-            && $booking->payment->paymentMethod->name === 'Wallet') {
-            
-            $walletTransaction = $this->walletTransactionRepository->findWhere([
-                'user_id'    => $booking->user_id,
-                'payment_id' => $booking->payment_id,
-            ])->first();
+        // Vérifie si le paiement est avec le wallet
+        if ($booking->payment && $booking->payment->paymentMethod->name === 'Wallet') {
 
+            // Chercher la dernière transaction wallet du client pour cette réservation
+            // On ne vérifie plus paymentStatus_id car le paiement des frais peut déjà être validé
+            $walletTransaction = $this->walletTransactionRepository
+                ->where('user_id', $booking->user_id)
+                ->where('payment_id', $booking->payment_id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            // Si pas de transaction trouvée avec payment_id, chercher le wallet du client directement
             if (!$walletTransaction) {
-                return [ null , null];
+                Log::info('UpdateBookingPaymentListener - Aucune transaction trouvée, récupération du wallet client directement', [
+                    'user_id' => $booking->user_id,
+                    'payment_id' => $booking->payment_id
+                ]);
+
+                // Récupérer les wallets du client (bonus d'abord, puis principal)
+                $clientWallets = $this->walletRepository->findWhere([
+                    'user_id' => $booking->user_id,
+                    'enabled' => true
+                ])->sortByDesc(function($wallet) {
+                    return $wallet->name === WalletType::BONUS->value ? 1 : 0;
+                });
+
+                $wallet = null;
+                $walletType = null;
+
+                // Chercher un wallet avec solde suffisant
+                $requiredAmount = $booking->getTotal();
+                foreach ($clientWallets as $w) {
+                    if ($w->balance >= $requiredAmount) {
+                        $wallet = $w;
+                        $walletType = ($w->name === WalletType::BONUS->value)
+                            ? WalletType::BONUS
+                            : WalletType::PRINCIPAL;
+                        break;
+                    }
+                }
+
+                // Si aucun wallet avec solde suffisant, prendre le principal
+                if (!$wallet) {
+                    $wallet = $clientWallets->firstWhere('name', WalletType::PRINCIPAL->value);
+                    $walletType = WalletType::PRINCIPAL;
+                }
+
+                if (!$wallet) {
+                    Log::error('UpdateBookingPaymentListener - Aucun wallet trouvé pour le client', [
+                        'user_id' => $booking->user_id
+                    ]);
+                    return [ null , null];
+                }
+
+                return [$wallet, $walletType];
             }
 
             // Déterminer le type de wallet utilisé
             $walletType = $walletTransaction->wallet->name ?? null;
 
-            $walletType = ($walletType === WalletType::BONUS->value) 
-                            ? WalletType::BONUS 
+            $walletType = ($walletType === WalletType::BONUS->value)
+                            ? WalletType::BONUS
                             : WalletType::PRINCIPAL;
 
             return [
