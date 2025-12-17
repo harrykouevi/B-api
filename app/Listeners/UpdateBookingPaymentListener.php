@@ -426,11 +426,14 @@ class UpdateBookingPaymentListener
                             Log::info('Creating payment from client to salon', [
                                 'amount' => $purchaseamount,
                                 'from_wallet' => $clientW->id,
+                                'from_wallet_type' => $walletType->value,
                                 'to_user' => auth()->user()->id,
-                                'wallet_type' => $walletType->value
+                                'to_wallet_type' => WalletType::PRINCIPAL->value
                             ]);
 
-                            $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),$walletType,$purchase->taxes,$this->paymentService->buildCouponData($purchase));
+                            // IMPORTANT: Le salon reçoit TOUJOURS sur son wallet PRINCIPAL (Igris)
+                            // Mais le client paie depuis son wallet choisi ($walletType)
+                            $purchasepayment = $this->paymentService->createPayment($purchaseamount,$clientW ,auth()->user(),WalletType::PRINCIPAL,$purchase->taxes,$this->paymentService->buildCouponData($purchase));
                             $purchasepayment = $purchasepayment[0];
 
                             Log::info('Payment created:', [
