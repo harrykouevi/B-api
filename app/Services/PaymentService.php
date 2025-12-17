@@ -85,6 +85,20 @@ class PaymentService
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
         $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
+        $taxLog = is_array($tax)
+            ? array_map(function ($t) {
+                return is_object($t) && isset($t->id) ? $t->id : $t;
+            }, $tax)
+            : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+        Log::info('PaymentService::createPayment start', [
+            'amount' => $amount,
+            'payer_wallet_id' => $payer_wallet?->id,
+            'payer_user_id' => $payer_wallet?->user_id,
+            'receiver_id' => $receiver?->id,
+            'wallet_type' => $wallettype,
+            'tax' => $taxLog,
+            'coupon' => $coupon,
+        ]);
         // if($receiver->id != null){ 
         //     $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
         //                                                             'user_id' => $receiver->id,
@@ -114,7 +128,10 @@ class PaymentService
 
                     return [$payment , $receiverWallet] ;
                 } catch (Exception $e) {
-                    Log::error( $e->getTraceAsString()  ) ;
+                    Log::error('PaymentService::createPayment error', [
+                        'message' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
                 }
             }
            
@@ -282,13 +299,34 @@ class PaymentService
         $amount = $input['payment']['amount'];
         // Wallet plateforme
         $platformWallet = $this->walletRepository->find(setting('app_default_wallet_id'));
+        $taxLog = is_array($tax)
+            ? array_map(function ($t) {
+                return is_object($t) && isset($t->id) ? $t->id : $t;
+            }, $tax)
+            : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+
+        Log::info('PaymentService::toWalletFromWallet start', [
+            'payment_amount' => $amount,
+            'receiver_wallet_id' => $receiverWallet->id,
+            'receiver_user_id' => $receiverWallet->user_id,
+            'payer_wallet_id' => $payer_wallet->id,
+            'payer_user_id' => $payer_wallet->user_id,
+            'currency_code' => $currency['code'] ?? null,
+            'platform_wallet_id' => $platformWallet?->id,
+            'coupon' => $coupon,
+            'tax' => $taxLog,
+        ]);
 
         if ($currency['code'] == setting('default_currency_code')) {
 
             $payment = $this->paymentRepository->create($input['payment']);
 
+            Log::info('PaymentService::toWalletFromWallet payment created', [
+                'payment_id' => $payment->id,
+                'payment_input' => $input['payment'],
+            ]);
            
-            
+           
             $discount = 0;
             $couponForSalon =  'platform' ;
             if ($coupon && $coupon['value'] > 0) {
@@ -303,6 +341,13 @@ class PaymentService
             if ($tax !== null && $amount > 0 ) {
                 $commission = self::getCommission($amount + $discount , $tax) ;
             }  
+
+            Log::info('PaymentService::toWalletFromWallet commission', [
+                'commission' => $commission,
+                'tax' => $taxLog,
+                'discount' => $discount,
+                'couponForSalon' => $couponForSalon,
+            ]);
 
 
             for ($i=0; $i <= 3  ; $i++) { 
@@ -408,7 +453,13 @@ class PaymentService
                 }
 
                 try{
-                    if(count($transaction) > 1) $o = $this->walletTransactionRepository->create($transaction);
+                    if(count($transaction) > 1) {
+                        Log::info('PaymentService::toWalletFromWallet create transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                        $o = $this->walletTransactionRepository->create($transaction);
+                    }
 
                 } catch (\Exception $e) {
                     Log::error('FAIL:'. $e->getMessage() , [
@@ -419,6 +470,10 @@ class PaymentService
             }
             return $payment ;
         }
+        Log::warning('PaymentService::toWalletFromWallet currency mismatch', [
+            'currency_code' => $currency['code'] ?? null,
+            'default_currency_code' => setting('default_currency_code'),
+        ]);
         return Null ;
     }
 
@@ -740,4 +795,3 @@ class PaymentService
         return min($commission, $amount);
     }
 }
-

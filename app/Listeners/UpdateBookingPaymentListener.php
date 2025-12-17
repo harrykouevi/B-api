@@ -115,6 +115,12 @@ class UpdateBookingPaymentListener
      */
     private function getWalletUseToPayBooking(Booking $booking): ?array
     {
+        Log::info('UpdateBookingPaymentListener - getWalletUseToPayBooking start', [
+            'booking_id' => $booking->id,
+            'payment_id' => $booking->payment_id,
+            'payment_method' => $booking->payment->paymentMethod->name ?? null,
+        ]);
+
         // Vérifie si le paiement est avec le wallet
         if ($booking->payment && $booking->payment->paymentMethod->name === 'Wallet') {
 
@@ -125,6 +131,15 @@ class UpdateBookingPaymentListener
                 ->where('payment_id', $booking->payment_id)
                 ->orderBy('created_at', 'desc')
                 ->first();
+
+            if ($walletTransaction) {
+                Log::info('UpdateBookingPaymentListener - transaction wallet trouvée', [
+                    'wallet_transaction_id' => $walletTransaction->id,
+                    'wallet_id' => $walletTransaction->wallet_id,
+                    'wallet_type' => $walletTransaction->wallet->name ?? null,
+                    'amount' => $walletTransaction->amount,
+                ]);
+            }
 
             // Si pas de transaction trouvée avec payment_id, chercher le wallet du client directement
             if (!$walletTransaction) {
@@ -162,6 +177,13 @@ class UpdateBookingPaymentListener
                     $walletType = WalletType::PRINCIPAL;
                 }
 
+                Log::info('UpdateBookingPaymentListener - wallet client sélectionné', [
+                    'wallet_id' => $wallet?->id,
+                    'wallet_type' => $walletType?->value,
+                    'balance' => $wallet?->balance,
+                    'required_amount' => $requiredAmount,
+                ]);
+
                 if (!$wallet) {
                     Log::error('UpdateBookingPaymentListener - Aucun wallet trouvé pour le client', [
                         'user_id' => $booking->user_id
@@ -178,6 +200,12 @@ class UpdateBookingPaymentListener
             $walletType = ($walletType === WalletType::BONUS->value)
                             ? WalletType::BONUS
                             : WalletType::PRINCIPAL;
+
+            Log::info('UpdateBookingPaymentListener - wallet provenant de la transaction', [
+                'wallet_id' => $walletTransaction->wallet->id ?? null,
+                'wallet_type' => $walletType->value,
+                'wallet_balance' => $walletTransaction->wallet->balance ?? null,
+            ]);
 
             return [
                 $walletTransaction->wallet,
@@ -196,6 +224,14 @@ class UpdateBookingPaymentListener
         try {
             /** @var Booking $booking */
             $booking = $event->booking;
+            Log::info('UpdateBookingPaymentListener - handle', [
+                'booking_id' => $booking->id,
+                'booking_status_id' => $booking->booking_status_id,
+                'payment_id' => $booking->payment_id,
+                'payment_status_id' => $booking->payment->paymentStatus_id ?? null,
+                'payment_method' => $booking->payment->paymentMethod->name ?? null,
+            ]);
+
             $payment_intents =[];
             
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->paymentStatus_id != 3){
