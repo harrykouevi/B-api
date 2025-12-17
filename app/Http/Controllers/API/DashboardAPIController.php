@@ -22,6 +22,7 @@ use App\Criteria\Wallets\WalletsOfUserCriteria;
 use App\Types\WalletType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Prettus\Repository\Exceptions\RepositoryException;
 
 class DashboardAPIController extends Controller
