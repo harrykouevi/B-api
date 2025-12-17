@@ -17,6 +17,9 @@ use App\Repositories\BookingRepository;
 use App\Repositories\EarningRepository;
 use App\Repositories\EServiceRepository;
 use App\Repositories\SalonRepository;
+use App\Repositories\WalletRepository;
+use App\Criteria\Wallets\WalletsOfUserCriteria;
+use App\Types\WalletType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Prettus\Repository\Exceptions\RepositoryException;
@@ -37,13 +40,19 @@ class DashboardAPIController extends Controller
      */
     private EarningRepository $earningRepository;
 
-    public function __construct(BookingRepository $bookingRepo, EarningRepository $earningRepository, SalonRepository $salonRepo, EServiceRepository $eServiceRepository)
+    /**
+     * @var WalletRepository
+     */
+    private WalletRepository $walletRepository;
+
+    public function __construct(BookingRepository $bookingRepo, EarningRepository $earningRepository, SalonRepository $salonRepo, EServiceRepository $eServiceRepository, WalletRepository $walletRepository)
     {
         parent::__construct();
         $this->bookingRepository = $bookingRepo;
         $this->salonRepository = $salonRepo;
         $this->eServiceRepository = $eServiceRepository;
         $this->earningRepository = $earningRepository;
+        $this->walletRepository = $walletRepository;
     }
 
     /**
@@ -57,9 +66,15 @@ class DashboardAPIController extends Controller
         $statistics = [];
         try {
 
-            $this->earningRepository->pushCriteria(new EarningOfUserCriteria(auth()->id()));
+            // Récupérer le solde du wallet PRINCIPAL (Igris) du salon
+            $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
+            $wallets = $this->walletRepository->all();
+
+            // Trouver le wallet PRINCIPAL
+            $principalWallet = $wallets->firstWhere('wallet_type', WalletType::PRINCIPAL->value);
+
             $earning['description'] = 'total_earning';
-            $earning['value'] = $this->earningRepository->all()->sum('salon_earning');
+            $earning['value'] = $principalWallet ? $principalWallet->balance : 0;
             $statistics[] = $earning;
 
             $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
