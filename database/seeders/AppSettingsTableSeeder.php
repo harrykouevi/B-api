@@ -465,9 +465,15 @@ class AppSettingsTableSeeder extends Seeder
                 'key' => 'postpone_charge',
                 'value' => 0,
             ),
-            
+
             array(
-                // 'id' => 161,
+                // 'id' => 162,
+                'key' => 'cancellation_charge',
+                'value' => 20,
+            ),
+
+            array(
+                // 'id' => 163,
                 'key' => 'max_partener_rewards',
                 'value' => 2,
             ),

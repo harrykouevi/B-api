@@ -235,7 +235,7 @@ class UpdateBookingPaymentListener
             ]);
 
             $payment_intents =[];
-            
+
             if( in_array($booking->booking_status_id, [7, 8]) && $booking->payment->paymentStatus_id != 3){
                 //si le statut de la reservation est failed et que le statut du paiement est tout sauf failed
                 //faire le remboursement necessaire
@@ -244,6 +244,14 @@ class UpdateBookingPaymentListener
 
                 [$clientW, $walletType] = $this->getWalletUseToPayBooking($booking) ;
 
+                // Récupérer la pénalité d'annulation depuis les settings
+                $cancellationCharge = setting('cancellation_charge', 20);
+
+                Log::info('🚫 ANNULATION DE RÉSERVATION', [
+                    'booking_id' => $booking->id,
+                    'cancelled_by' => auth()->user()->hasRole('salon owner') ? 'SALON' : 'CLIENT',
+                    'cancellation_charge' => $cancellationCharge
+                ]);
 
                 //si il y a eu achat trouver le montant de l'achat'
                 $this->purchaseRepository->pushCriteria(new PurchasesOfUserCriteria(auth()->id()));
@@ -254,48 +262,141 @@ class UpdateBookingPaymentListener
                         }) ;
 
                 if($purchase) {
-                    
+
                     if($purchase->purchaseStatus->order == 50) $purchaseamount = $purchase->payment->amount ;
-                    
+
 
                     if(auth()->user()->hasRole('salon owner') ){
-                        // c'est le coiffeur qui annule
+                        // 🔴 CAS 2: Le SALON annule
+                        Log::info('🔴 SALON ANNULE', [
+                            'purchase_amount' => $purchaseamount,
+                            'service_total' => $booking->getTotal()
+                        ]);
+
                         $salonW = $this->walletRepository->findWhere(['user_id' => auth()->user()->id,
                                                                         'name' => WalletType::PRINCIPAL->value,
                                                                     ])->first() ;
                         if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
-                        //le coiffeur rembourse au client le montant du service
-                        //si il y a eu achat de service
-                        if($purchaseamount > 0 ) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user , "walletType"=> $walletType  , "taxes" => ($purchase)? $purchase->taxes : Null ] );
-                        if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>$salonW, "user"=> $booking->user , "walletType"=> $walletType ] );
+
+                        // Transaction 1: Salon rembourse au client le montant COMPLET du service (1000F)
+                        // PAS la commission (100F), juste le service
+                        if($booking->getTotal() > 0) {
+                            array_push($payment_intents, [
+                                "amount" => $booking->getTotal(),  // Montant complet du service
+                                "payer_wallet" => $salonW,
+                                "user" => $booking->user,
+                                "walletType" => $walletType,
+                                "description" => "Remboursement complet du service (salon annule)"
+                            ]);
+
+                            Log::info('💸 Transaction: Salon → Client', [
+                                'amount' => $booking->getTotal(),
+                                'description' => 'Remboursement service complet'
+                            ]);
+                        }
+
+                        // Transaction 2: Pénalité d'annulation - Salon → Plateforme
+                        if($cancellationCharge > 0) {
+                            array_push($payment_intents, [
+                                "amount" => $cancellationCharge,
+                                "payer_wallet" => $salonW,
+                                "user" => null,  // null = plateforme
+                                "description" => "Pénalité d'annulation par le salon"
+                            ]);
+
+                            Log::info('💸 Transaction: Salon → Plateforme (Pénalité)', [
+                                'amount' => $cancellationCharge
+                            ]);
+                        }
+
+                        // NE PAS rembourser les frais de réservation (booking_price) - déjà encaissés
 
                     }
-                    
-                    if(auth()->user()->hasRole('customer') ){ 
-                    
-                        // c'est le client qui annule  
+
+                    if(auth()->user()->hasRole('customer') ){
+                        // 🔵 CAS 1: Le CLIENT annule
+                        Log::info('🔵 CLIENT ANNULE', [
+                            'purchase_amount' => $purchaseamount,
+                            'service_total' => $booking->getTotal()
+                        ]);
+
+                        // Le salon rembourse ce qu'il a reçu (900F si commission 10%)
                         $salonUsers = $booking->salon?->users ?? collect();
                         Log::info(['les utilisateurs du salon ',$salonUsers->toArray()] );
-        
-                        if(!$salonUsers->isEmpty()){ ;
+
+                        if(!$salonUsers->isEmpty()) {
                             $salonW = $this->walletRepository->findWhere(['user_id' => $salonUsers->first()->id ,
                                                                         'name' => WalletType::PRINCIPAL->value,
-                                                                    ])->first() ;        
-                            //le coiffeur rembourse au client le montant du service
-                            //si il y a eu achat de service
-                            if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>$salonW, "user"=> $booking->user  , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
-                        }else{
-                            if($purchaseamount > 0) array_push($payment_intents ,  ["amount"=>$purchaseamount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType , "taxes" => ($purchase)? $purchase->taxes : Null ] );
+                                                                    ])->first() ;
+
+                            // Transaction 1: Salon rembourse au client ce qu'il a reçu
+                            // (montant du service MOINS la commission)
+                            if($purchaseamount > 0) {
+                                // Calculer ce que le salon a vraiment reçu
+                                $salonReceivedAmount = $purchaseamount;
+
+                                // Si des taxes (commission) ont été prélevées, le salon a reçu moins
+                                if($purchase && $purchase->taxes) {
+                                    $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
+                                    $salonReceivedAmount = $booking->getTotal() - $commission;
+                                }
+
+                                array_push($payment_intents, [
+                                    "amount" => $salonReceivedAmount,
+                                    "payer_wallet" => $salonW,
+                                    "user" => $booking->user,
+                                    "walletType" => $walletType,
+                                    "description" => "Remboursement du service (client annule)"
+                                ]);
+
+                                Log::info('💸 Transaction: Salon → Client', [
+                                    'amount' => $salonReceivedAmount,
+                                    'description' => 'Remboursement ce que le salon a reçu'
+                                ]);
+                            }
+
+                            // Transaction 2: Pénalité - Client → Plateforme
+                            if($cancellationCharge > 0 && $clientW) {
+                                array_push($payment_intents, [
+                                    "amount" => $cancellationCharge,
+                                    "payer_wallet" => $clientW,
+                                    "user" => null,  // null = plateforme
+                                    "walletType" => $walletType,
+                                    "description" => "Pénalité d'annulation par le client"
+                                ]);
+
+                                Log::info('💸 Transaction: Client → Plateforme (Pénalité)', [
+                                    'amount' => $cancellationCharge
+                                ]);
+                            }
+
+                        } else {
+                            // Pas de salon trouvé - plateforme rembourse
+                            if($purchaseamount > 0) {
+                                array_push($payment_intents, [
+                                    "amount" => $purchaseamount,
+                                    "payer_wallet" => setting('app_default_wallet_id'),
+                                    "user" => $booking->user,
+                                    "walletType" => $walletType,
+                                    "description" => "Remboursement par la plateforme"
+                                ]);
+                            }
                         }
-                        
+
+                        // NE PAS rembourser les frais de réservation (booking_price)
                     }
                 }else{
-                    
-                    if($booking->payment->amount > 0) array_push($payment_intents ,  ["amount"=>$booking->payment->amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=> $booking->user , "walletType"=> $walletType ] );
-
+                    // Pas de purchase - remboursement par la plateforme
+                    if($booking->payment->amount > 0) {
+                        array_push($payment_intents, [
+                            "amount" => $booking->payment->amount,
+                            "payer_wallet" => setting('app_default_wallet_id'),
+                            "user" => $booking->user,
+                            "walletType" => $walletType,
+                            "description" => "Remboursement (pas de purchase)"
+                        ]);
+                    }
                 }
-
-
 
                 if($purchase) {
                     $purchase = $this->purchaseRepository->update([ 'purchase_status_id' => 3 ,
