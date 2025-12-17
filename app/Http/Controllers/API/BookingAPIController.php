@@ -537,6 +537,12 @@ class BookingAPIController extends Controller
         try {
             $user = auth()->user();
 
+            Log::info('📊 pendingCount API called', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'roles' => $user->roles->pluck('name')->toArray()
+            ]);
+
             // Récupérer les bookings avec status order = 1 (Received)
             $query = Booking::whereHas('bookingStatus', function ($q) {
                 $q->where('order', 1);
@@ -545,19 +551,34 @@ class BookingAPIController extends Controller
             // Filtrer selon le rôle de l'utilisateur
             if ($user->hasRole('salon owner') || $user->hasRole('admin')) {
                 // Pour le salon : compter les réservations de ses salons
+                Log::info('📊 Utilisateur est SALON OWNER, filtrage par salons');
+
                 $query->whereHas('salon', function ($q) use ($user) {
                     $q->whereHas('users', function ($q2) use ($user) {
                         $q2->where('users.id', $user->id);
                     });
                 });
+
+                // Debug: voir les bookings trouvés
+                $bookingsDebug = $query->with('salon', 'bookingStatus')->get();
+                Log::info('📊 Bookings trouvés pour le salon', [
+                    'count' => $bookingsDebug->count(),
+                    'bookings' => $bookingsDebug->map(fn($b) => [
+                        'id' => $b->id,
+                        'salon' => $b->salon->name ?? 'N/A',
+                        'status' => $b->bookingStatus->status ?? 'N/A',
+                        'order' => $b->bookingStatus->order ?? 'N/A'
+                    ])->toArray()
+                ]);
             } else {
                 // Pour le client : compter ses propres réservations
+                Log::info('📊 Utilisateur est CLIENT, filtrage par user_id');
                 $query->where('user_id', $user->id);
             }
 
             $count = $query->count();
 
-            Log::info('Pending bookings count', [
+            Log::info('✅ Pending bookings count result', [
                 'user_id' => $user->id,
                 'role' => $user->roles->pluck('name')->toArray(),
                 'count' => $count
@@ -568,7 +589,7 @@ class BookingAPIController extends Controller
             ], 'Pending bookings count retrieved successfully');
 
         } catch (Exception $e) {
-            Log::error('Error getting pending bookings count', [
+            Log::error('❌ Error getting pending bookings count', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

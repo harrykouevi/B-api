@@ -65,31 +65,53 @@ class DashboardAPIController extends Controller
     {
         $statistics = [];
         try {
+            $user = auth()->user();
+
+            Log::info('💰 Dashboard provider API called', [
+                'user_id' => $user->id,
+                'user_email' => $user->email
+            ]);
 
             // Récupérer le solde du wallet PRINCIPAL (Igris) du salon
             $this->walletRepository->pushCriteria(new WalletsOfUserCriteria(auth()->id()));
             $wallets = $this->walletRepository->all();
 
+            Log::info('💰 Wallets récupérés', [
+                'count' => $wallets->count(),
+                'wallets' => $wallets->map(fn($w) => [
+                    'id' => $w->id,
+                    'name' => $w->name,
+                    'wallet_type' => $w->wallet_type,
+                    'balance' => $w->balance
+                ])->toArray()
+            ]);
+
             // Trouver le wallet PRINCIPAL
             $principalWallet = $wallets->firstWhere('wallet_type', WalletType::PRINCIPAL->value);
 
+            Log::info('💰 Wallet PRINCIPAL trouvé', [
+                'found' => $principalWallet ? 'OUI' : 'NON',
+                'wallet_id' => $principalWallet->id ?? 'N/A',
+                'balance' => $principalWallet->balance ?? 0
+            ]);
+
             $earning['description'] = 'total_earning';
-            $earning['value'] = $principalWallet ? $principalWallet->balance : 0;
+            $earning['value'] = $principalWallet ? (string)$principalWallet->balance : '0';
             $statistics[] = $earning;
 
             $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
             $bookingsCount['description'] = "total_bookings";
-            $bookingsCount['value'] = $this->bookingRepository->all('bookings.id')->count();
+            $bookingsCount['value'] = (string)$this->bookingRepository->all('bookings.id')->count();
             $statistics[] = $bookingsCount;
 
             $this->salonRepository->pushCriteria(new SalonsOfUserCriteria(auth()->id()));
             $salonsCount['description'] = "total_salons";
-            $salonsCount['value'] = $this->salonRepository->all('salons.id')->count();
+            $salonsCount['value'] = (string)$this->salonRepository->all('salons.id')->count();
             $statistics[] = $salonsCount;
 
             $this->eServiceRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
             $eServicesCount['description'] = "total_e_services";
-            $eServicesCount['value'] = $this->eServiceRepository->all('e_services.id')->count();
+            $eServicesCount['value'] = (string)$this->eServiceRepository->all('e_services.id')->count();
             $statistics[] = $eServicesCount;
 
 
