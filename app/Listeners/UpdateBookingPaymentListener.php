@@ -311,26 +311,24 @@ class UpdateBookingPaymentListener
                                 ->where('action', 'credit')
                                 ->first();
 
-                            // Utiliser le montant RÉEL de la transaction
+                            // Par défaut : le salon rembourse ce qu'il a RÉELLEMENT REÇU
                             $salonReceivedAmount = $salonTransaction ? $salonTransaction->amount : 0;
-
-                            // ⚠️ IMPORTANT: Si coupon PLATEFORME, le client doit recevoir ce qu'il a PAYÉ
-                            // Pas forcément ce que le salon a reçu
                             $couponDiscount = 0;
-                            $clientPaidAmount = $purchaseamount; // Montant que le client a payé
 
+                            // ⚠️ EXCEPTION: Si coupon PLATEFORME, le client doit recevoir ce qu'il a PAYÉ
+                            // (qui est moins que ce que le salon a reçu)
                             if($purchase->coupon) {
                                 $couponData = $this->paymentService->buildCouponData($purchase);
                                 if($couponData['applies_to'] === 'platform') {
                                     $couponDiscount = $couponData['value'];
-                                    // Le salon rembourse seulement ce que le client a payé
-                                    $salonReceivedAmount = $clientPaidAmount;
+                                    // Le salon rembourse seulement ce que le client a payé (moins que ce qu'il a reçu)
+                                    $salonReceivedAmount = $purchaseamount; // Montant que le client a payé
                                 }
                             }
 
                             Log::info('💰 Montant à rembourser par le salon', [
                                 'montant_salon_a_recu' => $salonTransaction ? $salonTransaction->amount : 0,
-                                'montant_client_a_paye' => $clientPaidAmount,
+                                'montant_client_a_paye' => $purchaseamount,
                                 'coupon_platform' => $couponDiscount,
                                 'montant_a_rembourser' => $salonReceivedAmount,
                                 'transaction_id' => $salonTransaction ? $salonTransaction->id : 'NULL'
