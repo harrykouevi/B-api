@@ -370,14 +370,27 @@ class PaymentService
                     $transaction['action'] =  'credit';
                     $transaction['amount'] = $amount ;
 
+                    // Debug des rôles pour comprendre pourquoi le check échoue
+                    $payerHasCustomerRole = $payer_wallet->user->hasRole('customer');
+                    $receiverHasSalonOwnerRole = $receiverWallet->user->hasRole('salon owner');
+
+                    Log::info('💰 DEBUG ROLES', [
+                        'payer_user_id' => $payer_wallet->user->id,
+                        'payer_roles' => $payer_wallet->user->roles->pluck('name')->toArray(),
+                        'payer_hasRole_customer' => $payerHasCustomerRole,
+                        'receiver_user_id' => $receiverWallet->user->id,
+                        'receiver_roles' => $receiverWallet->user->roles->pluck('name')->toArray(),
+                        'receiver_hasRole_salon_owner' => $receiverHasSalonOwnerRole
+                    ]);
+
                     Log::info('💰 Transaction SALON (i=0) - AVANT déductions', [
                         'amount_initial' => $amount,
                         'discount' => $discount,
                         'commission' => $commission,
-                        'is_customer_to_salon' => $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner')
+                        'is_customer_to_salon' => $payerHasCustomerRole && $receiverHasSalonOwnerRole
                     ]);
 
-                    if(   $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner') ){
+                    if($payerHasCustomerRole && $receiverHasSalonOwnerRole){
 
                         // LOGIQUE DES COUPONS ET COMMISSIONS:
                         // $amount = montant que le client a payé (déjà après réduction coupon)
