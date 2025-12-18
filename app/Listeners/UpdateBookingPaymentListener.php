@@ -292,17 +292,39 @@ class UpdateBookingPaymentListener
                                                                     ])->first() ;
                         if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
 
-                        // Transaction 1: Salon rembourse au client ce qu'il a reçu (900F)
-                        // Le salon rembourse seulement ce qu'il a reçu après commission
+                        // Transaction 1: Salon rembourse au client ce qu'il a reçu
+                        // IMPORTANT: Utiliser le montant RÉEL de la transaction wallet, pas un calcul
                         if($purchaseamount > 0) {
-                            // Calculer ce que le salon a vraiment reçu
-                            $salonReceivedAmount = $purchaseamount;
+                            // Récupérer la transaction où le salon a été crédité
+                            $salonTransaction = \App\Models\WalletTransaction::where('payment_id', $purchase->payment_id)
+                                ->where('wallet_id', $salonW->id)
+                                ->where('action', 'credit')
+                                ->first();
 
-                            // Si des taxes (commission) ont été prélevées, le salon a reçu moins
-                            if($purchase && $purchase->taxes) {
-                                $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
-                                $salonReceivedAmount = $booking->getTotal() - $commission;
+                            // Utiliser le montant RÉEL de la transaction
+                            $salonReceivedAmount = $salonTransaction ? $salonTransaction->amount : 0;
+
+                            // ⚠️ IMPORTANT: Si coupon PLATEFORME, le client doit recevoir ce qu'il a PAYÉ
+                            // Pas forcément ce que le salon a reçu
+                            $couponDiscount = 0;
+                            $clientPaidAmount = $purchaseamount; // Montant que le client a payé
+
+                            if($purchase->coupon) {
+                                $couponData = $this->paymentService->buildCouponData($purchase);
+                                if($couponData['applies_to'] === 'platform') {
+                                    $couponDiscount = $couponData['value'];
+                                    // Le salon rembourse seulement ce que le client a payé
+                                    $salonReceivedAmount = $clientPaidAmount;
+                                }
                             }
+
+                            Log::info('💰 Montant à rembourser par le salon', [
+                                'montant_salon_a_recu' => $salonTransaction ? $salonTransaction->amount : 0,
+                                'montant_client_a_paye' => $clientPaidAmount,
+                                'coupon_platform' => $couponDiscount,
+                                'montant_a_rembourser' => $salonReceivedAmount,
+                                'transaction_id' => $salonTransaction ? $salonTransaction->id : 'NULL'
+                            ]);
 
                             array_push($payment_intents, [
                                 "amount" => $salonReceivedAmount,  // Ce que le salon a reçu (900F)
@@ -317,13 +339,13 @@ class UpdateBookingPaymentListener
                                 'description' => 'Remboursement ce que le salon a reçu'
                             ]);
 
-                            // Transaction 2: Plateforme rembourse la commission au client (100F)
-                            // Pour que le client récupère la TOTALITÉ de ce qu'il a payé
-                            if($purchase && $purchase->taxes) {
+                            // Transaction 2: Plateforme rembourse la commission au client
+                            // SAUF si coupon plateforme (car le client n'a pas payé le montant complet)
+                            if($purchase && $purchase->taxes && $couponDiscount == 0) {
                                 $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
 
                                 array_push($payment_intents, [
-                                    "amount" => $commission,  // 100F
+                                    "amount" => $commission,
                                     "payer_wallet" => setting('app_default_wallet_id'),
                                     "user" => $booking->user,
                                     "walletType" => $walletType,
@@ -355,6 +377,11 @@ class UpdateBookingPaymentListener
                                     'amount' => -$commission,
                                     'booking_id' => $booking->id,
                                     'reason' => 'salon_cancellation'
+                                ]);
+                            } elseif($couponDiscount > 0) {
+                                Log::info('💰 Coupon plateforme détecté - Pas de remboursement de commission', [
+                                    'coupon_value' => $couponDiscount,
+                                    'raison' => 'Le client récupère seulement ce qu\'il a payé'
                                 ]);
                             }
                         }
@@ -397,8 +424,8 @@ class UpdateBookingPaymentListener
 
                     }
 
-                    if(auth()->user()->hasRole('customer') ){
-                        // 🔵 CAS 1: Le CLIENT annule
+                    // 🔵 CAS 1: Le CLIENT annule (si ce n'est PAS un salon owner)
+                    if(!auth()->user()->hasRole('salon owner')){
                         Log::info('🔵 CLIENT ANNULE', [
                             'purchase_amount' => $purchaseamount,
                             'service_total' => $booking->getTotal()
@@ -414,16 +441,22 @@ class UpdateBookingPaymentListener
                                                                         'name' => WalletType::PRINCIPAL->value,
                                                                     ])->first() ;
 
-                            // Transaction 1: Salon rembourse au client ce qu'il a reçu (900F)
+                            // Transaction 1: Salon rembourse au client ce qu'il a reçu
+                            // IMPORTANT: Utiliser le montant RÉEL de la transaction wallet
                             if($purchaseamount > 0) {
-                                // Calculer ce que le salon a vraiment reçu
-                                $salonReceivedAmount = $purchaseamount;
+                                // Récupérer la transaction où le salon a été crédité
+                                $salonTransaction = \App\Models\WalletTransaction::where('payment_id', $purchase->payment_id)
+                                    ->where('wallet_id', $salonW->id)
+                                    ->where('action', 'credit')
+                                    ->first();
 
-                                // Si des taxes (commission) ont été prélevées, le salon a reçu moins
-                                if($purchase && $purchase->taxes) {
-                                    $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
-                                    $salonReceivedAmount = $booking->getTotal() - $commission;
-                                }
+                                // Utiliser le montant RÉEL de la transaction
+                                $salonReceivedAmount = $salonTransaction ? $salonTransaction->amount : 0;
+
+                                Log::info('💰 Montant réel reçu par le salon (depuis wallet transaction)', [
+                                    'salon_received_amount' => $salonReceivedAmount,
+                                    'transaction_id' => $salonTransaction ? $salonTransaction->id : 'NULL'
+                                ]);
 
                                 array_push($payment_intents, [
                                     "amount" => $salonReceivedAmount,  // 900F
