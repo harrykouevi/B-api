@@ -256,12 +256,24 @@ class UpdateBookingPaymentListener
                 ]);
 
                 //si il y a eu achat trouver le montant de l'achat'
-                $this->purchaseRepository->pushCriteria(new PurchasesOfUserCriteria(auth()->id()));
-                $this->purchaseRepository->pushCriteria(new PurchasesByBookingCriteria());
-                $this->purchaseRepository->pushCriteria(new PaidPurchasesCriteria());
-                $purchase = $this->purchaseRepository->get()->first(function ($purchase)  use ($booking) {
-                                return $purchase->booking && $purchase->booking->id == $booking->id;
-                        }) ;
+                // IMPORTANT: Si c'est le salon qui annule, chercher par booking_id uniquement
+                // Si c'est le client qui annule, chercher par user_id ET booking_id
+                if(auth()->user()->hasRole('salon owner')) {
+                    // Salon annule : chercher le purchase du booking (appartient au client)
+                    $this->purchaseRepository->pushCriteria(new PurchasesByBookingCriteria());
+                    $this->purchaseRepository->pushCriteria(new PaidPurchasesCriteria());
+                    $purchase = $this->purchaseRepository->get()->first(function ($purchase)  use ($booking) {
+                        return $purchase->booking && $purchase->booking->id == $booking->id;
+                    });
+                } else {
+                    // Client annule : chercher par user_id
+                    $this->purchaseRepository->pushCriteria(new PurchasesOfUserCriteria(auth()->id()));
+                    $this->purchaseRepository->pushCriteria(new PurchasesByBookingCriteria());
+                    $this->purchaseRepository->pushCriteria(new PaidPurchasesCriteria());
+                    $purchase = $this->purchaseRepository->get()->first(function ($purchase)  use ($booking) {
+                        return $purchase->booking && $purchase->booking->id == $booking->id;
+                    });
+                }
 
                 if($purchase) {
 
