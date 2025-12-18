@@ -332,7 +332,7 @@ class UpdateBookingPaymentListener
                                 'type' => PlatformRevenueType::CANCELLATION_PENALTY->value,
                                 'amount' => $cancellationCharge,
                                 'booking_id' => $booking->id,
-                                'salon_id' => auth()->user()->id,
+                                'salon_id' => $booking->salon->id,
                                 'customer_id' => $booking->user_id,
                                 'description' => sprintf(
                                     "Pénalité d'annulation par le salon (réservation #%d)",
@@ -414,7 +414,7 @@ class UpdateBookingPaymentListener
                                         'type' => PlatformRevenueType::COMMISSION->value,
                                         'amount' => -$commission,  // NÉGATIF = remboursement/perte
                                         'booking_id' => $booking->id,
-                                        'salon_id' => $salonUsers->first()->id ?? null,
+                                        'salon_id' => $booking->salon->id,
                                         'customer_id' => $booking->user_id,
                                         'description' => sprintf(
                                             "Remboursement commission (client annule réservation #%d) - %.1f%% de %sF",
@@ -453,7 +453,7 @@ class UpdateBookingPaymentListener
                                     'type' => PlatformRevenueType::CANCELLATION_PENALTY->value,
                                     'amount' => $cancellationCharge,
                                     'booking_id' => $booking->id,
-                                    'salon_id' => $salonUsers->first()->id ?? null,
+                                    'salon_id' => $booking->salon->id,
                                     'customer_id' => $booking->user_id,
                                     'description' => sprintf(
                                         "Pénalité d'annulation par le client (réservation #%d)",
