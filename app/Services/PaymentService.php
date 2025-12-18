@@ -370,27 +370,30 @@ class PaymentService
                     $transaction['action'] =  'credit';
                     $transaction['amount'] = $amount ;
 
-                    // Debug des rôles pour comprendre pourquoi le check échoue
-                    $payerHasCustomerRole = $payer_wallet->user->hasRole('customer');
-                    $receiverHasSalonOwnerRole = $receiverWallet->user->hasRole('salon owner');
+                    // Logique commission : Si le RECEVEUR est un salon owner ET que le PAYEUR N'EST PAS un salon owner
+                    // Cela couvre tous les cas : client avec rôle, client sans rôle, etc.
+                    $payerIsSalonOwner = $payer_wallet->user->hasRole('salon owner');
+                    $receiverIsSalonOwner = $receiverWallet->user->hasRole('salon owner');
+                    $shouldApplyCommission = $receiverIsSalonOwner && !$payerIsSalonOwner;
 
                     Log::info('💰 DEBUG ROLES', [
                         'payer_user_id' => $payer_wallet->user->id,
                         'payer_roles' => $payer_wallet->user->roles->pluck('name')->toArray(),
-                        'payer_hasRole_customer' => $payerHasCustomerRole,
+                        'payer_is_salon_owner' => $payerIsSalonOwner,
                         'receiver_user_id' => $receiverWallet->user->id,
                         'receiver_roles' => $receiverWallet->user->roles->pluck('name')->toArray(),
-                        'receiver_hasRole_salon_owner' => $receiverHasSalonOwnerRole
+                        'receiver_is_salon_owner' => $receiverIsSalonOwner,
+                        'should_apply_commission' => $shouldApplyCommission
                     ]);
 
                     Log::info('💰 Transaction SALON (i=0) - AVANT déductions', [
                         'amount_initial' => $amount,
                         'discount' => $discount,
                         'commission' => $commission,
-                        'is_customer_to_salon' => $payerHasCustomerRole && $receiverHasSalonOwnerRole
+                        'is_customer_to_salon' => $shouldApplyCommission
                     ]);
 
-                    if($payerHasCustomerRole && $receiverHasSalonOwnerRole){
+                    if($shouldApplyCommission){
 
                         // LOGIQUE DES COUPONS ET COMMISSIONS:
                         // $amount = montant que le client a payé (déjà après réduction coupon)
@@ -924,7 +927,38 @@ class PaymentService
             }
         }
 
-        // S’assurer que la commission ne dépasse pas le montant
+        // S'assurer que la commission ne dépasse pas le montant
         return min($commission, $amount);
+    }
+
+    /**
+     * Extrait le TAUX de commission (en pourcentage) depuis un objet/tableau de taxes
+     *
+     * @param Tax|Tax[]|null $tax Le tableau ou objet de taxes
+     * @return float Le taux de commission en pourcentage (ex: 5.0 pour 5%)
+     */
+    public static function getCommissionRate($tax): float
+    {
+        $rate = 0;
+
+        if ($tax !== null) {
+            if (is_array($tax)) {
+                foreach($tax as $tax_){
+                    if(isset($tax_['name']) && $tax_['name'] == 'commission'){
+                        if (isset($tax_['type']) && $tax_['type'] === 'percent' && isset($tax_['value'])) {
+                            $rate = $tax_['value'];
+                        }
+                    }
+                }
+            } else {
+                if(isset($tax['name']) && $tax['name'] == 'commission'){
+                    if (isset($tax['type']) && $tax['type'] === 'percent' && isset($tax['value'])) {
+                        $rate = $tax['value'];
+                    }
+                }
+            }
+        }
+
+        return $rate;
     }
 }

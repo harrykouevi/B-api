@@ -340,7 +340,7 @@ class UpdateBookingPaymentListener
                                     'description' => sprintf(
                                         "Remboursement commission (salon annule réservation #%d) - %.1f%% de %sF",
                                         $booking->id,
-                                        $purchase->taxes,
+                                        PaymentService::getCommissionRate($purchase->taxes),
                                         $booking->getTotal()
                                     )
                                 ]);
@@ -460,7 +460,7 @@ class UpdateBookingPaymentListener
                                         'description' => sprintf(
                                             "Remboursement commission (client annule réservation #%d) - %.1f%% de %sF",
                                             $booking->id,
-                                            $purchase->taxes,
+                                            PaymentService::getCommissionRate($purchase->taxes),
                                             $booking->getTotal()
                                         )
                                     ]);
@@ -734,7 +734,7 @@ class UpdateBookingPaymentListener
                                             'customer_id' => $booking->user_id,
                                             'description' => sprintf(
                                                 "Commission %.1f%% sur réservation #%d (service: %sF)",
-                                                $purchase->taxes,
+                                                PaymentService::getCommissionRate($purchase->taxes),
                                                 $booking->id,
                                                 $booking->getTotal()
                                             )
@@ -744,7 +744,7 @@ class UpdateBookingPaymentListener
                                             'type' => 'commission',
                                             'amount' => $commission,
                                             'booking_id' => $booking->id,
-                                            'rate' => $purchase->taxes . '%'
+                                            'rate' => PaymentService::getCommissionRate($purchase->taxes) . '%'
                                         ]);
                                     }
 
