@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Log;
 use Exception;
 use App\Repositories\TaxRepository;
 use App\Types\WalletType;
+use App\Models\PlatformRevenue;
+use App\Types\PlatformRevenueType;
 
 /**
  * Listener UpdateBookingPaymentListener
@@ -313,8 +315,28 @@ class UpdateBookingPaymentListener
                                 "description" => "Pénalité d'annulation par le salon"
                             ]);
 
+                            // ⭐ TRACKING REVENUS PLATEFORME - Pénalité salon
+                            PlatformRevenue::create([
+                                'type' => PlatformRevenueType::CANCELLATION_PENALTY->value,
+                                'amount' => $cancellationCharge,
+                                'booking_id' => $booking->id,
+                                'salon_id' => auth()->user()->id,
+                                'customer_id' => $booking->user_id,
+                                'description' => sprintf(
+                                    "Pénalité d'annulation par le salon (réservation #%d)",
+                                    $booking->id
+                                )
+                            ]);
+
                             Log::info('💸 Transaction: Salon → Plateforme (Pénalité)', [
                                 'amount' => $cancellationCharge
+                            ]);
+
+                            Log::info('💰 REVENU PLATEFORME - Pénalité salon enregistrée', [
+                                'type' => 'penalty',
+                                'amount' => $cancellationCharge,
+                                'booking_id' => $booking->id,
+                                'cancelled_by' => 'salon'
                             ]);
                         }
 
@@ -375,9 +397,31 @@ class UpdateBookingPaymentListener
                                         "description" => "Remboursement commission (client annule)"
                                     ]);
 
+                                    // ⭐ TRACKING REVENUS PLATEFORME - Remboursement commission (montant négatif)
+                                    PlatformRevenue::create([
+                                        'type' => PlatformRevenueType::COMMISSION->value,
+                                        'amount' => -$commission,  // NÉGATIF = remboursement/perte
+                                        'booking_id' => $booking->id,
+                                        'salon_id' => $salonUsers->first()->id ?? null,
+                                        'customer_id' => $booking->user_id,
+                                        'description' => sprintf(
+                                            "Remboursement commission (client annule réservation #%d) - %.1f%% de %sF",
+                                            $booking->id,
+                                            $purchase->taxes,
+                                            $booking->getTotal()
+                                        )
+                                    ]);
+
                                     Log::info('💸 Transaction 2: Plateforme → Client', [
                                         'amount' => $commission,
                                         'description' => 'Remboursement de la commission'
+                                    ]);
+
+                                    Log::info('💰 REVENU PLATEFORME - Remboursement commission enregistré', [
+                                        'type' => 'commission_refund',
+                                        'amount' => -$commission,
+                                        'booking_id' => $booking->id,
+                                        'reason' => 'client_cancellation'
                                     ]);
                                 }
                             }
@@ -392,8 +436,28 @@ class UpdateBookingPaymentListener
                                     "description" => "Pénalité d'annulation par le client"
                                 ]);
 
+                                // ⭐ TRACKING REVENUS PLATEFORME - Pénalité client
+                                PlatformRevenue::create([
+                                    'type' => PlatformRevenueType::CANCELLATION_PENALTY->value,
+                                    'amount' => $cancellationCharge,
+                                    'booking_id' => $booking->id,
+                                    'salon_id' => $salonUsers->first()->id ?? null,
+                                    'customer_id' => $booking->user_id,
+                                    'description' => sprintf(
+                                        "Pénalité d'annulation par le client (réservation #%d)",
+                                        $booking->id
+                                    )
+                                ]);
+
                                 Log::info('💸 Transaction 3: Client → Plateforme (Pénalité)', [
                                     'amount' => $cancellationCharge
+                                ]);
+
+                                Log::info('💰 REVENU PLATEFORME - Pénalité client enregistrée', [
+                                    'type' => 'penalty',
+                                    'amount' => $cancellationCharge,
+                                    'booking_id' => $booking->id,
+                                    'cancelled_by' => 'client'
                                 ]);
                             }
 
@@ -417,6 +481,25 @@ class UpdateBookingPaymentListener
                                     "user" => null,
                                     "walletType" => $walletType,
                                     "description" => "Pénalité d'annulation par le client"
+                                ]);
+
+                                // ⭐ TRACKING REVENUS PLATEFORME - Pénalité client (sans salon)
+                                PlatformRevenue::create([
+                                    'type' => PlatformRevenueType::CANCELLATION_PENALTY->value,
+                                    'amount' => $cancellationCharge,
+                                    'booking_id' => $booking->id,
+                                    'salon_id' => null,
+                                    'customer_id' => $booking->user_id,
+                                    'description' => sprintf(
+                                        "Pénalité d'annulation par le client (réservation #%d - pas de salon trouvé)",
+                                        $booking->id
+                                    )
+                                ]);
+
+                                Log::info('💰 REVENU PLATEFORME - Pénalité client enregistrée (sans salon)', [
+                                    'type' => 'penalty',
+                                    'amount' => $cancellationCharge,
+                                    'booking_id' => $booking->id
                                 ]);
                             }
                         }
@@ -585,6 +668,54 @@ class UpdateBookingPaymentListener
                                 try{
                                     //mise à jour du purchase comme étant payé et validé
                                     $purchase = $this->purchaseRepository->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
+
+                                    // ⭐ TRACKING REVENUS PLATEFORME - Commission
+                                    if($purchase->taxes > 0) {
+                                        $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
+
+                                        PlatformRevenue::create([
+                                            'type' => PlatformRevenueType::COMMISSION->value,
+                                            'amount' => $commission,
+                                            'booking_id' => $booking->id,
+                                            'salon_id' => $booking->salon->id,
+                                            'customer_id' => $booking->user_id,
+                                            'description' => sprintf(
+                                                "Commission %.1f%% sur réservation #%d (service: %sF)",
+                                                $purchase->taxes,
+                                                $booking->id,
+                                                $booking->getTotal()
+                                            )
+                                        ]);
+
+                                        Log::info('💰 REVENU PLATEFORME - Commission enregistrée', [
+                                            'type' => 'commission',
+                                            'amount' => $commission,
+                                            'booking_id' => $booking->id,
+                                            'rate' => $purchase->taxes . '%'
+                                        ]);
+                                    }
+
+                                    // ⭐ TRACKING REVENUS PLATEFORME - Frais de réservation
+                                    $bookingPrice = setting('booking_price', 0);
+                                    if($bookingPrice > 0) {
+                                        PlatformRevenue::create([
+                                            'type' => PlatformRevenueType::BOOKING_FEE->value,
+                                            'amount' => $bookingPrice,
+                                            'booking_id' => $booking->id,
+                                            'salon_id' => $booking->salon->id,
+                                            'customer_id' => $booking->user_id,
+                                            'description' => sprintf(
+                                                "Frais de réservation pour réservation #%d",
+                                                $booking->id
+                                            )
+                                        ]);
+
+                                        Log::info('💰 REVENU PLATEFORME - Frais de réservation enregistrés', [
+                                            'type' => 'booking_fee',
+                                            'amount' => $bookingPrice,
+                                            'booking_id' => $booking->id
+                                        ]);
+                                    }
 
                                     // ✅ Charger les transactions pour les notifications
                                     $purchasepayment->load('transactions');

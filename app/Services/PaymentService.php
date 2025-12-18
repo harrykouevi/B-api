@@ -694,24 +694,46 @@ class PaymentService
 
     private function resolveWallet(int|string|Wallet $wallet): Wallet
     {
-        return $wallet instanceof Wallet
-            ? $wallet
-            : $this->walletRepository->find($wallet);
+        if ($wallet instanceof Wallet) {
+            // Si c'est déjà un Wallet, charger les relations si pas déjà chargées
+            if (!$wallet->relationLoaded('user')) {
+                $wallet->load('user.roles');
+            } elseif ($wallet->user && !$wallet->user->relationLoaded('roles')) {
+                $wallet->user->load('roles');
+            }
+            return $wallet;
+        }
+
+        // Sinon, récupérer avec les relations user.roles chargées
+        return $this->walletRepository->with('user.roles')->find($wallet);
     }
 
 
     private function resolveReceiverWallet(User $user, string|Null $walletType): Wallet
     {
         if (!$user->id) {
-            return $this->walletRepository->find(setting('app_default_wallet_id'));
+            // Wallet plateforme - charger avec user.roles
+            return $this->walletRepository->with('user.roles')->find(setting('app_default_wallet_id'));
         }
 
-        $wallet = $this->walletRepository->findWhere([
+        // Charger les rôles du user si pas déjà fait
+        if (!$user->relationLoaded('roles')) {
+            $user->load('roles');
+        }
+
+        // Récupérer le wallet avec la relation user.roles
+        $wallet = $this->walletRepository->with('user.roles')->findWhere([
             'user_id' => $user->id,
             'name'    => !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value,
         ])->first();
 
-        return $wallet ?: $this->createWallet($user, 0, !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value);
+        if (!$wallet) {
+            $wallet = $this->createWallet($user, 0, !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value);
+            // S'assurer que les relations sont chargées sur le wallet nouvellement créé
+            $wallet->load('user.roles');
+        }
+
+        return $wallet;
     }
 
     /**
