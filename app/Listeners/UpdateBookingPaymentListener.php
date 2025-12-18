@@ -312,13 +312,54 @@ class UpdateBookingPaymentListener
                                 "description" => "Remboursement du service (salon annule)"
                             ]);
 
-                            Log::info('💸 Transaction: Salon → Client', [
+                            Log::info('💸 Transaction 1: Salon → Client', [
                                 'amount' => $salonReceivedAmount,
                                 'description' => 'Remboursement ce que le salon a reçu'
                             ]);
+
+                            // Transaction 2: Plateforme rembourse la commission au client (100F)
+                            // Pour que le client récupère la TOTALITÉ de ce qu'il a payé
+                            if($purchase && $purchase->taxes) {
+                                $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
+
+                                array_push($payment_intents, [
+                                    "amount" => $commission,  // 100F
+                                    "payer_wallet" => setting('app_default_wallet_id'),
+                                    "user" => $booking->user,
+                                    "walletType" => $walletType,
+                                    "description" => "Remboursement commission (salon annule)"
+                                ]);
+
+                                // ⭐ TRACKING REVENUS PLATEFORME - Remboursement commission (montant négatif)
+                                PlatformRevenue::create([
+                                    'type' => PlatformRevenueType::COMMISSION->value,
+                                    'amount' => -$commission,  // NÉGATIF = remboursement/perte
+                                    'booking_id' => $booking->id,
+                                    'salon_id' => $booking->salon->id,
+                                    'customer_id' => $booking->user_id,
+                                    'description' => sprintf(
+                                        "Remboursement commission (salon annule réservation #%d) - %.1f%% de %sF",
+                                        $booking->id,
+                                        $purchase->taxes,
+                                        $booking->getTotal()
+                                    )
+                                ]);
+
+                                Log::info('💸 Transaction 2: Plateforme → Client', [
+                                    'amount' => $commission,
+                                    'description' => 'Remboursement de la commission'
+                                ]);
+
+                                Log::info('💰 REVENU PLATEFORME - Remboursement commission enregistré', [
+                                    'type' => 'commission_refund',
+                                    'amount' => -$commission,
+                                    'booking_id' => $booking->id,
+                                    'reason' => 'salon_cancellation'
+                                ]);
+                            }
                         }
 
-                        // Transaction 2: Pénalité d'annulation - Salon → Plateforme
+                        // Transaction 3: Pénalité d'annulation - Salon → Plateforme
                         if($cancellationCharge > 0) {
                             array_push($payment_intents, [
                                 "amount" => $cancellationCharge,
@@ -340,7 +381,7 @@ class UpdateBookingPaymentListener
                                 )
                             ]);
 
-                            Log::info('💸 Transaction: Salon → Plateforme (Pénalité)', [
+                            Log::info('💸 Transaction 3: Salon → Plateforme (Pénalité)', [
                                 'amount' => $cancellationCharge
                             ]);
 
