@@ -278,20 +278,29 @@ class UpdateBookingPaymentListener
                                                                     ])->first() ;
                         if($salonW == Null) throw new \Exception('a Salon dont have a wallet yet');
 
-                        // Transaction 1: Salon rembourse au client le montant COMPLET du service (1000F)
-                        // PAS la commission (100F), juste le service
-                        if($booking->getTotal() > 0) {
+                        // Transaction 1: Salon rembourse au client ce qu'il a reçu (900F)
+                        // Le salon rembourse seulement ce qu'il a reçu après commission
+                        if($purchaseamount > 0) {
+                            // Calculer ce que le salon a vraiment reçu
+                            $salonReceivedAmount = $purchaseamount;
+
+                            // Si des taxes (commission) ont été prélevées, le salon a reçu moins
+                            if($purchase && $purchase->taxes) {
+                                $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
+                                $salonReceivedAmount = $booking->getTotal() - $commission;
+                            }
+
                             array_push($payment_intents, [
-                                "amount" => $booking->getTotal(),  // Montant complet du service
+                                "amount" => $salonReceivedAmount,  // Ce que le salon a reçu (900F)
                                 "payer_wallet" => $salonW,
                                 "user" => $booking->user,
                                 "walletType" => $walletType,
-                                "description" => "Remboursement complet du service (salon annule)"
+                                "description" => "Remboursement du service (salon annule)"
                             ]);
 
                             Log::info('💸 Transaction: Salon → Client', [
-                                'amount' => $booking->getTotal(),
-                                'description' => 'Remboursement service complet'
+                                'amount' => $salonReceivedAmount,
+                                'description' => 'Remboursement ce que le salon a reçu'
                             ]);
                         }
 
@@ -320,7 +329,8 @@ class UpdateBookingPaymentListener
                             'service_total' => $booking->getTotal()
                         ]);
 
-                        // Le salon rembourse ce qu'il a reçu (900F si commission 10%)
+                        // Le client doit recevoir le montant COMPLET (1000F)
+                        // Salon rembourse 900F + Plateforme rembourse 100F
                         $salonUsers = $booking->salon?->users ?? collect();
                         Log::info(['les utilisateurs du salon ',$salonUsers->toArray()] );
 
@@ -329,8 +339,7 @@ class UpdateBookingPaymentListener
                                                                         'name' => WalletType::PRINCIPAL->value,
                                                                     ])->first() ;
 
-                            // Transaction 1: Salon rembourse au client ce qu'il a reçu
-                            // (montant du service MOINS la commission)
+                            // Transaction 1: Salon rembourse au client ce qu'il a reçu (900F)
                             if($purchaseamount > 0) {
                                 // Calculer ce que le salon a vraiment reçu
                                 $salonReceivedAmount = $purchaseamount;
@@ -342,20 +351,38 @@ class UpdateBookingPaymentListener
                                 }
 
                                 array_push($payment_intents, [
-                                    "amount" => $salonReceivedAmount,
+                                    "amount" => $salonReceivedAmount,  // 900F
                                     "payer_wallet" => $salonW,
                                     "user" => $booking->user,
                                     "walletType" => $walletType,
                                     "description" => "Remboursement du service (client annule)"
                                 ]);
 
-                                Log::info('💸 Transaction: Salon → Client', [
+                                Log::info('💸 Transaction 1: Salon → Client', [
                                     'amount' => $salonReceivedAmount,
                                     'description' => 'Remboursement ce que le salon a reçu'
                                 ]);
+
+                                // Transaction 2: Plateforme rembourse la commission (100F)
+                                if($purchase && $purchase->taxes) {
+                                    $commission = PaymentService::getCommission($booking->getTotal(), $purchase->taxes);
+
+                                    array_push($payment_intents, [
+                                        "amount" => $commission,  // 100F
+                                        "payer_wallet" => setting('app_default_wallet_id'),
+                                        "user" => $booking->user,
+                                        "walletType" => $walletType,
+                                        "description" => "Remboursement commission (client annule)"
+                                    ]);
+
+                                    Log::info('💸 Transaction 2: Plateforme → Client', [
+                                        'amount' => $commission,
+                                        'description' => 'Remboursement de la commission'
+                                    ]);
+                                }
                             }
 
-                            // Transaction 2: Pénalité - Client → Plateforme
+                            // Transaction 3: Pénalité - Client → Plateforme
                             if($cancellationCharge > 0 && $clientW) {
                                 array_push($payment_intents, [
                                     "amount" => $cancellationCharge,
@@ -365,20 +392,31 @@ class UpdateBookingPaymentListener
                                     "description" => "Pénalité d'annulation par le client"
                                 ]);
 
-                                Log::info('💸 Transaction: Client → Plateforme (Pénalité)', [
+                                Log::info('💸 Transaction 3: Client → Plateforme (Pénalité)', [
                                     'amount' => $cancellationCharge
                                 ]);
                             }
 
                         } else {
-                            // Pas de salon trouvé - plateforme rembourse
+                            // Pas de salon trouvé - plateforme rembourse tout
                             if($purchaseamount > 0) {
                                 array_push($payment_intents, [
-                                    "amount" => $purchaseamount,
+                                    "amount" => $booking->getTotal(),
                                     "payer_wallet" => setting('app_default_wallet_id'),
                                     "user" => $booking->user,
                                     "walletType" => $walletType,
-                                    "description" => "Remboursement par la plateforme"
+                                    "description" => "Remboursement complet par la plateforme"
+                                ]);
+                            }
+
+                            // Pénalité même si pas de salon
+                            if($cancellationCharge > 0 && $clientW) {
+                                array_push($payment_intents, [
+                                    "amount" => $cancellationCharge,
+                                    "payer_wallet" => $clientW,
+                                    "user" => null,
+                                    "walletType" => $walletType,
+                                    "description" => "Pénalité d'annulation par le client"
                                 ]);
                             }
                         }
