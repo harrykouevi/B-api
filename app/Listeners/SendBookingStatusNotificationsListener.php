@@ -249,12 +249,29 @@ class SendBookingStatusNotificationsListener
                 'notification_type' => 'StatusChangedBooking'
             ]);
         } catch (Exception $e) {
-            Log::error("SendBookingStatusNotificationsListener - notifyClient ERROR", [
-                'booking_id' => $booking->id,
-                'user_id' => $booking->user_id ?? 'N/A',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Détection spécifique d'un token FCM invalide
+            $isFcmTokenError = str_contains($e->getMessage(), '404 Not Found') ||
+                              str_contains($e->getMessage(), 'Requested entity was not found');
+
+            if ($isFcmTokenError && $booking->user) {
+                // Token FCM invalide - le supprimer
+                Log::warning("SendBookingStatusNotificationsListener - Token FCM invalide, suppression", [
+                    'booking_id' => $booking->id,
+                    'user_id' => $booking->user_id,
+                    'user_email' => $booking->user->email
+                ]);
+
+                // Supprimer le token invalide
+                $booking->user->update(['device_token' => null]);
+            } else {
+                // Autre erreur - log complet
+                Log::error("SendBookingStatusNotificationsListener - notifyClient ERROR", [
+                    'booking_id' => $booking->id,
+                    'user_id' => $booking->user_id ?? 'N/A',
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
         }
     }
 
@@ -309,13 +326,38 @@ class SendBookingStatusNotificationsListener
                 'notification_type' => 'OwnerStatusChangedBooking'
             ]);
         } catch (Exception $e) {
-            Log::error("SendBookingStatusNotificationsListener - notifySalonOwners ERROR", [
-                'booking_id' => $booking->id,
-                'salon_id' => $booking->salon->id ?? 'N/A',
-                'users_count' => $salonUsers->count(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            // Détection spécifique d'un token FCM invalide
+            $isFcmTokenError = str_contains($e->getMessage(), '404 Not Found') ||
+                              str_contains($e->getMessage(), 'Requested entity was not found');
+
+            if ($isFcmTokenError) {
+                // Token FCM invalide - tenter de supprimer les tokens invalides
+                Log::warning("SendBookingStatusNotificationsListener - Token FCM invalide chez un salon owner", [
+                    'booking_id' => $booking->id,
+                    'salon_id' => $booking->salon->id ?? 'N/A',
+                    'users_count' => $salonUsers->count()
+                ]);
+
+                // Supprimer les tokens invalides pour tous les users du salon
+                foreach ($salonUsers as $user) {
+                    if ($user->device_token) {
+                        $user->update(['device_token' => null]);
+                        Log::info("Token FCM supprimé pour salon owner", [
+                            'user_id' => $user->id,
+                            'user_email' => $user->email
+                        ]);
+                    }
+                }
+            } else {
+                // Autre erreur - log complet
+                Log::error("SendBookingStatusNotificationsListener - notifySalonOwners ERROR", [
+                    'booking_id' => $booking->id,
+                    'salon_id' => $booking->salon->id ?? 'N/A',
+                    'users_count' => $salonUsers->count(),
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
         }
     }
 }

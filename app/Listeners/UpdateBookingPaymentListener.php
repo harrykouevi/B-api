@@ -277,8 +277,18 @@ class UpdateBookingPaymentListener
 
                 if($purchase) {
 
-                    if($purchase->purchaseStatus->order == 50) $purchaseamount = $purchase->payment->amount ;
+                    // Récupérer le montant du payment (montant que le client a payé)
+                    if($purchase->payment) {
+                        $purchaseamount = $purchase->payment->amount;
+                    }
 
+                    Log::info('📊 Purchase trouvé pour annulation', [
+                        'purchase_id' => $purchase->id,
+                        'purchase_amount' => $purchaseamount,
+                        'has_payment' => $purchase->payment ? true : false,
+                        'payment_id' => $purchase->payment ? $purchase->payment->id : 'NULL',
+                        'user_is_salon_owner' => auth()->user()->hasRole('salon owner')
+                    ]);
 
                     if(auth()->user()->hasRole('salon owner') ){
                         // 🔴 CAS 2: Le SALON annule
@@ -387,6 +397,13 @@ class UpdateBookingPaymentListener
                         }
 
                         // Transaction 3: Pénalité d'annulation - Salon → Plateforme
+                        Log::info('🔍 DEBUG Pénalité Salon', [
+                            'cancellationCharge' => $cancellationCharge,
+                            'salonW_exists' => $salonW ? true : false,
+                            'salonW_id' => $salonW ? $salonW->id : 'NULL',
+                            'condition_met' => ($cancellationCharge > 0)
+                        ]);
+
                         if($cancellationCharge > 0) {
                             array_push($payment_intents, [
                                 "amount" => $cancellationCharge,
@@ -513,6 +530,13 @@ class UpdateBookingPaymentListener
                             }
 
                             // Transaction 3: Pénalité - Client → Plateforme
+                            Log::info('🔍 DEBUG Pénalité Client', [
+                                'cancellationCharge' => $cancellationCharge,
+                                'clientW_exists' => $clientW ? true : false,
+                                'clientW_id' => $clientW ? $clientW->id : 'NULL',
+                                'condition_met' => ($cancellationCharge > 0 && $clientW)
+                            ]);
+
                             if($cancellationCharge > 0 && $clientW) {
                                 array_push($payment_intents, [
                                     "amount" => $cancellationCharge,
