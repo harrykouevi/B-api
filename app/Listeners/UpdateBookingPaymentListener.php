@@ -311,7 +311,16 @@ class UpdateBookingPaymentListener
                                 ->where('action', 'credit')
                                 ->first();
 
+                            Log::info('🔍 DEBUG: Recherche transaction salon', [
+                                'payment_id' => $purchase->payment_id,
+                                'salon_wallet_id' => $salonW->id,
+                                'transaction_found' => $salonTransaction ? true : false,
+                                'transaction_amount' => $salonTransaction ? $salonTransaction->amount : 'NULL',
+                                'purchaseamount' => $purchaseamount
+                            ]);
+
                             // Le salon est débité de ce qu'il a RÉELLEMENT REÇU
+                            // Si la transaction n'est pas trouvée, fallback à 0 (erreur)
                             $salonReceivedAmount = $salonTransaction ? $salonTransaction->amount : 0;
                             $couponDiscount = 0;
                             $hasPlatformCoupon = false;
