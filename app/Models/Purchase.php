@@ -75,7 +75,8 @@ class Purchase extends Model
         'coupon',
         'taxes',
         'purchase_at',
-        'cancel'
+        'cancel',
+        'hint'  // AJOUTÉ: permet de distinguer wallet vs cash
     ];
     /**
      * The attributes that should be casted to native types.

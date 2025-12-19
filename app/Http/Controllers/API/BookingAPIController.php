@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use App\Notifications\NewBooking;
 use Illuminate\Http\JsonResponse;
 use App\Events\BookingPaymentUpdatedEvent;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Repositories\SalonRepository;
@@ -201,6 +202,35 @@ class BookingAPIController extends Controller
             $input['salon'] = $salon;
             $input['taxes'] = $taxes;
 
+            // Si le frontend n'a pas envoyé purchase_taxes (via 'taxe'),
+            // récupérer depuis les settings
+            if (!isset($input['purchase_taxes'])) {
+                $purchaseTaxeSetting = setting('purchase_taxe');
+                if ($purchaseTaxeSetting) {
+                    // Le setting est un JSON string, le décoder
+                    $purchaseTaxeData = json_decode($purchaseTaxeSetting, true);
+                    if ($purchaseTaxeData) {
+                        $input['purchase_taxes'] = [
+                            [
+                                'name' => 'commission',
+                                'type' => $purchaseTaxeData['type'] ?? 'percent',
+                                'value' => $purchaseTaxeData['value'] ?? 10
+                            ]
+                        ];
+                    }
+                }
+            }
+
+            // CORRECTION: Si payment est un objet, extraire payment_id
+            if (isset($input['payment']) && is_array($input['payment'])) {
+                Log::info('Payment reçu comme objet, extraction du payment_id', [
+                    'payment' => $input['payment']
+                ]);
+                // Extraire payment_id si présent, sinon laisser payment_id null
+                $input['payment_id'] = $input['payment']['id'] ?? null;
+                // Ne pas garder l'objet payment dans les données à sauvegarder
+                unset($input['payment']);
+            }
 
             $input['booking_status_id'] = $this->bookingStatusRepository->find(1)->id;
 
@@ -266,8 +296,18 @@ class BookingAPIController extends Controller
                 // montant_a_reverser
                 // commission_calculee
                 $input["purchase_taxes"] = $input['taxe'] ;
-                unset($input['taxe']);  
+                unset($input['taxe']);
             }
+
+            // CORRECTION: Si payment est un objet, extraire payment_id
+            if (isset($input['payment']) && is_array($input['payment'])) {
+                Log::info('Payment reçu comme objet dans update, extraction du payment_id', [
+                    'payment' => $input['payment']
+                ]);
+                $input['payment_id'] = $input['payment']['id'] ?? null;
+                unset($input['payment']);
+            }
+
             $booking = $this->bookingRepository->update($input, $id);
             
             if (isset($input['booking_status_id']) && $input['booking_status_id'] != $oldBooking->booking_status_id) {
@@ -470,20 +510,93 @@ class BookingAPIController extends Controller
         if ($booking->cancel) {
             return 'Le rendez-vous est déjà annulé';
         }
-        
+
         if ($booking->booking_status_id === 6) {
             return 'Le rendez-vous est déjà terminé';
         }
-        
+
         if ($booking->booking_status_id === 7) {
             return 'Le rendez-vous a déjà échoué';
         }
-        
+
         if ($booking->booking_status_id === 8) {
             return 'Le rendez-vous a été reporté';
         }
-        
+
         return 'Conditions non remplies pour l\'annulation';
-    } 
+    }
+
+    /**
+     * Get count of pending bookings (status order = 1)
+     * GET /bookings/pending/count
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function pendingCount(Request $request): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+
+            Log::info('📊 pendingCount API called', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'roles' => $user->roles->pluck('name')->toArray()
+            ]);
+
+            // Récupérer les bookings avec status order = 1 (Received)
+            $query = Booking::whereHas('bookingStatus', function ($q) {
+                $q->where('order', 1);
+            });
+
+            // Filtrer selon le rôle de l'utilisateur
+            if ($user->hasRole('salon owner') || $user->hasRole('admin')) {
+                // Pour le salon : compter les réservations de ses salons
+                // IMPORTANT: salon est un champ JSON, pas une relation Eloquent
+                // On doit utiliser DB::raw avec json_extract
+                Log::info('📊 Utilisateur est SALON OWNER, filtrage par salons');
+
+                $salonId = DB::raw("json_extract(salon, '$.id')");
+                $query->join("salon_users", "salon_users.salon_id", "=", $salonId)
+                    ->where('salon_users.user_id', $user->id)
+                    ->select('bookings.*');
+
+                // Debug: voir les bookings trouvés
+                $bookingsDebug = $query->with('bookingStatus')->get();
+                Log::info('📊 Bookings trouvés pour le salon', [
+                    'count' => $bookingsDebug->count(),
+                    'bookings' => $bookingsDebug->map(fn($b) => [
+                        'id' => $b->id,
+                        'salon_name' => $b->salon->name ?? 'N/A',
+                        'status' => $b->bookingStatus->status ?? 'N/A',
+                        'order' => $b->bookingStatus->order ?? 'N/A'
+                    ])->toArray()
+                ]);
+            } else {
+                // Pour le client : compter ses propres réservations
+                Log::info('📊 Utilisateur est CLIENT, filtrage par user_id');
+                $query->where('user_id', $user->id);
+            }
+
+            $count = $query->count();
+
+            Log::info('✅ Pending bookings count result', [
+                'user_id' => $user->id,
+                'role' => $user->roles->pluck('name')->toArray(),
+                'count' => $count
+            ]);
+
+            return $this->sendResponse([
+                'count' => $count
+            ], 'Pending bookings count retrieved successfully');
+
+        } catch (Exception $e) {
+            Log::error('❌ Error getting pending bookings count', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->sendError($e->getMessage(), 500);
+        }
+    }
 
 }

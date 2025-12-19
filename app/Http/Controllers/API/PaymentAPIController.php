@@ -162,8 +162,16 @@ class PaymentAPIController extends Controller
                             'coupon'=>  $booking->coupon ,
                             'purchase_status_id' => 1 ,
                             'hint' => 'cash' ,
-                            'purchase_at'  => now()  
+                            'purchase_at'  => now()
                         ]);
+
+                        Log::info('Purchase créé dans cash():', [
+                            'purchase_id' => $purchase->id,
+                            'hint' => $purchase->hint,
+                            'booking_id' => $booking->id,
+                            'purchase_status_id' => $purchase->purchase_status_id
+                        ]);
+
                         event( new NotifyBookingEvent($booking)) ;
 
                     } catch (Exception $e) {
@@ -233,41 +241,85 @@ class PaymentAPIController extends Controller
     public function wallets(string $walletId, Request $request): JsonResponse
     {
         $input = $request->all();
-        $transaction = [];
         try {
             $wallet = $this->walletRepository->find($walletId);
             $currency = json_decode($wallet->currency, true);
-            
-            $booking = $this->bookingRepository->find($input['id']);
-            $servicesAmountIntentToDebit = $booking->getTotal();
-            $this->bookingRepository->pushCriteria(new BookingsOfUserCriteria(auth()->id()));
-            $waitingAmountToDebit = $this->bookingRepository->findByField('booking_status_id', 1)->sum(function ($booking) {
-                                        return $booking->getTotal();
-                                    });
-            // Log::info(["verification du terrain", $wallet->id , $currency['code'] , setting('default_currency_code') ,$servicesAmountIntentToDebit , $wallet->balance]);
-            
-            if ($wallet && $currency['code'] == setting('default_currency_code')) {
 
-                //si le montant de la reservation +montant nouvelle achat + montant achat precedent est inferieur ou egales au montant sur le wallet
-                if(($input['payment']['amount'] + $servicesAmountIntentToDebit + $waitingAmountToDebit) >  $wallet->balance ) return $this->sendError(__('lang.wallet_insufficient_amount'),400);
-                    //permettre le payment pour cette reservation sinon dire que ca ne peut se faire car il n'y a pas suffisemment d'agent sur le wallet
-                
-                $payment = $this->paymentService->createPayment($input['payment']['amount'],$wallet);
-                $payment = $payment[0];
-                if($payment){
-                    $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
-                    event(new BookingStatusChangedEvent($booking));
-                
-                }else{
-                    // If there's no payment required, return a successful response
-                    if (isset($input['payment']['amount']) && $input['payment']['amount'] <= 0) {
-                        return $this->sendResponse([], 'Aucun paiement requis pour cette réservation');
-                    }
-                    throw new Exception('failed booking payment');
-                }
-                
-            } else {
+            // Charger le booking (salon, e_services, options sont des attributs castés, pas des relations)
+            $booking = $this->bookingRepository->find($input['id']);
+
+            // Vérification de base du wallet et de la devise
+            if (!$wallet || $currency['code'] != setting('default_currency_code')) {
                 return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
+            }
+
+            // Vérification optionnelle supplémentaire du solde (en cas de changement entre création et paiement)
+            $bookingTotal = $booking->getTotal();
+            if ($wallet->balance < $bookingTotal) {
+                return $this->sendError(__('lang.wallet_insufficient_amount'), 400);
+            }
+
+            // Créer le paiement
+            $transactionAmount = $input['payment']['amount'];
+
+            // Déterminer le type de wallet en fonction du nom
+            $walletType = $wallet->name === WalletType::BONUS->value
+                ? WalletType::BONUS
+                : WalletType::PRINCIPAL;
+
+            // Récupérer les taxes et le coupon si présents
+            $tax = $booking->taxes ?? null;
+            $coupon = $booking->coupon ? $this->paymentService->buildCouponData($booking) : null;
+
+            // Le paiement va au wallet par défaut de la plateforme (comme dans cash())
+            $payment = $this->paymentService->createPayment(
+                $transactionAmount,
+                $wallet,
+                new User(),  // Wallet de la plateforme
+                $walletType,
+                $tax,
+                $coupon
+            );
+            $payment = $payment[0];
+
+            if ($payment) {
+                if($transactionAmount > 0) event(new NotifyPaymentEvent($payment, $wallet, new User()));
+                $booking = $this->bookingRepository->update(['payment_id' => $payment->id], $input['id']);
+
+                // Créer le Purchase AVANT de déclencher les événements
+                $purchase = $this->purchaseRepository->Create([
+                    'salon' => $booking->salon,
+                    'booking' => $booking,
+                    'e_services' => $booking->e_services,
+                    'options' => $booking->options,
+                    'quantity' => $booking->quantity,
+                    'user_id' => $booking->user_id,
+                    'taxes' => $booking->purchase_taxes,
+                    'coupon' => $booking->coupon,
+                    'purchase_status_id' => 1,
+                    'hint' => 'wallet',
+                    'purchase_at' => now()
+                ]);
+
+                // S'assurer que le Purchase est bien enregistré avant de déclencher les événements
+                Log::info('Purchase créé dans wallets():', [
+                    'purchase_id' => $purchase->id,
+                    'hint' => $purchase->hint,
+                    'booking_id' => $booking->id,
+                    'purchase_status_id' => $purchase->purchase_status_id
+                ]);
+
+                event(new NotifyBookingEvent($booking));
+                // Ne PAS déclencher BookingStatusChangedEvent ici
+                // car le payment n'est pas encore validé (status != 3)
+                // Il sera géré quand le salon accepte la réservation
+                // event(new BookingStatusChangedEvent($booking));
+            } else {
+                // If there's no payment required, return a successful response
+                if (isset($input['payment']['amount']) && $input['payment']['amount'] <= 0) {
+                    return $this->sendResponse([], 'Aucun paiement requis pour cette réservation');
+                }
+                throw new Exception('failed booking payment');
             }
 
             return $this->sendResponse($payment->toArray(), 'Payement par portefeuil succès');
@@ -280,7 +332,7 @@ class PaymentAPIController extends Controller
             ]);
             return $this->sendError($e->getMessage());
         }
-        
+
     }
 
     public function byMonth(): JsonResponse

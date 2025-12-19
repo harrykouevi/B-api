@@ -85,6 +85,20 @@ class PaymentService
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
         $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
+        $taxLog = is_array($tax)
+            ? array_map(function ($t) {
+                return is_object($t) && isset($t->id) ? $t->id : $t;
+            }, $tax)
+            : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+        Log::info('PaymentService::createPayment start', [
+            'amount' => $amount,
+            'payer_wallet_id' => $payer_wallet?->id,
+            'payer_user_id' => $payer_wallet?->user_id,
+            'receiver_id' => $receiver?->id,
+            'wallet_type' => $wallettype,
+            'tax' => $taxLog,
+            'coupon' => $coupon,
+        ]);
         // if($receiver->id != null){ 
         //     $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
         //                                                             'user_id' => $receiver->id,
@@ -114,7 +128,10 @@ class PaymentService
 
                     return [$payment , $receiverWallet] ;
                 } catch (Exception $e) {
-                    Log::error( $e->getTraceAsString()  ) ;
+                    Log::error('PaymentService::createPayment error', [
+                        'message' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
                 }
             }
            
@@ -282,13 +299,34 @@ class PaymentService
         $amount = $input['payment']['amount'];
         // Wallet plateforme
         $platformWallet = $this->walletRepository->find(setting('app_default_wallet_id'));
+        $taxLog = is_array($tax)
+            ? array_map(function ($t) {
+                return is_object($t) && isset($t->id) ? $t->id : $t;
+            }, $tax)
+            : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+
+        Log::info('PaymentService::toWalletFromWallet start', [
+            'payment_amount' => $amount,
+            'receiver_wallet_id' => $receiverWallet->id,
+            'receiver_user_id' => $receiverWallet->user_id,
+            'payer_wallet_id' => $payer_wallet->id,
+            'payer_user_id' => $payer_wallet->user_id,
+            'currency_code' => $currency['code'] ?? null,
+            'platform_wallet_id' => $platformWallet?->id,
+            'coupon' => $coupon,
+            'tax' => $taxLog,
+        ]);
 
         if ($currency['code'] == setting('default_currency_code')) {
 
             $payment = $this->paymentRepository->create($input['payment']);
 
+            Log::info('PaymentService::toWalletFromWallet payment created', [
+                'payment_id' => $payment->id,
+                'payment_input' => $input['payment'],
+            ]);
            
-            
+           
             $discount = 0;
             $couponForSalon =  'platform' ;
             if ($coupon && $coupon['value'] > 0) {
@@ -301,8 +339,22 @@ class PaymentService
              // Calcul de la commission si elle existe
             $commission = 0 ;
             if ($tax !== null && $amount > 0 ) {
-                $commission = self::getCommission($amount + $discount , $tax) ;
+                // Convertir les objets Tax en array si nécessaire
+                $taxArray = is_array($tax)
+                    ? array_map(function($t) {
+                        return is_object($t) ? $t->toArray() : $t;
+                      }, $tax)
+                    : (is_object($tax) ? $tax->toArray() : $tax);
+
+                $commission = self::getCommission($amount + $discount , $taxArray) ;
             }  
+
+            Log::info('PaymentService::toWalletFromWallet commission', [
+                'commission' => $commission,
+                'tax' => $taxLog,
+                'discount' => $discount,
+                'couponForSalon' => $couponForSalon,
+            ]);
 
 
             for ($i=0; $i <= 3  ; $i++) { 
@@ -310,35 +362,90 @@ class PaymentService
                 $transaction = [];
                 $transaction['payment_id'] = $payment->id;
                 if($i == 0){
-                    
+
                     $transaction['user_id'] = $receiverWallet->user_id;
                     $transaction['status'] = "completed" ;
                     $transaction['wallet_id'] = $receiverWallet->id;
                     $transaction['description'] = 'compte credité';
                     $transaction['action'] =  'credit';
                     $transaction['amount'] = $amount ;
-                    
-                    if(   $payer_wallet->user->hasRole('customer') && $receiverWallet->user->hasRole('salon owner') ){
-                        
+
+                    // Logique commission : Si le RECEVEUR est un salon owner ET que le PAYEUR N'EST PAS un salon owner
+                    // Cela couvre tous les cas : client avec rôle, client sans rôle, etc.
+                    $payerIsSalonOwner = $payer_wallet->user->hasRole('salon owner');
+                    $receiverIsSalonOwner = $receiverWallet->user->hasRole('salon owner');
+                    $shouldApplyCommission = $receiverIsSalonOwner && !$payerIsSalonOwner;
+
+                    Log::info('💰 DEBUG ROLES', [
+                        'payer_user_id' => $payer_wallet->user->id,
+                        'payer_roles' => $payer_wallet->user->roles->pluck('name')->toArray(),
+                        'payer_is_salon_owner' => $payerIsSalonOwner,
+                        'receiver_user_id' => $receiverWallet->user->id,
+                        'receiver_roles' => $receiverWallet->user->roles->pluck('name')->toArray(),
+                        'receiver_is_salon_owner' => $receiverIsSalonOwner,
+                        'should_apply_commission' => $shouldApplyCommission
+                    ]);
+
+                    Log::info('💰 Transaction SALON (i=0) - AVANT déductions', [
+                        'amount_initial' => $amount,
+                        'discount' => $discount,
+                        'commission' => $commission,
+                        'is_customer_to_salon' => $shouldApplyCommission
+                    ]);
+
+                    if($shouldApplyCommission){
+
+                        // LOGIQUE DES COUPONS ET COMMISSIONS:
+                        // $amount = montant que le client a payé (déjà après réduction coupon)
+                        // $discount = valeur du coupon
+                        // $commission = calculée sur ($amount + $discount) donc sur le prix AVANT coupon
 
                         if ($discount > 0) {
-                           
-                            if ($couponForSalon === 'salon') {
-                                // Le salon prend en charge la réduction → on réduit le crédit du salon
-                                $transaction['amount'] -= $discount ;
-                            } else {
-                                // Coupon non pour le salon → la réduction vient de la plateforme
-                                $transaction['amount']  += $discount;
 
+                            if ($couponForSalon === 'salon') {
+                                // COUPON SALON: Le salon offre la réduction
+                                // - Client paie: $amount (prix réduit)
+                                // - Salon reçoit: $amount - commission
+                                // - Commission calculée sur prix RÉDUIT
+                                // RIEN à faire ici, la logique normale s'applique
+                                Log::info('💰 Coupon SALON', [
+                                    'discount' => $discount,
+                                    'amount_client_paie' => $amount,
+                                    'salon_recevra' => $amount - $commission,
+                                    'explication' => 'Salon offre réduction, commission sur prix réduit'
+                                ]);
+                            } else {
+                                // COUPON PLATFORM: La plateforme offre la réduction
+                                // - Client paie: $amount (prix réduit)
+                                // - Salon DOIT recevoir: (prix_original - commission_sur_original)
+                                // - Donc: ($amount + $discount) - $commission
+                                // - On AJOUTE le discount pour que le salon reçoive le montant complet
+                                $transaction['amount'] += $discount;
+                                Log::info('💰 Coupon PLATFORM', [
+                                    'discount' => $discount,
+                                    'amount_client_paie' => $amount,
+                                    'amount_avant_ajout_discount' => $amount,
+                                    'amount_apres_ajout_discount' => $transaction['amount'],
+                                    'salon_recevra' => $transaction['amount'] - $commission,
+                                    'explication' => 'Platform offre réduction, salon reçoit prix complet moins commission'
+                                ]);
                             }
                         }
 
                         //il a t'il une commission a prendre chez le coiffeur parce qu'il recoit
-                        //de l'argent provenant du client 
+                        //de l'argent provenant du client
                         if(  $commission > 0 ) {
                             $transaction['amount'] -= $commission;
+                            Log::info('💰 Commission déduite du SALON', [
+                                'commission' => $commission,
+                                'amount_final' => $transaction['amount']
+                            ]);
                         }
                     }
+
+                    Log::info('💰 Transaction SALON (i=0) - APRÈS déductions', [
+                        'amount_final' => $transaction['amount']
+                    ]);
 
                 }
                 
@@ -408,7 +515,13 @@ class PaymentService
                 }
 
                 try{
-                    if(count($transaction) > 1) $o = $this->walletTransactionRepository->create($transaction);
+                    if(count($transaction) > 1) {
+                        Log::info('PaymentService::toWalletFromWallet create transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                        $o = $this->walletTransactionRepository->create($transaction);
+                    }
 
                 } catch (\Exception $e) {
                     Log::error('FAIL:'. $e->getMessage() , [
@@ -419,6 +532,10 @@ class PaymentService
             }
             return $payment ;
         }
+        Log::warning('PaymentService::toWalletFromWallet currency mismatch', [
+            'currency_code' => $currency['code'] ?? null,
+            'default_currency_code' => setting('default_currency_code'),
+        ]);
         return Null ;
     }
 
@@ -443,6 +560,22 @@ class PaymentService
             if($amount > 0){
                 $payment = $this->paymentRepository->create($input['payment']);
 
+                $taxLog = is_array($tax)
+                    ? array_map(function ($t) {
+                        return is_object($t) && isset($t->id) ? $t->id : $t;
+                    }, $tax)
+                    : (is_object($tax) && isset($tax->id) ? $tax->id : $tax);
+
+                Log::info('PaymentService::intentCashPayment start', [
+                    'payment_id' => $payment->id,
+                    'amount' => $amount,
+                    'salon_wallet_id' => $wallet->id,
+                    'salon_user_id' => $wallet->user_id,
+                    'currency_code' => $currency['code'] ?? null,
+                    'tax' => $taxLog,
+                    'coupon' => $coupon,
+                ]);
+
                 $discount = 0;
                 $couponForSalon =  'platform' ;
                 if ($coupon && $coupon['value'] > 0) {
@@ -454,9 +587,29 @@ class PaymentService
                 // Calcul de la commission si elle existe
                 $commission = 0 ;
                 if (!is_null($tax)) {
-                    $commission = self::getCommission($amount + $discount, $tax) ;
-                   
-                }        
+                    // Convertir les objets Tax en array si nécessaire
+                    $taxArray = is_array($tax)
+                        ? array_map(function($t) {
+                            return is_object($t) ? $t->toArray() : $t;
+                          }, $tax)
+                        : (is_object($tax) ? $tax->toArray() : $tax);
+
+                    Log::info('PaymentService::intentCashPayment tax before getCommission', [
+                        'tax_original' => $tax,
+                        'tax_converted' => $taxArray,
+                        'amount' => $amount,
+                        'discount' => $discount,
+                    ]);
+
+                    $commission = self::getCommission($amount + $discount, $taxArray) ;
+
+                }
+
+                Log::info('PaymentService::intentCashPayment commission/discount', [
+                    'commission' => $commission,
+                    'discount' => $discount,
+                    'couponForSalon' => $couponForSalon,
+                ]);
                 
                 for ($i=0; $i <= 3  ; $i++) { 
                     $transaction = [];
@@ -473,7 +626,7 @@ class PaymentService
                             $transaction['action'] =  'debit';
                             $transaction['amount'] = $commission;
                         }else{
-                            break ;
+                            continue ;
                         }
                     }
                     if($i == 1){
@@ -489,7 +642,7 @@ class PaymentService
                             $transaction['description'] = 'compte crédité';
                             $transaction['action'] =  'credit';
                         }else{
-                            break ;
+                            continue ;
                         }
                         
                     }
@@ -530,35 +683,73 @@ class PaymentService
                         }
                     }
                     
-                    $this->walletTransactionRepository->create($transaction);
+                    if(count($transaction) > 1) {
+                        Log::info('PaymentService::intentCashPayment create transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                        $this->walletTransactionRepository->create($transaction);
+                    } else {
+                        Log::info('PaymentService::intentCashPayment skip empty transaction', [
+                            'step' => $i,
+                            'transaction' => $transaction,
+                        ]);
+                    }
                 }
                 return $payment ;
             }
         }
+        Log::warning('PaymentService::intentCashPayment currency mismatch or amount invalid', [
+            'amount' => $amount,
+            'currency_code' => $currency['code'] ?? null,
+            'default_currency_code' => setting('default_currency_code'),
+        ]);
         return Null ;
     }
 
 
     private function resolveWallet(int|string|Wallet $wallet): Wallet
     {
-        return $wallet instanceof Wallet
-            ? $wallet
-            : $this->walletRepository->find($wallet);
+        if ($wallet instanceof Wallet) {
+            // Si c'est déjà un Wallet, charger les relations si pas déjà chargées
+            if (!$wallet->relationLoaded('user')) {
+                $wallet->load('user.roles');
+            } elseif ($wallet->user && !$wallet->user->relationLoaded('roles')) {
+                $wallet->user->load('roles');
+            }
+            return $wallet;
+        }
+
+        // Sinon, récupérer avec les relations user.roles chargées
+        return $this->walletRepository->with('user.roles')->find($wallet);
     }
 
 
     private function resolveReceiverWallet(User $user, string|Null $walletType): Wallet
     {
         if (!$user->id) {
-            return $this->walletRepository->find(setting('app_default_wallet_id'));
+            // Wallet plateforme - charger avec user.roles
+            return $this->walletRepository->with('user.roles')->find(setting('app_default_wallet_id'));
         }
 
-        $wallet = $this->walletRepository->findWhere([
+        // Charger les rôles du user si pas déjà fait
+        if (!$user->relationLoaded('roles')) {
+            $user->load('roles');
+        }
+
+        // Récupérer le wallet avec la relation user.roles
+        $wallet = $this->walletRepository->with('user.roles')->findWhere([
             'user_id' => $user->id,
             'name'    => !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value,
         ])->first();
 
-        return $wallet ?: $this->createWallet($user, 0, !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value);
+        if (!$wallet) {
+            $wallet = $this->createWallet($user, 0, !is_null($walletType)? $walletType  : WalletType::PRINCIPAL->value);
+            // S'assurer que les relations sont chargées sur le wallet nouvellement créé
+            $wallet->load('user.roles');
+        }
+
+        return $wallet;
     }
 
     /**
@@ -736,8 +927,38 @@ class PaymentService
             }
         }
 
-        // S’assurer que la commission ne dépasse pas le montant
+        // S'assurer que la commission ne dépasse pas le montant
         return min($commission, $amount);
     }
-}
 
+    /**
+     * Extrait le TAUX de commission (en pourcentage) depuis un objet/tableau de taxes
+     *
+     * @param Tax|Tax[]|null $tax Le tableau ou objet de taxes
+     * @return float Le taux de commission en pourcentage (ex: 5.0 pour 5%)
+     */
+    public static function getCommissionRate($tax): float
+    {
+        $rate = 0;
+
+        if ($tax !== null) {
+            if (is_array($tax)) {
+                foreach($tax as $tax_){
+                    if(isset($tax_['name']) && $tax_['name'] == 'commission'){
+                        if (isset($tax_['type']) && $tax_['type'] === 'percent' && isset($tax_['value'])) {
+                            $rate = $tax_['value'];
+                        }
+                    }
+                }
+            } else {
+                if(isset($tax['name']) && $tax['name'] == 'commission'){
+                    if (isset($tax['type']) && $tax['type'] === 'percent' && isset($tax['value'])) {
+                        $rate = $tax['value'];
+                    }
+                }
+            }
+        }
+
+        return $rate;
+    }
+}
