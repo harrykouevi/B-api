@@ -311,36 +311,64 @@ class UpdateBookingPaymentListener
                                 ->where('action', 'credit')
                                 ->first();
 
-                            // Par défaut : le salon rembourse ce qu'il a RÉELLEMENT REÇU
+                            // Le salon est débité de ce qu'il a RÉELLEMENT REÇU
                             $salonReceivedAmount = $salonTransaction ? $salonTransaction->amount : 0;
                             $couponDiscount = 0;
+                            $hasPlatformCoupon = false;
 
-                            // ⚠️ EXCEPTION: Si coupon PLATEFORME, le client doit recevoir ce qu'il a PAYÉ
-                            // (qui est moins que ce que le salon a reçu)
+                            // Vérifier s'il y a un coupon plateforme
                             if($purchase->coupon) {
                                 $couponData = $this->paymentService->buildCouponData($purchase);
                                 if($couponData['applies_to'] === 'platform') {
                                     $couponDiscount = $couponData['value'];
-                                    // Le salon rembourse seulement ce que le client a payé (moins que ce qu'il a reçu)
-                                    $salonReceivedAmount = $purchaseamount; // Montant que le client a payé
+                                    $hasPlatformCoupon = true;
                                 }
                             }
 
                             Log::info('💰 Montant à rembourser par le salon', [
-                                'montant_salon_a_recu' => $salonTransaction ? $salonTransaction->amount : 0,
+                                'montant_salon_a_recu' => $salonReceivedAmount,
                                 'montant_client_a_paye' => $purchaseamount,
                                 'coupon_platform' => $couponDiscount,
-                                'montant_a_rembourser' => $salonReceivedAmount,
+                                'has_platform_coupon' => $hasPlatformCoupon,
                                 'transaction_id' => $salonTransaction ? $salonTransaction->id : 'NULL'
                             ]);
 
-                            array_push($payment_intents, [
-                                "amount" => $salonReceivedAmount,  // Ce que le salon a reçu (900F)
-                                "payer_wallet" => $salonW,
-                                "user" => $booking->user,
-                                "walletType" => $walletType,
-                                "description" => "Remboursement du service (salon annule)"
-                            ]);
+                            if($hasPlatformCoupon) {
+                                // Avec coupon plateforme : 2 transactions
+                                // 1. Salon → Client : montant que le client a payé
+                                array_push($payment_intents, [
+                                    "amount" => $purchaseamount,  // Ce que le client a payé (6000F)
+                                    "payer_wallet" => $salonW,
+                                    "user" => $booking->user,
+                                    "walletType" => $walletType,
+                                    "description" => "Remboursement du service (salon annule)"
+                                ]);
+
+                                // 2. Salon → Plateforme : la différence (ce que la plateforme avait ajouté)
+                                $platformAddedAmount = $salonReceivedAmount - $purchaseamount;
+                                if($platformAddedAmount > 0) {
+                                    array_push($payment_intents, [
+                                        "amount" => $platformAddedAmount,  // Différence (1200F)
+                                        "payer_wallet" => $salonW,
+                                        "user" => null,  // null = plateforme
+                                        "description" => "Retour du surplus coupon plateforme"
+                                    ]);
+
+                                    Log::info('💸 Transaction 1b: Salon → Plateforme (Surplus coupon)', [
+                                        'amount' => $platformAddedAmount
+                                    ]);
+                                }
+                            } else {
+                                // Sans coupon plateforme : 1 seule transaction
+                                // Salon → Client : tout ce que le salon a reçu
+                                array_push($payment_intents, [
+                                    "amount" => $salonReceivedAmount,  // Tout ce que le salon a reçu (7200F)
+                                    "payer_wallet" => $salonW,
+                                    "user" => $booking->user,
+                                    "walletType" => $walletType,
+                                    "description" => "Remboursement du service (salon annule)"
+                                ]);
+                            }
 
                             Log::info('💸 Transaction 1: Salon → Client', [
                                 'amount' => $salonReceivedAmount,
