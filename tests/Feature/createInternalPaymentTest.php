@@ -21,12 +21,12 @@ class createInternalPaymentTest extends TestCase
     public function test_example(): void
     {
         try{ 
-            $clientW = Wallet::find('2df056af-cbdd-416a-8f6c-4cb6ef02bc3f');
-            $receiver = User::find(29) ;
-            $purchase = Purchase::find(38) ;
+            // $clientW = Wallet::find('2df056af-cbdd-416a-8f6c-4cb6ef02bc3f');
+            // $receiver = User::find(29) ;
+            // $purchase = Purchase::find(38) ;
 
-            $purchasepayment = app(PaymentService::class)->createPayment(1000,$clientW ,$receiver,Null,$purchase->taxes);
-            $purchasepayment = $purchasepayment[0];
+            // $purchasepayment = app(PaymentService::class)->createPayment(1000,$clientW ,$receiver,Null,$purchase->taxes);
+            // $purchasepayment = $purchasepayment[0];
 
             
             // dd( [
@@ -35,10 +35,10 @@ class createInternalPaymentTest extends TestCase
             //     $purchase->toArray(),
             //     // 'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
             // ]);
-            if($purchasepayment){
-                //mise à jour du purchase comme étant payé et validé
-                $purchase = app(PurchaseRepository::class)->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
-            }
+            // if($purchasepayment){
+            //     //mise à jour du purchase comme étant payé et validé
+            //     $purchase = app(PurchaseRepository::class)->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
+            // }
 
         } catch (\Exception $e) {
             Log::error('FAIL:'. $e->getMessage() , [
