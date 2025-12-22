@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Repositories\PurchaseRepository;
 use App\Services\PaymentService;
+use App\Types\WalletType;
 use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -21,20 +22,23 @@ class createInternalPaymentTest extends TestCase
     public function test_example(): void
     {
         try{ 
-            // $clientW = Wallet::find('2df056af-cbdd-416a-8f6c-4cb6ef02bc3f');
-            // $receiver = User::find(29) ;
+           
+            $payer = setting('app_default_wallet_id');
+            $receiver = User::find(321) ;
+            $amount = 10000 ;
             // $purchase = Purchase::find(38) ;
 
-            // $purchasepayment = app(PaymentService::class)->createPayment(1000,$clientW ,$receiver,Null,$purchase->taxes);
-            // $purchasepayment = $purchasepayment[0];
+            // $payment = app(PaymentService::class)->createPayment($amount,$payer ,$receiver,  WalletType::BONUS);
+            // $purchasepayment = $payment[0];
 
             
-            // dd( [
-            //     $clientW->toArray(),
-            //     $receiver->toArray(),
-            //     $purchase->toArray(),
-            //     // 'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
-            // ]);
+            dd( [
+                $payer->toArray(),
+                $receiver->toArray(),
+                WalletType::BONUS
+                // $purchase->toArray(),
+                // 'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
+            ]);
             // if($purchasepayment){
             //     //mise à jour du purchase comme étant payé et validé
             //     $purchase = app(PurchaseRepository::class)->update(['payment_id' => $purchasepayment->id , 'purchase_status_id' => 2  ], $purchase->id);
