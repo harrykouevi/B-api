@@ -33,7 +33,7 @@ class createInternalPaymentTest extends TestCase
 
             
             dd( [
-                $payer->toArray(),
+                $payer,
                 $receiver->toArray(),
                 WalletType::BONUS
                 // $purchase->toArray(),
