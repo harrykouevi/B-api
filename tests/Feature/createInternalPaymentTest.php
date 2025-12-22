@@ -28,15 +28,15 @@ class createInternalPaymentTest extends TestCase
             $amount = 10000 ;
             // $purchase = Purchase::find(38) ;
 
-            $payment = app(PaymentService::class)->createPayment($amount,$payer ,$receiver,  WalletType::BONUS);
-            $payment__ = $payment[0];
+            // $payment = app(PaymentService::class)->createPayment($amount,$payer ,$receiver,  WalletType::BONUS);
+            // $payment__ = $payment[0];
 
             
             dd( [
                 $payer,
                 $receiver->toArray(),
                 WalletType::BONUS ,
-                $payment__->toArray(),
+                // $payment__->toArray(),
                 // 'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
             ]);
             // if($purchasepayment){
