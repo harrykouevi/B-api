@@ -22,21 +22,22 @@ class createInternalPaymentTest extends TestCase
     public function test_example(): void
     {
         try{ 
-           
+           //321
+           //
             $payer = setting('app_default_wallet_id');
-            $receiver = User::find(321) ;
+            $receiver = User::find(315) ;
             $amount = 10000 ;
             // $purchase = Purchase::find(38) ;
 
-            // $payment = app(PaymentService::class)->createPayment($amount,$payer ,$receiver,  WalletType::BONUS);
-            // $payment__ = $payment[0];
+            $payment = app(PaymentService::class)->createPayment($amount,$payer ,$receiver,  WalletType::PRINCIPAL);
+            $payment__ = $payment[0];
 
             
             dd( [
                 $payer,
                 $receiver->toArray(),
-                WalletType::BONUS ,
-                // $payment__->toArray(),
+                WalletType::PRINCIPAL ,
+                $payment__->toArray(),
                 // 'payment_id' => $purchasepayment ? $purchasepayment->id : 'NULL'
             ]);
             // if($purchasepayment){
