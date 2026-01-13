@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Repositories\BookingRepository;
 use App\Repositories\BookingStatusRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 /**
@@ -60,6 +61,11 @@ class BookingCancellationService
             // }
             
             // ÉTAPE 6 : Déclencher les événements pour notifications
+            Log::info('📢 BookingCancellationService - Déclenchement BookingStatusChangedEvent', [
+                'booking_id' => $booking->id,
+                'new_status_id' => $booking->booking_status_id,
+                'cancelled_by' => $cancelledBy
+            ]);
             event(new BookingStatusChangedEvent($booking->fresh()));
             
             return [
