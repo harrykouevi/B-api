@@ -32,39 +32,47 @@ class InfoBipService{
     {
         Log::info('Envoi du message SMS au '.$phone);
         $phone = $this->refactorPhoneNumber($phone);
+
+        // Structure conforme à la documentation InfoBip
         $body = [
             'messages' => [
                 [
-                    'sender' => $this->sender,
+                    'from' => $this->sender,
                     'destinations' => [
                         [
                             'to' => $phone
                         ]
                     ],
-                    'content' => [        
-                             'text' => "Votre code de confirmation est : ".$code." ",              
-                    ],
+                    'text' => "Votre code de confirmation est : ".$code
                 ]
             ]
         ];
+
         Log::info("InfoBipService message:", [
-            "headers:  " =>  json_encode($this->headers),
-            "body:  " =>  json_encode($body)
+            "headers" => $this->headers,
+            "body" => $body
         ]);
-        $apiUrl = $this->api_url.'/sms/3/messages';
+
+        // Endpoint conforme à la documentation InfoBip
+        $apiUrl = $this->api_url.'/sms/2/text/advanced';
         $response = Http::withHeaders($this->headers)->post($apiUrl, $body);
-        Log::info("réponse de l'envoie de l'sms: ",['response' => $response]);
+
+        Log::info("Réponse de l'envoi du SMS:", [
+            'status' => $response->status(),
+            'body' => $response->json()
+        ]);
+
         if($response->status() != 200){
             return [
                 'status' => false,
                 'message' => "Une erreur est survenue"
             ];
-            }else{
-                return [
-                    'status' => true,
-                    'message' => "Le message a été envoyé"
-                ];
-            }
+        } else {
+            return [
+                'status' => true,
+                'message' => "Le message a été envoyé"
+            ];
+        }
     }
 
 
