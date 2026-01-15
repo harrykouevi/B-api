@@ -9,17 +9,25 @@
 namespace App\Services;
 
 use App\Events\SendEmailOtpEvent;
+use App\Events\SendOtpByInfoBipEvent;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Exception;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use App\Services\InfoBipService;
 
 class OtpService
 {
     private $userRepository;
+    private $infoBipService;
+  
+    public function __construct(InfoBipService $infoBipService) {
 
-    public function __construct() {}
-
+        $this ->infoBipService  = $infoBipService;
+    }
     /**
     * generate and send otp .
     *
@@ -33,6 +41,53 @@ class OtpService
         event(new SendEmailOtpEvent($user));
         
         return Null ;
+    }
+
+
+    /**
+    * generate  otp code
+    *
+    * @return string
+    */
+    public function gen() : string
+    {
+       $currentOTP = random_int(100000, 999999);
+       return (string) $currentOTP; 
+    }
+
+    /**
+    * send otp code via sms
+    * @param string $code
+    * @param string $phoneNumber
+    *
+    * @return string
+    */
+    public function sendSMS(string $code , string $phoneNumber)
+    {
+        // Stocker dans le cache avec expiration de 5 minutes
+        Cache::put('otp_' . $phoneNumber, Hash::make($code), now()->addMinutes(5));
+        Log::info('code envoyé via sms', ["request" => $code] );
+         $result = $this->infoBipService->sendSMS($code , $phoneNumber);
+        Log::info('resultat', ["request" => $result] );
+        event(new SendOtpByInfoBipEvent($code , $phoneNumber));
+        return 'If an account exists with this phone number, a reset link will be sent.' ;
+    }
+
+    /**
+    * send otp code via sms
+    * @param string $code
+    * @param string $phoneNumber
+    *
+    * @return string
+    */
+    public function sendByWhatsapp(string $code , string $phoneNumber)
+    {
+        // Stocker dans le cache avec expiration de 5 minutes
+        Cache::put('otp_' . $phoneNumber, Hash::make($code), now()->addMinutes(5));
+        $result = $this->infoBipService->sendWhatsappSMS($code , $phoneNumber);
+        Log::info('resultat', ["request" => $result] );
+        event(new SendOtpByInfoBipEvent($code , $phoneNumber,'wh'));
+        return 'If an account exists with this phone number, a reset link will be sent.' ;
     }
 
 

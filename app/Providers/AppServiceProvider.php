@@ -8,6 +8,8 @@
 
 namespace App\Providers;
 
+use App\Models\Category;
+use App\Observers\CategoryObserver;
 use Exception;
 use Stripe\Stripe;
 use Illuminate\Support\Str;
@@ -32,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->app->singleton(BookingReportService::class, function ($app) {
             return new BookingReportService(
@@ -71,6 +73,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        //Category::Observe(CategoryObserver::class);
+
         Schema::defaultStringLength(191);
         try {
             config(['mail.driver' => setting('mail_driver', 'smtp')]);
@@ -108,7 +113,7 @@ class AppServiceProvider extends ServiceProvider
             config(['services.fcm.key' => setting('fcm_key', '')]);
 
             config(['paypal.mode' => setting('paypal_mode', '0') != '0' ? 'live' : 'sandbox']);
-            config(['paypal.currency' => Str::upper(setting('default_currency_code', 'USD'))]);
+            config(['paypal.currency' => Str::upper('USD')]);
 
             config(['paypal.sandbox.username' => setting('paypal_username')]);
             config(['paypal.sandbox.password' => setting('paypal_password')]);

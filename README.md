@@ -20,7 +20,45 @@ Bienvenue dans la plateforme complète dédiée aux professionnels de la coiffur
 
 ---
 
-## 🆕 Nouveautés (v1.2.0)
+---
+## 🆕 Nouveautés ## 🆕 v2.0.0
+
+  ### Gestion des slides de l’application mobile
+
+  * Interface d’administration permettant de voir, ajouter, modifier et supprimer les slides affichées sur l’application mobile
+  * Activation et désactivation des slides
+
+  ### Gestion complète des coupons
+
+  * Interface d’administration pour voir, créer, modifier et supprimer les coupons
+  * Affichage de la liste des coupons existants
+  * Activation et désactivation des coupons (visibilité côté utilisateur)
+  * Vérification automatique du coupon avant le paiement
+  * Mise à jour du compteur d’utilisation du coupon après chaque utilisation
+
+  ### Intégration du Wallet avec PayDunya
+
+  * Recharge du wallet via l’API PayDunya
+  * Retrait d’argent du wallet vers mobile via PayDunya
+  * Intégration de PayDunya parmi les méthodes de paiement existantes
+
+
+
+## 🆕 v1.3.0
+
+
+- **Services prédéfinis et assistance aux salons**
+  - Création de services standardisés côté admin**
+  - Possibilité pour les salons de les utiliser ou non
+  - Visualisation et support administratif pour la création de services
+
+- **Gestion avancée des options**
+  - Création d’Option Templates et groupes d’options
+  - Association facile aux services prédéfinis ou personnalisés
+
+
+
+## v1.2.0
 
 ### 🚀 Ajouts
 - 👛 **Double Wallet**  

@@ -11,6 +11,7 @@ namespace App\DataTables;
 use App\Models\Category;
 use App\Models\CustomField;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use JsonException;
 use Yajra\DataTables\DataTableAbstract;
 use Yajra\DataTables\EloquentDataTable;
 use Yajra\DataTables\Html\Builder;
@@ -43,6 +44,9 @@ class CategoryDataTable extends DataTable
             })
             ->editColumn('name', function ($category) {
                 return $category->name;
+            })
+            ->editColumn('path', function ($category) {
+                return $category->path;
             })
             ->editColumn('color', function ($category) {
                 return getColorColumn($category, 'color');
@@ -81,6 +85,11 @@ class CategoryDataTable extends DataTable
 
             ],
             [
+                'data' => 'parent.path_names',
+                'title' => trans('category_parent'),
+
+            ],
+            [
                 'data' => 'color',
                 'title' => trans('lang.category_color'),
 
@@ -111,7 +120,7 @@ class CategoryDataTable extends DataTable
             ]
         ];
 
-        $hasCustomField = in_array(Category::class, setting('custom_field_models', []));
+        $hasCustomField = in_array(Category::class, setting('custom_field_models', []), true);
         if ($hasCustomField) {
             $customFieldsCollection = CustomField::where('custom_field_model', Category::class)->where('in_table', '=', true)->get();
             foreach ($customFieldsCollection as $key => $field) {
@@ -134,13 +143,19 @@ class CategoryDataTable extends DataTable
      */
     public function query(Category $model): \Illuminate\Database\Eloquent\Builder
     {
-        return $model->newQuery()->with("parentCategory")->select("categories.*");
+        return $model->newQuery()
+        ->with('parent') // charge automatiquement le parent avec alias correct
+        ->from('categories as c1') // alias pour la table principale
+        ->leftJoin('categories as c2', 'c1.parent_id', '=', 'c2.id') // alias pour la table parente
+        ->select('c1.*', 'c2.name as parent_name')// sélectionne les colonnes principales
+        ->orderBy('c1.name', 'asc');
     }
 
     /**
      * Optional method if you want to use html builder.
      *
      * @return Builder
+     * @throws JsonException
      */
     public function html(): Builder
     {
@@ -150,9 +165,8 @@ class CategoryDataTable extends DataTable
             ->addAction(['width' => '80px', 'printable' => false, 'responsivePriority' => '100'])
             ->parameters(array_merge(
                 config('datatables-buttons.parameters'), [
-                    'language' => json_decode(
-                        file_get_contents(base_path('resources/lang/' . app()->getLocale() . '/datatable.json')
-                        ), true)
+                    'language' => json_decode(file_get_contents(base_path('resources/lang/' . app()->getLocale() . '/datatable.json')
+                    ), true, 512, JSON_THROW_ON_ERROR)
                 ]
             ));
     }
@@ -164,8 +178,7 @@ class CategoryDataTable extends DataTable
     public function pdf(): mixed
     {
         $data = $this->getDataForPrint();
-        $pdf = PDF::loadView($this->printPreview, compact('data'));
-        return $pdf->download($this->filename() . '.pdf');
+        return PDF::loadView($this->printPreview, compact('data'))->download($this->filename() . '.pdf');
     }
 
     /**

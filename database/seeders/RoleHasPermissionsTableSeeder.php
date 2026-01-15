@@ -21,10 +21,15 @@ class RoleHasPermissionsTableSeeder extends Seeder
     public function run(): void
     {
 
+        // Désactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         DB::table('role_has_permissions')->truncate();
 
-        DB::table('role_has_permissions')->insert(array(
+         // Réactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        DB::table('role_has_permissions')->insertOrIgnore(array(
 
             array(
                 'permission_id' => 1,
@@ -151,40 +156,40 @@ class RoleHasPermissionsTableSeeder extends Seeder
                 'role_id' => 1,
             ),
 
-            // array(
-            //     'permission_id' => 27,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 27,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 28,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 28,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 29,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 29,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 30,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 30,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 31,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 31,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 32,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 32,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 33,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 33,
+            // //     'role_id' => 1,
+            // // ),
 
             array(
                 'permission_id' => 34,
@@ -390,75 +395,75 @@ class RoleHasPermissionsTableSeeder extends Seeder
                 'role_id' => 1,
             ),
 
-            // array(
-            //     'permission_id' => 72,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 72,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 72,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 72,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 73,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 73,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 73,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 73,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 74,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 74,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 74,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 74,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 75,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 75,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 75,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 75,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 76,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 76,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 76,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 76,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 77,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 77,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 77,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 77,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 78,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 78,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 78,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 78,
+            // //     'role_id' => 2,
+            // // ),
 
             array(
                 'permission_id' => 79,
@@ -729,10 +734,10 @@ class RoleHasPermissionsTableSeeder extends Seeder
                 'role_id' => 3,
             ),
 
-            // array(
-            //     'permission_id' => 110,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 110,
+            // //     'role_id' => 1,
+            // // ),
 
             array(
                 'permission_id' => 111,
@@ -1273,45 +1278,45 @@ class RoleHasPermissionsTableSeeder extends Seeder
                 'role_id' => 3,
             ),
 
-            // array(
-            //     'permission_id' => 176,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 176,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 176,
-            //     'role_id' => 2,
-            // ),
+            array(
+                'permission_id' => 176,
+                'role_id' => 2,
+            ),
 
-            // array(
-            //     'permission_id' => 177,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 177,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 178,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 178,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 179,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 179,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 179,
-            //     'role_id' => 2,
-            // ),
+            array(
+                'permission_id' => 179,
+                'role_id' => 2,
+            ),
 
-            // array(
-            //     'permission_id' => 180,
-            //     'role_id' => 1,
-            // ),
+            array(
+                'permission_id' => 180,
+                'role_id' => 1,
+            ),
 
-            // array(
-            //     'permission_id' => 180,
-            //     'role_id' => 2,
-            // ),
+            array(
+                'permission_id' => 180,
+                'role_id' => 2,
+            ),
 
             array(
                 'permission_id' => 181,
@@ -1428,70 +1433,70 @@ class RoleHasPermissionsTableSeeder extends Seeder
                 'role_id' => 2,
             ),
 
-            // array(
-            //     'permission_id' => 199,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 199,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 199,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 199,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 200,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 200,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 200,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 200,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 203,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 203,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 203,
-            //     'role_id' => 2,
-            // ),
+            // // array(
+            // //     'permission_id' => 203,
+            // //     'role_id' => 2,
+            // // ),
 
-            // array(
-            //     'permission_id' => 203,
-            //     'role_id' => 3,
-            // ),
+            // // array(
+            // //     'permission_id' => 203,
+            // //     'role_id' => 3,
+            // // ),
 
-            // array(
-            //     'permission_id' => 204,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 204,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 205,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 205,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 206,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 206,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 207,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 207,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 208,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 208,
+            // //     'role_id' => 1,
+            // // ),
 
-            // array(
-            //     'permission_id' => 209,
-            //     'role_id' => 1,
-            // ),
+            // // array(
+            // //     'permission_id' => 209,
+            // //     'role_id' => 1,
+            // // ),
             array(
                 'permission_id' => 210,
                 'role_id' => 1,
@@ -1558,6 +1563,56 @@ class RoleHasPermissionsTableSeeder extends Seeder
             ),
             array(
                 'permission_id' => 222,
+                'role_id' => 1,
+            ),
+
+            array(
+                'permission_id' => 225,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 226,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 227,
+                'role_id' => 1,
+            ),
+            
+            array(
+                'permission_id' => 228,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 229,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 230,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 231,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 232,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 233,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 234,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 235,
+                'role_id' => 1,
+            ),
+            array(
+                'permission_id' => 236,
                 'role_id' => 1,
             ),
         ));

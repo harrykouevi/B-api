@@ -1,10 +1,5 @@
 <?php
-/*
- * File name: RoleController.php
- * Last modified: 2024.04.10 at 14:47:28
- * Author: SmarterVision - https://codecanyon.net/user/smartervision
- * Copyright (c) 2024
- */
+
 
 namespace App\Http\Controllers;
 
@@ -12,11 +7,13 @@ use App\DataTables\RoleDataTable;
 use App\Http\Requests\CreateRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
 use App\Repositories\RoleRepository;
-use Flash;
+// use Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Response;
+use Illuminate\Http\Request;
+use Laracasts\Flash\Flash;
 
 class RoleController extends Controller
 {
@@ -25,7 +22,6 @@ class RoleController extends Controller
 
     public function __construct(RoleRepository $roleRepo)
     {
-        parent::__construct();
         $this->roleRepository = $roleRepo;
     }
 
@@ -50,10 +46,7 @@ class RoleController extends Controller
      */
     public function store(CreateRoleRequest $request): RedirectResponse
     {
-        if ((config('installer.demo_app'))) {
-            Flash::warning('This is only demo app you can\'t change this section ');
-            return redirect(route('roles.index'));
-        }
+
         $input = $request->all();
 
         $role = $this->roleRepository->create($input);

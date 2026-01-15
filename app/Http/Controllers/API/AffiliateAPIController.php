@@ -117,7 +117,6 @@ class AffiliateAPIController extends Controller
         try {
 
             $input = $request->all();
-            // $user = Auth::user(); // Utilisez auth()->user() au lieu de auth()->Auth::user()
             $input['user_id'] = Auth::id();
         
             // Vérifier si l'utilisateur a déjà un lien d'affiliation
@@ -131,7 +130,7 @@ class AffiliateAPIController extends Controller
                 $code = $this->getdigits_v2(Auth::id());
                 // Vérifie si ce code existe déjà
                 $existingCode = $this->affiliateRepository->findByField('code', $code)->first();
-            // Tant qu'il existe déjà, on recommence
+                // Tant qu'il existe déjà, on recommence
                 if ($existingCode) {
                     Log::info("Le code {$code} existe déjà, génération d'un nouveau code...");
                 }

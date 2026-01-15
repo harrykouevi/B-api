@@ -54,7 +54,6 @@ class SendPaymentNotificationListener
         }
         
         if($user){
-            Log::info(['NotifyPaymentEvent', 'Paiement : Type  crédité sur le compte. Venant de ']) ;
                     
             if(!is_null($user)){ 
                 $transaction = $event->payment->transactions->first(function ($transaction)  use ($user) {

@@ -23,11 +23,15 @@ class PermissionsTableSeeder extends Seeder
     public function run(): void
     {
 
+        // Désactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        DB::table('role_has_permissions')->truncate();
         DB::table('permissions')->truncate();
 
-        DB::table('permissions')->insert(array(
+        // Réactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        DB::table('permissions')->insertOrIgnore(array(
             array(
                 'id' => 1,
                 'name' => 'dashboard',
@@ -1211,48 +1215,48 @@ class PermissionsTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
-            // array(
-            //     'id' => 176,
-            //     'name' => 'coupons.index',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 177,
-            //     'name' => 'coupons.create',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 178,
-            //     'name' => 'coupons.store',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 179,
-            //     'name' => 'coupons.edit',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 180,
-            //     'name' => 'coupons.update',
-            //     'guard_name' => 'web',
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
             array(
-                'id' => 181,
-                'name' => 'coupons.destroy',
+                'id' => 176,
+                'name' => 'coupons.index',
                 'guard_name' => 'web',
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
+            array(
+                'id' => 177,
+                'name' => 'coupons.create',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 178,
+                'name' => 'coupons.store',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 179,
+                'name' => 'coupons.edit',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 180,
+                'name' => 'coupons.update',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+          array(
+              'id' => 181,
+              'name' => 'coupons.destroy',
+              'guard_name' => 'web',
+              'created_at' => now(),
+              'updated_at' => now(),
+          ),
             array(
                 'id' => 182,
                 'name' => 'bookingStatuses.index',
@@ -1539,6 +1543,91 @@ class PermissionsTableSeeder extends Seeder
                 'guard_name' => 'web',
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
+            ),
+            
+            array(
+                'id' => 225,
+                'name' => 'model-services.index',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 226,
+                'name' => 'model-services.create',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 227,
+                'name' => 'model-services.store',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 228,
+                'name' => 'model-services.edit',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 229,
+                'name' => 'model-services.update',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 230,
+                'name' => 'model-services.destroy',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 231,
+                'name' => 'option-templates.index',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 232,
+                'name' => 'option-templates.create',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 233,
+                'name' => 'option-templates.store',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 234,
+                'name' => 'option-templates.edit',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 235,
+                'name' => 'option-templates.update',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 236,
+                'name' => 'option-templates.destroy',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
             ),
         ));
 

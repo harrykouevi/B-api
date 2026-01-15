@@ -84,13 +84,36 @@ return [
     'secret_key' => env('CINETPAY_SECRET_KEY'),
     'base_url' => env('CINETPAY_BASE_URL', 'https://api.cinetpay.com/v1'),
     'transfert_base_url' => env('CINETPAY_TRANSFERT_BASE_URL', 'https://client.cinetpay.com/v1'),
-    'api_password' => env('CINETPAY_PASSWORD')
+    'api_password' => env('CINETPAY_PASSWORD'),
+    'api_password_depot' => env('CINETPAY_PASSWORD_DEPOT')
+   
 ],
-    'paygate' => [
-    'api_key' => env('PAYGATE_API_KEY'),
-    'base_url' => env('PAYGATE_BASE_URL', 'https://api.cinetpay.com/v1'),
-    'transfert_base_url' => env('CINETPAY_TRANSFERT_BASE_URL', 'https://client.cinetpay.com/v1'),
-    'api_password' => env('CINETPAY_PASSWORD')
-],
+    'paydunya' => [
+        'master_key' => env('PAYDUNYA_MASTER_KEY'),
+        'private_key' => env('PAYDUNYA_PRIVATE_KEY'),
+        'public_key' => env('PAYDUNYA_PUBLIC_KEY', env('PAYDUNYA_PUBLIC_KEY')),
+        'token' => env('PAYDUNYA_TOKEN'),
+        'base_url' => env('PAYDUNYA_BASE_URL', 'https://app.paydunya.com/api/v1'),
+        'support_fees' => env('PAYDUNYA_SUPPORT_FEES', 1),
+        'send_notification' => env('PAYDUNYA_SEND_NOTIFICATION', 0),
+        'mode' => env('PAYDUNYA_MODE', 'test'),
+        'store_name' => env('PAYDUNYA_STORE_NAME', env('APP_NAME')),
+        'store_tagline' => env('PAYDUNYA_STORE_TAGLINE'),
+        'store_phone' => env('PAYDUNYA_STORE_PHONE'),
+        'store_postal_address' => env('PAYDUNYA_STORE_POSTAL_ADDRESS'),
+        'store_website_url' => env('PAYDUNYA_STORE_WEBSITE_URL', env('APP_URL')),
+        'store_logo_url' => env('PAYDUNYA_STORE_LOGO_URL'),
+        'callback_url' => env('PAYDUNYA_CALLBACK_URL'),
+        'return_url' => env('PAYDUNYA_RETURN_URL'),
+        'cancel_url' => env('PAYDUNYA_CANCEL_URL'),
+
+    ],
+
+   'infobip' => [
+        'api_url' => env('INFOBIP_BASE_URL'),
+        'api_key' => env('INFOBIP_API_KEY'),
+        'sender' => env('INFOBIP_SENDER'),
+    ],
+   
 
 ];

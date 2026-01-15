@@ -16,6 +16,7 @@ use App\Events\NotifyBookingEvent;
 use App\Events\NotifyPaymentEvent;
 use App\Events\PaymentUpdatedEvent;
 use App\Events\SendEmailOtpEvent;
+use App\Events\SendOtpByInfoBipEvent;
 use App\Events\WalletTransactionCreatedEvent;
 use App\Listeners\CreatedWalletTransactionListener;
 use App\Listeners\CreatingPaymentListener;
@@ -24,6 +25,7 @@ use App\Listeners\NotifyForBookingPaymentListener;
 use App\Listeners\SendBookingReportedNotificationsListener;
 use App\Listeners\SendBookingStatusNotificationsListener;
 use App\Listeners\SendEmailOtpEventListener;
+use App\Listeners\SendOtpByInfoBipListener;
 use App\Listeners\SendPaymentNotificationListener;
 use App\Listeners\UpdateBookingEarningTable;
 use App\Listeners\UpdateBookingPaymentListener;
@@ -82,6 +84,10 @@ class EventServiceProvider extends ServiceProvider
 
         BookingReportedEvent::class => [
             SendBookingReportedNotificationsListener::class,
+        ],
+
+        SendOtpByInfoBipEvent::class => [
+            SendOtpByInfoBipListener::class,
         ],
 
     ];

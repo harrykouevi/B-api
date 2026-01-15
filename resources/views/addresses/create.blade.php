@@ -45,7 +45,9 @@
                 </ul>
             </div>
             <div class="card-body">
-                {!! Form::open(['route' => 'addresses.store']) !!}
+                {{-- {!! Form::open(['route' => 'addresses.store']) !!} --}}
+                {!! Form::model($address, ['route' => ['addresses.store'] ]) !!}
+
                 <div class="row">
                     @include('addresses.fields')
                 </div>

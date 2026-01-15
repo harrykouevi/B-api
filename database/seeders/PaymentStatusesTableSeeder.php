@@ -21,8 +21,12 @@ class PaymentStatusesTableSeeder extends Seeder
     public function run(): void
     {
 
+        // Désactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         DB::table('payment_statuses')->truncate();
+         // Réactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         DB::table('payment_statuses')->insert(array(
             0 =>

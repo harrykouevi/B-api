@@ -21,8 +21,12 @@ class PaymentMethodsTableSeeder extends Seeder
     public function run(): void
     {
 
-
-        // DB::table('payment_methods')->truncate();
+        // Désactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('payment_methods')->truncate();
+        // Réactiver les clés étrangères
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        
 
         DB::table('payment_methods')->insert(array(
             // array(
@@ -101,17 +105,19 @@ class PaymentMethodsTableSeeder extends Seeder
             //     'created_at' => now(),
             //     'updated_at' => now(),
             // ),
-            // array(
-            //     'id' => 11,
-            //     'name' => 'Wallet',
-            //     'description' => 'Click to pay with Wallet',
-            //     'route' => '/Wallet',
-            //     'order' => 8,
-            //     'default' => 0,
-            //     'enabled' => 1,
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
+            array(
+                'id' => 11,
+                'name' => 'Wallet',
+                'description' => 'Click to pay with Wallet',
+                'route' => '/Wallet',
+                'order' => 8,
+                'default' => 0,
+                'enabled' => 1,
+                'is_gateway_method'  => 0,
+
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
             // array(
             //     'id' => 12,
             //     'name' => 'PayMongo',
@@ -134,30 +140,30 @@ class PaymentMethodsTableSeeder extends Seeder
             //     'created_at' => now(),
             //     'updated_at' => now(),
             // ),
-            //   array(
-            //     'id' => 12,
-            //     'name' => 'Mobile Money',
-            //     'description' => 'payer par tmoney ou flooz',
-            //     'route' => 'MOBILE_MONEY',
-            //     'order' => 0,
-            //     'default' => 0,
-            //     'enabled' => 1,
-            //     'is_gateway_method'  => 1,
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
-            // array(
-            //     'id' => 13,
-            //     'name' => 'Credit card',
-            //     'description' => 'Paiement par carte de crédit',
-            //     'route' => 'CREDIT_CARD',
-            //     'order' => 0,
-            //     'default' => 0,
-            //     'enabled' => 1,
-            //     'is_gateway_method'  => 1,
-            //     'created_at' => now(),
-            //     'updated_at' => now(),
-            // ),
+              array(
+                'id' => 12,
+                'name' => 'Mobile Money',
+                'description' => 'payer par tmoney ou flooz',
+                'route' => 'MOBILE_MONEY',
+                'order' => 0,
+                'default' => 0,
+                'enabled' => 1,
+                'is_gateway_method'  => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 13,
+                'name' => 'Credit card',
+                'description' => 'Paiement par carte de crédit',
+                'route' => 'CREDIT_CARD',
+                'order' => 0,
+                'default' => 0,
+                'enabled' => 1,
+                'is_gateway_method'  => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
             array(
                 'id' => 14,
                 'name' => 'Cash',
@@ -166,6 +172,8 @@ class PaymentMethodsTableSeeder extends Seeder
                 'order' => 3,
                 'default' => 1,
                 'enabled' => 1,
+                'is_gateway_method'  => 0,
+
                 'created_at' => now(),
                 'updated_at' => now(),
             ),

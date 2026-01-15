@@ -14,11 +14,15 @@ use App\Criteria\EServices\EServicesOfUserCriteria;
 use App\Criteria\EServices\NearCriteria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateEServiceRequest;
+use App\Http\Requests\CreateEServiceFromTemplateRequest;
 use App\Http\Requests\UpdateEServiceRequest;
+use App\Http\Requests\UpdateEServiceFromTemplateRequest;
 use App\Models\EService;
 use App\Repositories\EServiceRepository;
+use App\Repositories\ServiceTemplateRepository;
 use App\Repositories\UploadRepository;
 use App\Repositories\UserRepository;
+use App\Services\EServiceFromTemplateService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +32,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Nwidart\Modules\Facades\Module;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
+
 
 /**
  * Class EServiceController
@@ -43,13 +48,27 @@ class EServiceAPIController extends Controller
      * @var UploadRepository
      */
     private UploadRepository $uploadRepository;
+    /**
+     * @var EServiceFromTemplateService
+     */
+    private EServiceFromTemplateService $eServiceFromTemplateService;
 
-    public function __construct(EServiceRepository $eServiceRepo, UserRepository $userRepository, UploadRepository $uploadRepository)
-    {
+      /**
+     * @var ServiceTemplateRepository
+     */
+    private ServiceTemplateRepository $serviceTemplateRepository;
+
+    public function __construct(
+        EServiceRepository $eServiceRepo,
+        UserRepository $userRepository,
+        UploadRepository $uploadRepository,
+        EServiceFromTemplateService $eServiceFromTemplateService
+    ) {
         parent::__construct();
         $this->eServiceRepository = $eServiceRepo;
         $this->userRepository = $userRepository;
         $this->uploadRepository = $uploadRepository;
+        $this->eServiceFromTemplateService = $eServiceFromTemplateService;
     }
 
     /**
@@ -161,6 +180,7 @@ class EServiceAPIController extends Controller
         try {
             $this->validate($request, EService::$rules);
             $input = $request->all();
+            
             $eService = $this->eServiceRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
@@ -198,6 +218,8 @@ class EServiceAPIController extends Controller
         try {
             $input = $request->all();
             $input['categories'] = $input['categories'] ?? [];
+            $input['options_data'] = $input['options'] ?? [];
+            unset($input['options']) ;
             $eService = $this->eServiceRepository->update($input, $id);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 if ($eService->hasMedia('image')) {
@@ -210,6 +232,9 @@ class EServiceAPIController extends Controller
                 }
             }
         } catch (Exception $e) {
+             Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
             return $this->sendError($e->getMessage());
         }
 
@@ -254,6 +279,59 @@ class EServiceAPIController extends Controller
             }
         } catch (Exception $e) {
             Log::error($e->getMessage());
+        }
+    }
+
+    /**
+     * Create a new EService from a ServiceTemplate
+     * POST /eServices/from-template
+     *
+     * @param CreateEServiceFromTemplateRequest $request
+     * @return JsonResponse
+     */
+    public function storeFromTemplate(CreateEServiceFromTemplateRequest $request): JsonResponse
+    {
+        try {
+            // Request is automatically validated through FormRequest
+            $salonId = $request->input('salon_id');
+            $templateData = $request->except(['salon_id']);
+            $eService = $this->eServiceFromTemplateService->create($templateData, $salonId);
+            
+            return $this->sendResponse(
+                $eService->load('categories')->toArray(),
+                __('lang.saved_successfully', ['operator' => __('lang.e_service')])
+            );
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()), 422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    /**
+     * Update an existing EService from template data
+     * PUT /eServices/{id}/from-template
+     *
+     * @param int $id
+     * @param UpdateEServiceFromTemplateRequest $request
+     * @return JsonResponse
+     */
+    public function updateFromTemplate(int $id, UpdateEServiceFromTemplateRequest $request): JsonResponse
+    {
+        try {
+            // Request is automatically validated through FormRequest
+            $salonId = $request->input('salon_id');
+            $templateData = $request->input('template');
+            $eService = $this->eServiceFromTemplateService->update($id, $templateData, $salonId);
+
+            return $this->sendResponse(
+                $eService->toArray(),
+                __('lang.updated_successfully', ['operator' => __('lang.e_service')])
+            );
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()), 422);
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
         }
     }
 }

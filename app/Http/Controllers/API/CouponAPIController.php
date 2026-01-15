@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Repositories\CouponRepository;
 use App\Repositories\EServiceRepository;
+use App\Repositories\OptionRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,12 +50,14 @@ class CouponAPIController extends Controller
             $this->validate($request, [
                 'code' => 'required',
                 'e_services_id' => 'required',
+                'options_id' => 'nullable',
             ]);
             $this->couponRepository->pushCriteria(new ValidCriteria($request));
             $eServices = $this->eServiceRepository->findWhereIn('id', explode(',', $request->get('e_services_id')));
+            $options = app(OptionRepository::class)->findWhereIn('id', explode(',', $request->get('options_id')));
             $coupon = $this->couponRepository->first();
             if (!empty($coupon)) {
-                $coupon = $coupon->getValue($eServices);
+                $coupon = $coupon->getValue($eServices , $options instanceof \Illuminate\Support\Collection ? $options :null);
             }
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());

@@ -13,17 +13,34 @@
         </div>
     </div>
 
-    <!-- Color Field -->
+    <!-- Parent Id Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('color', trans("lang.category_color"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        {!! Form::label('parent_id', trans("lang.category_parent_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::text('color', null,  ['class' => 'form-control','placeholder'=>  trans("lang.category_color_placeholder")]) !!}
-            <div class="form-text text-muted">
-                {{ trans("lang.category_color_help") }}
-            </div>
+       
+            {{-- {!! Form::select('parent_id', $parentCategory, null, ['data-empty'=>trans("lang.category_parent_id_placeholder"), 'class' => 'select2 not-required form-control']) !!} --}}
+            <select name="parent_id"  class="select2 form-control not-required" >
+            	<option value=""  
+                        data-level=""
+                       
+                        >
+                        Sélectionner
+                    </option>
+                @foreach($parentCategory as $id => $cat)
+                    
+                    <option value="{{ $id }}"  
+                        data-level="{{ $cat['level'] }}"
+                       
+                        @if(in_array($id, $parentSelected ?? [])) selected @endif>
+                        {{ $cat['label'] }}
+                    </option>
+                @endforeach
+            </select>
+            <div class="form-text text-muted">{{ trans("lang.category_parent_id_help") }}</div>
         </div>
     </div>
 
+    
     <!-- Description Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('description', trans("lang.category_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -35,6 +52,17 @@
     </div>
 </div>
 <div class="d-flex flex-column col-sm-12 col-md-6">
+    <!-- Color Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('color', trans("lang.category_color"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::text('color', null,  ['class' => 'form-control','placeholder'=>  trans("lang.category_color_placeholder")]) !!}
+            <div class="form-text text-muted">
+                {{ trans("lang.category_color_help") }}
+            </div>
+        </div>
+    </div>
+
     <!-- Image Field -->
     <div class="form-group align-items-start d-flex flex-column flex-md-row">
         {!! Form::label('image', trans("lang.category_image"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
@@ -105,14 +133,7 @@
         </div>
     </div>
 
-    <!-- Parent Id Field -->
-    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
-        {!! Form::label('parent_id', trans("lang.category_parent_id"),['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-        <div class="col-md-9">
-            {!! Form::select('parent_id', $parentCategory, null, ['data-empty'=>trans("lang.category_parent_id_placeholder"), 'class' => 'select2 not-required form-control']) !!}
-            <div class="form-text text-muted">{{ trans("lang.category_parent_id_help") }}</div>
-        </div>
-    </div>
+    
 
 </div>
 @if($customFields)

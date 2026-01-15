@@ -32,6 +32,8 @@ class WalletDataTable extends DataTable
      */
     public function dataTable(mixed $query): DataTableAbstract
     {
+        //  $dataTable = new EloquentDataTable($query);
+        // dd($query->get()->toArray()) ;
         $dataTable = new EloquentDataTable($query);
         $columns = array_column($this->getColumns(), 'data');
         return $dataTable
@@ -44,7 +46,7 @@ class WalletDataTable extends DataTable
             ->editColumn('balance', function ($wallet) {
                 return getPriceColumn($wallet, 'balance', $wallet->currency);
             })
-            ->editColumn('currency.name', function ($wallet) {
+            ->editColumn('currency', function ($wallet) {
                 if (isset($wallet->currency)) {
                     return $wallet->currency->name;
                 } else {
@@ -52,7 +54,16 @@ class WalletDataTable extends DataTable
                 }
             })
             ->editColumn('user.name', function ($wallet) {
+                if (is_null($wallet->user)) {
+                    return ''; 
+                }
                 return getLinksColumnByRouteName([$wallet->user], 'users.edit', 'id', 'name');
+            })
+            ->addColumn('user_id', function($wallet) {
+                if (is_null($wallet->user)) {
+                    return ''; 
+                }
+                return $wallet->user_id;
             })
             ->addColumn('action', 'wallets.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
@@ -77,7 +88,7 @@ class WalletDataTable extends DataTable
 
             ],
             [
-                'data' => 'currency.name',
+                'data' => 'currency',
                 'name' => 'currency',
                 'title' => trans('lang.wallet_currency'),
             ],

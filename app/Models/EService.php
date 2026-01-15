@@ -9,6 +9,7 @@
 namespace App\Models;
 
 use App\Casts\EServiceCast;
+use App\Casts\OptionCollectionCast;
 use App\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Database\Eloquent\Castable;
@@ -24,6 +25,8 @@ use Spatie\Image\Manipulations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Illuminate\Support\Str;
+
 
 /**
  * Class EService
@@ -34,6 +37,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property Salon salon
  * @property Collection Option
  * @property string name
+ * @property string slug
  * @property integer id
  * @property double price
  * @property double discount_price
@@ -61,13 +65,16 @@ class EService extends Model implements HasMedia, Castable
      * @var array
      */
     public static array $rules = [
-        'name' => 'required|max:127',
+        'name' => 'required_without:template_id|max:127',
         'price' => 'required|numeric|min:0|max:99999999,99',
         'discount_price' => 'nullable|numeric|min:0|max:99999999,99',
         'duration' => 'nullable|max:16',
         'description' => 'required',
-        'salon_id' => 'required|exists:salons,id'
+        'salon_id' => 'required|exists:salons,id',
+        'category_id' => 'required_without:template_id|exists:categories,id',
+        'template_id' => 'nullable|exists:service_templates,id',
     ];
+
     public array $translatable = [
         'name',
         'description',
@@ -104,6 +111,7 @@ class EService extends Model implements HasMedia, Castable
         'enable_at_customer_address' => 'boolean',
         'available' => 'boolean',
         'salon_id' => 'integer',
+        'options' => OptionCollectionCast::class,
     ];
     /**
      * New Attributes
@@ -130,6 +138,22 @@ class EService extends Model implements HasMedia, Castable
         return EServiceCast::class;
     }
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // Avant la création
+        static::creating(function ($s) {
+            $s->slug = Str::slug($s->name);
+        });
+
+        // Avant la mise à jour
+        static::updating(function ($s) {
+            $s->slug = Str::slug($s->name);
+        });
+    }
+
+  
     /**
      * @param Media|null $media
      * @throws InvalidManipulation

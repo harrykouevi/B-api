@@ -29,6 +29,7 @@ class Authenticate extends Middleware
             $this->authenticate($request, $guards);
             return $next($request);
         } catch (AuthenticationException $e) {
+            
             if ($request->isJson()) {
                 return response()->json(['error' => "Not authenticated"], 401);
             } else {

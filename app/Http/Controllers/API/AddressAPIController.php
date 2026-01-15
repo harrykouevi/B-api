@@ -91,6 +91,7 @@ class AddressAPIController extends Controller
      */
     public function store(CreateAddressRequest $request): JsonResponse
     {
+        
         $input = $request->all();
         $input['user_id'] = auth()->id();
         try {

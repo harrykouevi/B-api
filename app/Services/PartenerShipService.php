@@ -113,12 +113,16 @@ class PartenerShipService
         //recuperation du user a qui appartient le code
         $partner = $affiliation->user;
         if( $partner){ 
+            // dd($affiliation->conversions->toArray()) ;
             //si il est trouvé user a qui appartient le code recois son bunus
-            $amount =  $partner->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
-            // $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
-            
-            $paymentInfo = ["amount"=> $amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
-            event(new DoPaymentEvent($paymentInfo));
+            //mais ce user ne recoit que si le nombre d'utilisation de son code est inferieur à
+            if($affiliation->conversions->count() < (setting('max_partener_rewards') ?? 50)){ 
+                $amount =  $partner->hasRole('customer') ? setting('partener_rewards') : setting('owner_partener_rewards');
+                // $this->paymentService->createPayment($amount,setting('app_default_wallet_id'),$partner, WalletType::BONUS);
+                
+                $paymentInfo = ["amount"=> $amount,"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner , "walletType"=> WalletType::BONUS] ;
+                event(new DoPaymentEvent($paymentInfo));
+            }
         }
         
         return  $conversion ;

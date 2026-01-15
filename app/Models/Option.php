@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use App\Models\CustomFieldValue;
 
 /**
  * Class Option
@@ -44,12 +45,14 @@ class Option extends Model implements HasMedia
      * @var array
      */
     public static array $rules = [
-        'name' => 'required|max:127',
+        'name' => 'required_without:option_template_id|max:127',
         'description' => 'required',
         'price' => 'required|numeric|min:0|max:99999999,99',
         'e_service_id' => 'required|exists:e_services,id',
-        'option_group_id' => 'required|exists:option_groups,id'
+        'option_group_id' => 'required_without:option_template_id|exists:option_groups,id',
+        'option_template_id' => 'nullable|exists:option_templates,id',
     ];
+
     public array $translatable = [
         'name',
         'description',
@@ -97,12 +100,12 @@ class Option extends Model implements HasMedia
      * @param string $conversion
      * @return string url
      */
-    public function getFirstMediaUrl($collectionName = 'default', string $conversion = ''): string
+    public function getFirstMediaUrl(string $collectionName = 'default', string $conversion = ''): string
     {
         $url = $this->getFirstMediaUrlTrait($collectionName);
         $array = explode('.', $url);
         $extension = strtolower(end($array));
-        if (in_array($extension, config('media-library.extensions_has_thumb'))) {
+        if (in_array($extension, config('media-library.extensions_has_thumb'), true)) {
             return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
         } else {
             return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
@@ -125,7 +128,7 @@ class Option extends Model implements HasMedia
 
     public function customFieldsValues(): MorphMany
     {
-        return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
+        return $this->morphMany(CustomFieldValue::class, 'customizable');
     }
 
     /**

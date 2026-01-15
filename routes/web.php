@@ -19,14 +19,16 @@
 
 use App\Http\Controllers\AddressController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route ;
-use Illuminate\Support\Facades\Auth ;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OptionTemplateController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayPalController;
 use App\Http\Controllers\SalonController;
 use App\Http\Controllers\SalonPayoutController;
 use App\Http\Controllers\SalonReviewController;
+use App\Http\Controllers\ServiceTemplateController;
 use App\Http\Controllers\StripeController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserController;
@@ -38,10 +40,18 @@ Route::match(['get', 'post'], '/payment/return', function (Request $request) {
     return view('payments.return');
 })->name('payments.return');
 
+Route::match(['get', 'post'], '/payment/cancel', function (Request $request) {
+    return view('payments.cancel');
+})->name('payments.cancel');
+
 Route::withoutMiddleware(['permissions'])->group(function () {
+    Route::match(['get', 'post'], '/payment/paydunya_return', function (Request $request) {
+        return view('payments.return_paydunya');
+    })->name('payments.paydunya_return');
+
     Route::match(['get', 'post'], '/payment/paygate_return', function (Request $request) {
-        return view('payments.return_paygate');
-    })->name('payments.paygate_return');
+        return redirect()->route('payments.paydunya_return', $request->all());
+    });
 });
 
 Route::get('login/{service}/callback', 'Auth\LoginController@handleProviderCallback');
@@ -53,7 +63,7 @@ Route::post('payments/razorpay/pay-success/{bookingId}', 'RazorPayController@pay
 Route::get('payments/razorpay', 'RazorPayController@index');
 
 Route::get('payments/stripe/checkout', 'StripeController@checkout');
-Route::get('payments/stripe/pay-success/{bookingId}/{paymentMethodId}', [StripeController::class ,'paySuccess']);
+Route::get('payments/stripe/pay-success/{bookingId}/{paymentMethodId}', [StripeController::class, 'paySuccess']);
 Route::get('payments/stripe', 'StripeController@index');
 
 Route::get('payments/paymongo/checkout', 'PayMongoController@checkout');
@@ -158,6 +168,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('eServices', 'EServiceController')->except([
         'show'
     ]);
+
+
     Route::resource('faqCategories', 'FaqCategoryController')->except([
         'show'
     ]);
@@ -165,6 +177,17 @@ Route::middleware('auth')->group(function () {
     Route::resource('categories', 'CategoryController')->except([
         'show'
     ]);
+    
+    Route::post('model-services/remove-media', [ServiceTemplateController::class , 'removeMedia']);
+    Route::resource('model-services', ServiceTemplateController::class)->except([
+        'show'
+    ]);
+
+    Route::post('option-templates/remove-media', 'OptionTemplateController@removeMedia');
+    Route::resource('option-templates', OptionTemplateController::class)->except([
+        'show'
+    ]);
+
     Route::resource('bookingStatuses', 'BookingStatusController')->except([
         'show',
     ]);
@@ -175,7 +198,7 @@ Route::middleware('auth')->group(function () {
 
 
     Route::resource('salonReviews', SalonReviewController::class);
-   Route::resource('payments', PaymentController::class )->except([
+    Route::resource('payments', PaymentController::class)->except([
         'create', 'store', 'edit', 'update', 'destroy'
     ]);
     Route::post('paymentMethods/remove-media', 'PaymentMethodController@removeMedia');
@@ -223,12 +246,20 @@ Route::middleware('auth')->group(function () {
     Route::resource('wallets', 'WalletController')->except([
         'show'
     ]);
-    Route::resource('walletTransactions',  WalletTransactionController::class)->except([
+    Route::resource('walletTransactions', WalletTransactionController::class)->except([
         'show', 'edit', 'update', 'destroy'
     ]);
 
     Route::get('/test-public', function () {
         return 'Page publique accessible sans auth';
     });
+
+// CinetPay webhook route - déplacée depuis api.php pour éviter les problèmes d'authentification
+    Route::post('/cinetpay/transfer/webhook/{userId}', [App\Http\Controllers\API\CinetpayAPIController::class,
+        'handleTransferNotification'
+    ])->name('cinetpay.transfer.webhook');
+
+// Route pour le ping (GET)
+    Route::get('/cinetpay/transfer/webhook/{userId}', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
 
 });

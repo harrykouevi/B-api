@@ -164,6 +164,7 @@ class SlideController extends Controller
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->slideRepository->model());
         try {
+           
             $slide = $this->slideRepository->update($input, $id);
 
             if (isset($input['image']) && $input['image']) {

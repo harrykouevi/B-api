@@ -7,15 +7,17 @@
  */
 
 use App\Http\Controllers\API\AddressAPIController;
-use App\Http\Controllers\API\PaygateController;
-use App\Services\PaygateService;
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
 use App\Http\Controllers\API\BookingAPIController;
+use App\Http\Controllers\API\CategoryAPIController;
 use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
+use App\Http\Controllers\API\ServiceTemplateAPIController;
+use App\Http\Controllers\API\OptionTemplateAPIController;
 use App\Http\Controllers\API\UserAPIController;
 use App\Http\Controllers\API\WithdrawalPhoneController;
 use App\Http\Controllers\API\SalonOwner\UserAPIController as UOwnerAPIController;
@@ -65,21 +67,26 @@ Route::prefix('salon_owner')->group(function () {
 
 Route::post('login', 'API\UserAPIController@login');
 Route::post('recharge/callback/{user_id}', [CinetpayAPIController::class, 'notify']);
-Route::match(['get', 'post'],'paygate/callback', [PaygateController::class, 'handleCallback']);
 
+// PayDunya Checkout Callback (utilisé par checkout ET disburse)
+Route::match(['get', 'post'], 'paydunya/checkout/callback', [WalletAPIController::class, 'handlePaydunyaCheckoutCallback'])->name('paydunya.checkout.callback');
 
-Route::post('/cinetpay/transfer/webhook', [CinetpayAPIController::class,
-    'handleTransferNotification'
+// PayDunya Disburse Callback (POST pour les vrais callbacks, GET pour le test d'accessibilité)
+Route::match(['get', 'post'], 'paydunya/disburse/callback', [WalletAPIController::class, 'handlePaydunyaDisburseCallback'])->name('paydunya.disburse.callback');
 
-])->name('cinetpay.transfer.webhook');
+// PayDunya Payment Callback
+Route::post('paydunya/payment/callback', [WalletAPIController::class, 'handlePaydunyaPaymentCallback'])->name('paydunya.payment.callback');
 
-
-// Route pour le ping (GET)
-Route::get('/cinetpay/transfer/webhook', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
+// PayDunya PSR Token
+Route::post('paydunya/psr/token', [WalletAPIController::class, 'getPaydunyaPSRToken'])->name('paydunya.psr.token');
 
 Route::post('register', [UserAPIController::class, 'register']);
 Route::post('v2/register', [UserAPIController::class, 'v2_register']);
-Route::post('send_reset_link_email', 'API\UserAPIController@sendResetLinkEmail');
+Route::post('send_reset_link_email', [UserAPIController::class, 'sendResetLinkEmail'])->name('users.sendresetlinkemail');
+Route::post('password/phone/request', [UserAPIController::class, 'sendResetLinkPhone'])->name('users.password.phone.request');
+Route::post('password/phone/reset', [UserAPIController::class, 'resetPasswordPhoneMethod'])->name('users.password.phone.reset');
+Route::post('phone/otp/send', [UserAPIController::class, 'sendPhoneVerificationOtp'])->name('users.phone.otp.send');
+Route::post('phone/otp/verify', [UserAPIController::class, 'verifyPhoneOtp'])->name('users.phone.otp.verify');
 Route::get('user', 'API\UserAPIController@user');
 Route::get('logout', 'API\UserAPIController@logout');
 Route::get('settings', 'API\UserAPIController@settings');
@@ -98,7 +105,38 @@ Route::resource('faq_categories', 'API\FaqCategoryAPIController');
 Route::resource('faqs', 'API\FaqAPIController');
 Route::resource('custom_pages', 'API\CustomPageAPIController');
 
-Route::resource('categories', 'API\CategoryAPIController');
+// Routes spécifiques pour les catégories (AVANT la resource route)
+Route::get('categories/tree', 'API\CategoryAPIController@tree');
+Route::get('categories/roots', 'API\CategoryAPIController@roots');
+Route::get('categories/featured', 'API\CategoryAPIController@featured');
+Route::get('categories/search', 'API\CategoryAPIController@search');
+Route::get('categories/all-with-descendants', 'API\CategoryAPIController@allWithDescendants');
+Route::get('categories/{id}/children', 'API\CategoryAPIController@children');
+Route::get('categories/{id}/tree-with-services', 'API\CategoryAPIController@treeWithServices');
+Route::get('categories/{id}/services', 'API\CategoryAPIController@services');
+Route::get('categories/{id}/breadcrumb', 'API\CategoryAPIController@breadcrumb');
+
+// Routes spécifiques pour les catégories avec templates
+Route::get('categories/templates/tree', 'API\CategoryAPIController@templatesTree');
+Route::get('categories/templates/roots', 'API\CategoryAPIController@templatesRoots');
+Route::get('categories/templates/featured', 'API\CategoryAPIController@templatesFeatured');
+Route::get('categories/templates/search', 'API\CategoryAPIController@templatesSearch');
+Route::get('categories/templates/all-with-descendants', 'API\CategoryAPIController@templatesAllWithDescendants');
+Route::get('categories/{id}/templates/children', 'API\CategoryAPIController@templatesChildren');
+Route::get('categories/{id}/templates/tree', 'API\CategoryAPIController@templatesTreeWithTemplates');
+Route::get('categories/{id}/templates', 'API\CategoryAPIController@templates');
+Route::get('categories/{id}/templates/breadcrumb', 'API\CategoryAPIController@templatesBreadcrumb');
+
+// Route resource standard pour les catégories
+Route::resource('categories', CategoryAPIController::class);
+
+Route::resource('service_templates', ServiceTemplateAPIController::class);
+
+// Routes spécifiques pour les option templates (AVANT la resource route)
+Route::get('option-templates/by-service/{serviceTemplateId}', [OptionTemplateAPIController::class, 'byServiceTemplate']);
+
+// Route resource standard pour les option templates
+Route::resource('option_templates', OptionTemplateAPIController::class);
 
 Route::resource('e_services', 'API\EServiceAPIController');
 Route::resource('galleries', 'API\GalleryAPIController');
@@ -116,6 +154,12 @@ Route::resource('option_groups', 'API\OptionGroupAPIController');
 Route::resource('options', 'API\OptionAPIController');
 
 Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
+
+// Routes for creating and updating EServices from templates (authenticated)
+Route::middleware('auth:api')->group(function () {
+    Route::post('e_services/from-template', 'API\EServiceAPIController@storeFromTemplate')->name('e_services.storeFromTemplate');
+    Route::put('e_services/{id}/from-template', 'API\EServiceAPIController@updateFromTemplate')->name('e_services.updateFromTemplate');
+});
 
 Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
@@ -162,6 +206,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('notifications/count', 'API\NotificationAPIController@count');
     Route::resource('notifications', 'API\NotificationAPIController');
+    Route::get('bookings/pending/count', [BookingAPIController::class, 'pendingCount']);
     Route::resource('bookings', BookingAPIController::class);
 
     Route::resource('earnings', 'API\EarningAPIController');
@@ -190,6 +235,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('withdrawal-phones', [WithdrawalPhoneController::class, 'index'])->name('withdrawal-phones.index');
     Route::post('withdrawal-phones', [WithdrawalPhoneController::class, 'store'])->name('withdrawal-phones.store');
     Route::put('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'update'])->name('withdrawal-phones.update');
+    Route::post('withdrawal-phones/{id}/resync', [WithdrawalPhoneController::class, 'resync'])->name('withdrawal-phones.resync');
     Route::delete('withdrawal-phones/{id}', [WithdrawalPhoneController::class, 'destroy'])->name('withdrawal-phones.destroy');
 
     // Report Routes

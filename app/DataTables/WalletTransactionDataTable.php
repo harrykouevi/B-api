@@ -41,7 +41,9 @@ class WalletTransactionDataTable extends DataTable
             }
 
         });
+
         $columns = array_column($this->getColumns(), 'data');
+        
         return $dataTable
             ->editColumn('updated_at', function ($walletTransaction) {
                 return getDateColumn($walletTransaction, 'updated_at');

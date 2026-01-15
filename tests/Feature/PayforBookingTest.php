@@ -131,7 +131,7 @@ class PayforBookingTest extends TestCase
 
             $response =  $this->actingAs($user, 'api')->postJson(route('api.payments.wallets', $wallet->id), [
                     "id" => $booking2->id,
-                    'payment' => ['amount'=> 200 ],
+                    'payment' => ['amount'=> 0 ],
                 ]);
 
             // $responseData = $response->json();

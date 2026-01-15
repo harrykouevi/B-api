@@ -49,7 +49,7 @@
         </div>
     </div>
 </div>
-@if(isset($address) && route('addresses.edit', $address->id) == url()->current())
+@if(isset($address) && !is_null($address->id) && route('addresses.edit', $address->id) == url()->current())
 <div class="d-flex flex-column col-sm-12 col-md-6">
 
     <!-- district Field -->

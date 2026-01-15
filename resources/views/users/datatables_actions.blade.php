@@ -5,26 +5,28 @@
         <i class="fas fa-eye"></i> 
     </a>
     @endcan
-    @can('users.edit')
-    <a data-toggle="tooltip" data-placement="left" title="{{trans('lang.user_edit')}}" href="{{ route('users.edit', $id) }}" class='btn btn-link'>
-        <i class="fas fa-edit"></i> 
-    </a>
-    @endcan
-    @can('users.destroy')
-    @if($id == 1)
-    {!! Form::open(['route' => ['users.destroy', $id], 'method' => 'delete']) !!}
-    {!! Form::button('<i class="fas fa-trash"></i>', [
-    'data-toggle' => 'tooltip',
-    'data-placement' => 'bottom',
-    'title' => trans('lang.user_delete'),
-    'type' => 'submit',
-    'class' => 'btn btn-link text-danger',
-    'onclick' => "swal({title: ".trans('lang.error').", confirmButtonText: ".trans('lang.ok').",
-                            text: data.message,type: 'error', confirmButtonClass: 'btn-danger'});"
-    ]) !!}
-    {!! Form::close() !!}
+    @if($id !== 1 )
+        @can('users.edit')
+        <a data-toggle="tooltip" data-placement="left" title="{{trans('lang.user_edit')}}" href="{{ route('users.edit', $id) }}" class='btn btn-link'>
+             $id <i class="fas fa-edit"></i> 
+        </a>
+        @endcan
+        @can('users.destroy')
+        
+        {!! Form::open(['route' => ['users.destroy', $id], 'method' => 'delete']) !!}
+        {!! Form::button('<i class="fas fa-trash"></i>', [
+        'data-toggle' => 'tooltip',
+        'data-placement' => 'bottom',
+        'title' => trans('lang.user_delete'),
+        'type' => 'submit',
+        'class' => 'btn btn-link text-danger',
+        'onclick' => "swal({title: ".trans('lang.error').", confirmButtonText: ".trans('lang.ok').",
+                                text: data.message,type: 'error', confirmButtonClass: 'btn-danger'});"
+        ]) !!}
+        {!! Form::close() !!}
+        
+        @endcan
     @endif
-    @endcan
     {{-- <div class="dropdown">
         <a class="btn btn-link btn-sm dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
             <i class="fas fa-cog"></i> 

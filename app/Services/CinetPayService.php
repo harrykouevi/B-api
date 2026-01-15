@@ -14,12 +14,14 @@ class CinetPayService
     protected string $baseUrl;
     protected string $transferBaseUrl;
     protected string $apiPassword;
+    protected string $apiPasswordForPayment;
 
     public function __construct()
     {
         $this->apiKey = config('services.cinetpay.api_key');
         $this->siteId = config('services.cinetpay.site_id');
         $this->apiPassword = config('services.cinetpay.api_password');
+        $this->apiPasswordForPayment = config('services.cinetpay.api_password_depot');
         $this->baseUrl = config('services.cinetpay.base_url', 'https://api-checkout.cinetpay.com');
         $this->transferBaseUrl = config('services.cinetpay.transfert_base_url');
     }
@@ -141,6 +143,74 @@ class CinetPayService
             $payload = [
                 'apikey' => $this->apiKey,
                 'password' => $this->apiPassword,
+            ];
+
+            Log::info('CinetPay login request POST', [
+                'url' => $url,
+                'payload' => $payload
+            ]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            ])->asForm()->post($url, $payload);
+
+            Log::info('CinetPay login response POST', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            if ($response->failed()) {
+                return [
+                    'success' => false,
+                    'message' => 'Erreur lors de la communication avec le service de paiement.',
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ];
+            }
+
+            $data = $response->json();
+
+            if (isset($data['code']) && $data['code'] !== 0) {
+                $errorMessage = $data['message'] ?? 'Erreur d\'authentification inconnue';
+
+                if ($data['code'] == 701) { // Utilisez == pour la comparaison
+                    return [
+                        'success' => false,
+                        'message' => 'Erreur: les identifiants CinetPay sont incorrects',
+                    ];
+                }
+
+                return [
+                    'success' => false,
+                    'message' => $errorMessage,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'token' => $data['data']['token'] ?? null
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de l\'authentification CinetPay', [
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Erreur lors de l\'authentification: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function getAuthTokenForPayment()
+    {
+        try {
+            $url = "{$this->transferBaseUrl}/v1/auth/login?lang=fr";
+
+            $payload = [
+                'apikey' => $this->apiKey,
+                'password' => $this->apiPasswordForPayment,
             ];
 
             Log::info('CinetPay login request POST', [
@@ -400,6 +470,17 @@ public function addContact(string $prefix, string $phone, string $name, string $
         ];
     }
 }
+
+
+public function formatPhoneNumber(string $phoneNumber): string
+{
+    $rawNumber = preg_replace('/\D/', '', $phoneNumber);
+
+    if (strpos($rawNumber, '228') === 0) {
+        $rawNumber = substr($rawNumber, 3);
+    }
+    return $rawNumber;
+}
     /**
      * Exécuter un transfert via CinetPay
      *
@@ -409,12 +490,12 @@ public function addContact(string $prefix, string $phone, string $name, string $
      * @param string|null $paymentMethod Méthode de paiement optionnelle
      * @return array
      */
-   public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, ?string $paymentMethod = null): array
+   public function executeTransfer(WalletTransaction $withdrawal, string $phoneNumber, string $countryPrefix, int $userId, ?string $paymentMethod = null): array
 {
     try {
         // 1. Obtenir le token d'authentification
         $tokenResult = $this->getAuthToken();
-
+        Log::info("Token recupéré", ["token"=>$tokenResult]);
         if (is_array($tokenResult) && !$tokenResult['success']) {
             return $tokenResult;
         }
@@ -429,13 +510,15 @@ public function addContact(string $prefix, string $phone, string $name, string $
             ];
         }
 
+        $formattedPhone = $this->formatPhoneNumber($phoneNumber);
+        Log::info("Phone", ["phone"=>$formattedPhone]);
         // 2. Préparer les données de transfert
         $transferData = [[
             'prefix' => $countryPrefix,
-            'phone' => $phoneNumber,
+            'phone' => $formattedPhone,
             'amount' => $withdrawal->amount,
             'client_transaction_id' => "WD_{$withdrawal->id}_" . time(),
-            'notify_url' => route('cinetpay.transfer.webhook', [], false)
+            'notify_url' => route('cinetpay.transfer.webhook', ['userId' => $userId], true), // URL absolue
         ]];
 
         // Ajouter la méthode de paiement si spécifiée
@@ -446,11 +529,22 @@ public function addContact(string $prefix, string $phone, string $name, string $
         Log::info("Payload transfert", $transferData);
 
         // 3. Exécuter le transfert
-        $response = Http::asForm()->post("{$this->transferBaseUrl}/v1/transfer/money/send/contact", [
-            'token' => $token,
-            'lang' => 'fr',
-            'data' => json_encode($transferData) // 🔑 doit être JSON stringifié
+        $url = "{$this->transferBaseUrl}/v1/transfer/money/send/contact?token={$token}&lang=fr";
+        
+        $payload = [
+            'data' => json_encode($transferData)
+        ];
+
+        Log::info('CinetPay login request POST', [
+            'url' => $url,
+            'payload' => $payload
         ]);
+
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/x-www-form-urlencoded'
+        ])->asForm()->post($url, $payload);
+
+        Log::info("Response transfert",[ "response"=>$response]);
 
         if (!$response->successful()) {
             return [

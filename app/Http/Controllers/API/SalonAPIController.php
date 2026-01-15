@@ -71,9 +71,10 @@ class SalonAPIController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $this->salonRepository->pushCriteria(new RequestCriteria($request));
             $this->salonRepository->pushCriteria(new LimitOffsetCriteria($request));
             $this->salonRepository->pushCriteria(new NearCriteria($request));
+            $this->salonRepository->pushCriteria(new RequestCriteria($request));
+
             // $this->salonRepository->pushCriteria(new WithAvailabilityHoursCriteria($request));
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());

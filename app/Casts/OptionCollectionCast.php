@@ -11,6 +11,7 @@ namespace App\Casts;
 use App\Models\Option;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Support\Collection;
+use JsonException;
 
 /**
  * Class OptionCollectionCast
@@ -24,9 +25,10 @@ class OptionCollectionCast implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes): array
     {
+        
         if(empty($value))  return [];
       
-        $decodedValue = json_decode($value, true);
+        $decodedValue = is_string($value) ? json_decode($value, true) : $value;
         return array_map(function ($value) {
             $option = Option::find($value['id']);
             if (!empty($option)) {
@@ -43,12 +45,18 @@ class OptionCollectionCast implements CastsAttributes
 
     /**
      * @inheritDoc
+     * @throws JsonException
      */
     public function set($model, string $key, $value, array $attributes): array
     {
+        
         $collection = $value instanceof Collection ? $value : collect($value);
         return [
-            'options' => json_encode($collection->map->only(['id', 'name', 'price']))
+            'options' => $collection->map(function ($item) {
+                return collect($item)->only(['id', 'name', 'price']) ;
+            })
+            ->values() // facultatif, pour réindexer
+            ->toJson()
         ];
     }
 }
