@@ -818,6 +818,7 @@ return [
     'user_api_token' => 'Jeton API',
     'user_api_token_help' => 'Insérer un jeton API',
     'user_api_token_placeholder' => 'Insérer un jeton API',
+    'user_phone_number' => 'Téléphone',
     'user_avatar' => 'Avatar',
     'user_avatar_help' => 'Téléchargez une image d\'avatar ou sélectionnez-la dans les médias',
     'user_bio' => 'Courte biographie',

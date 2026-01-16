@@ -144,7 +144,7 @@ class UserAPIController extends Controller
             $user->save();
 
             $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
-            $defaultRoles = $defaultRoles->pluck('name')->toArray();
+            $defaultRoles = $defaultRoles->pluck('id')->toArray();
             $user->assignRole($defaultRoles);
 
             if($registerwith == 'email') event(new SendEmailOtpEvent($user));
@@ -212,7 +212,7 @@ class UserAPIController extends Controller
             $user->save();
 
             $defaultRoles = $this->roleRepository->findByField('name', 'salon owner');
-            $defaultRoles = $defaultRoles->pluck('name')->toArray();
+            $defaultRoles = $defaultRoles->pluck('id')->toArray();
             $user->assignRole($defaultRoles);
 
             if($registerwith == 'email') event(new SendEmailOtpEvent($user));

@@ -39,7 +39,7 @@ class UserDataTable extends DataTable
             ->editColumn('updated_at', function ($user) {
                 return getDateColumn($user, 'updated_at');
             })
-            ->editColumn('role', function ($user) {
+            ->editColumn('roles.name', function ($user) {
                 return getArrayColumn($user->roles, 'name', "badge bg-" . setting('theme_color'));
             })
             ->editColumn('email', function ($user) {
@@ -60,7 +60,10 @@ class UserDataTable extends DataTable
      */
     public function query(User $model): \Illuminate\Database\Eloquent\Builder
     {
-        return $model->newQuery()->with('roles');
+        $query= $model->newQuery()->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
+        ->leftJoin('roles', 'roles.id', '=', 'model_has_roles.role_id')
+        ->select('users.*' , 'roles.name as role_name');
+        return $query ;
     }
 
     /**
@@ -104,14 +107,19 @@ class UserDataTable extends DataTable
 
             ],
             [
+                'data' => 'phone_number',
+                'title' => trans('lang.salon_phone_number'),
+
+            ],
+            [
                 'data' => 'email',
                 'title' => trans('lang.user_email'),
 
             ],
             [
-                'data' => 'role',
+                'data' => 'roles.name',
                 'title' => trans('lang.user_role_id'),
-                'orderable' => false, 'searchable' => false,
+                'orderable' => true, 'searchable' => true,
 
             ],
             [
