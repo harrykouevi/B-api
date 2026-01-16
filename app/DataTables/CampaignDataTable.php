@@ -58,7 +58,13 @@ class CampaignDataTable extends DataTable
                 $key = 'lang.campaign_status_' . $campaign->status;
                 $translated = trans($key);
                 $label = $translated !== $key ? $translated : $campaign->status;
-                $class = $campaign->status === 'success' ? 'badge badge-success' : 'badge badge-danger';
+                if ($campaign->status === 'success') {
+                    $class = 'badge badge-success';
+                } elseif ($campaign->status === 'partial') {
+                    $class = 'badge badge-warning';
+                } else {
+                    $class = 'badge badge-danger';
+                }
                 return '<span class="' . $class . '">' . $label . '</span>';
             })
             ->editColumn('creator.name', function ($campaign) {
@@ -100,6 +106,11 @@ class CampaignDataTable extends DataTable
             [
                 'data' => 'sent_count',
                 'title' => trans('lang.campaign_sent_count'),
+                'searchable' => false,
+            ],
+            [
+                'data' => 'failed_count',
+                'title' => trans('lang.campaign_failed_count'),
                 'searchable' => false,
             ],
             [

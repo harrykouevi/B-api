@@ -16,17 +16,32 @@ class CampaignNotification extends BaseNotification
 
     private string $title;
     private string $message;
+    private string $messageRich;
+    private string $messageFormat;
+    private ?string $imageUrl;
     private string $audience;
     private bool $sendToTopic;
     private string $topicName;
 
-    public function __construct(string $title, string $message, string $audience = 'all', bool $sendToTopic = false, string $topicName = 'all')
+    public function __construct(
+        string $title,
+        string $message,
+        string $audience = 'all',
+        bool $sendToTopic = false,
+        string $topicName = 'all',
+        string $messageRich = '',
+        string $messageFormat = 'plain',
+        ?string $imageUrl = null
+    )
     {
         $this->title = $title;
         $this->message = $message;
         $this->audience = $audience;
         $this->sendToTopic = $sendToTopic;
         $this->topicName = $topicName;
+        $this->messageRich = $messageRich;
+        $this->messageFormat = $messageFormat;
+        $this->imageUrl = $imageUrl;
     }
 
     /**
@@ -52,10 +67,20 @@ class CampaignNotification extends BaseNotification
             'campaign' => '1',
             'title' => $this->title,
             'message' => $this->message,
+            'message_rich' => $this->messageRich,
+            'message_format' => $this->messageFormat,
+            'image_url' => $this->imageUrl ?? '',
             'audience' => $this->audience,
         ];
 
         $message = $this->getFcmMessage($notifiable, $this->title, $this->message, $data);
+        if (!empty($this->imageUrl)) {
+            $message->content([
+                'title' => $this->title,
+                'body' => $this->message,
+                'image' => $this->imageUrl,
+            ]);
+        }
         if ($this->sendToTopic) {
             $message->to($this->topicName, true);
         }

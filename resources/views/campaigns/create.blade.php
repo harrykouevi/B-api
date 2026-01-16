@@ -1,4 +1,9 @@
 @extends('layouts.app')
+{{--
+@push('css_lib')
+    <link rel="stylesheet" href="{{asset('vendor/summernote/summernote-bs4.min.css')}}">
+@endpush
+--}}
 
 @section('content')
     <!-- Content Header (Page header) -->
@@ -41,7 +46,7 @@
                 </ul>
             </div>
             <div class="card-body">
-                {!! Form::open(['route' => 'campaigns.store']) !!}
+                {!! Form::open(['route' => 'campaigns.store', 'files' => true]) !!}
                 <div class="row">
                     <div class="d-flex flex-column col-sm-12 col-md-6">
                         <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
@@ -67,11 +72,32 @@
                         </div>
                     </div>
 
+                    <div class="d-flex flex-column col-sm-12 col-md-6">
+                        <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+                            {!! Form::label('image_file', trans('lang.campaign_image_file'), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+                            <div class="col-md-9">
+                                {!! Form::file('image_file', ['class' => 'form-control']) !!}
+                                <div class="form-text text-muted">{{ trans('lang.campaign_image_file_help') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column col-sm-12 col-md-6">
+                        <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+                            {!! Form::label('image_url', trans('lang.campaign_image_url'), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+                            <div class="col-md-9">
+                                {!! Form::text('image_url', old('image_url'), ['class' => 'form-control', 'placeholder' => trans('lang.campaign_image_url_placeholder')]) !!}
+                                <div class="form-text text-muted">{{ trans('lang.campaign_image_url_help') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex flex-column col-sm-12">
                         <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
                             {!! Form::label('message', trans('lang.campaign_message'), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
                             <div class="col-md-9">
-                                {!! Form::textarea('message', old('message'), ['class' => 'form-control', 'rows' => 4, 'placeholder' => trans('lang.campaign_message_placeholder')]) !!}
+                                {{-- {!! Form::hidden('message_format', 'html') !!} --}}
+                                {!! Form::textarea('message', old('message'), ['class' => 'form-control', 'rows' => 4, 'placeholder' => trans('lang.campaign_message_placeholder'), 'id' => 'campaign-message']) !!}
                                 <div class="form-text text-muted">{{ trans('lang.campaign_message_help') }}</div>
                             </div>
                         </div>
@@ -90,3 +116,12 @@
         </div>
     </div>
 @endsection
+@push('scripts_lib')
+    <script>
+        if (typeof jQuery !== 'undefined' && !$.fn.summernote) {
+            $.fn.summernote = function () {
+                return this;
+            };
+        }
+    </script>
+@endpush

@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Throwable;
 
@@ -54,7 +55,10 @@ class CampaignController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:120',
-            'message' => 'required|string|max:1000',
+            'message' => 'nullable|string|max:1000',
+            // 'message_format' => 'nullable|string|in:plain,markdown,html',
+            'image_url' => 'nullable|url|max:2048',
+            'image_file' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:4096',
             'audience' => 'required|string|in:all,salon,client',
         ]);
 
@@ -75,19 +79,38 @@ class CampaignController extends Controller
             return redirect()->back()->withInput();
         }
 
+        // Temporary: keep campaigns plain text until rich rendering is supported on mobile.
+        $messageFormat = 'plain';
+        $messageRaw = (string) ($validated['message'] ?? '');
+        $messagePlain = trim(html_entity_decode(strip_tags($messageRaw), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $messageRaw = $messagePlain;
+        $imageUrl = $this->resolveImageUrl($request, $validated);
+
         if ($validated['audience'] === 'all') {
             try {
                 Notification::route('fcm', 'topic')->notify(
-                    new CampaignNotification($validated['title'], $validated['message'], 'all', true, 'all')
+                    new CampaignNotification(
+                        $validated['title'],
+                        $messagePlain,
+                        'all',
+                        true,
+                        'all',
+                        $messageRaw,
+                        $messageFormat,
+                        $imageUrl
+                    )
                 );
             } catch (Throwable $e) {
                 Campaign::create([
                     'title' => $validated['title'],
-                    'message' => $validated['message'],
+                    'message' => $messageRaw,
+                    'message_format' => $messageFormat,
+                    'image_url' => $imageUrl,
                     'audience' => 'all',
                     'sent_via' => 'topic',
                     'topic' => 'all',
                     'sent_count' => null,
+                    'failed_count' => 0,
                     'status' => 'failed',
                     'error_message' => $e->getMessage(),
                     'sent_at' => now(),
@@ -99,11 +122,14 @@ class CampaignController extends Controller
 
             Campaign::create([
                 'title' => $validated['title'],
-                'message' => $validated['message'],
+                'message' => $messageRaw,
+                'message_format' => $messageFormat,
+                'image_url' => $imageUrl,
                 'audience' => 'all',
                 'sent_via' => 'topic',
                 'topic' => 'all',
                 'sent_count' => null,
+                'failed_count' => 0,
                 'status' => 'success',
                 'sent_at' => now(),
                 'created_by' => auth()->id(),
@@ -126,22 +152,46 @@ class CampaignController extends Controller
         }
 
         $sent = 0;
+        $failed = 0;
+        $lastError = null;
         try {
-            $query->chunkById(200, function ($users) use (&$sent, $validated) {
+            $query->chunkById(200, function ($users) use (&$sent, &$failed, &$lastError, $validated, $messagePlain, $messageRaw, $messageFormat, $imageUrl) {
                 if ($users->isEmpty()) {
                     return;
                 }
-                Notification::send($users, new CampaignNotification($validated['title'], $validated['message'], $validated['audience']));
-                $sent += $users->count();
+                foreach ($users as $user) {
+                    try {
+                        Notification::send(
+                            $user,
+                            new CampaignNotification(
+                                $validated['title'],
+                                $messagePlain,
+                                $validated['audience'],
+                                false,
+                                'all',
+                                $messageRaw,
+                                $messageFormat,
+                                $imageUrl
+                            )
+                        );
+                        $sent++;
+                    } catch (Throwable $e) {
+                        $failed++;
+                        $lastError = $e->getMessage();
+                    }
+                }
             });
         } catch (Throwable $e) {
             Campaign::create([
                 'title' => $validated['title'],
-                'message' => $validated['message'],
+                'message' => $messageRaw,
+                'message_format' => $messageFormat,
+                'image_url' => $imageUrl,
                 'audience' => $validated['audience'],
                 'sent_via' => 'tokens',
                 'topic' => null,
                 'sent_count' => $sent,
+                'failed_count' => $failed,
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
                 'sent_at' => now(),
@@ -154,13 +204,16 @@ class CampaignController extends Controller
         if ($sent === 0) {
             Campaign::create([
                 'title' => $validated['title'],
-                'message' => $validated['message'],
+                'message' => $messageRaw,
+                'message_format' => $messageFormat,
+                'image_url' => $imageUrl,
                 'audience' => $validated['audience'],
                 'sent_via' => 'tokens',
                 'topic' => null,
                 'sent_count' => 0,
+                'failed_count' => $failed,
                 'status' => 'failed',
-                'error_message' => 'no_recipients',
+                'error_message' => $lastError ?? 'no_recipients',
                 'sent_at' => now(),
                 'created_by' => auth()->id(),
             ]);
@@ -168,14 +221,19 @@ class CampaignController extends Controller
             return redirect()->back()->withInput();
         }
 
+        $status = $failed > 0 ? 'partial' : 'success';
         Campaign::create([
             'title' => $validated['title'],
-            'message' => $validated['message'],
+            'message' => $messageRaw,
+            'message_format' => $messageFormat,
+            'image_url' => $imageUrl,
             'audience' => $validated['audience'],
             'sent_via' => 'tokens',
             'topic' => null,
             'sent_count' => $sent,
-            'status' => 'success',
+            'failed_count' => $failed,
+            'status' => $status,
+            'error_message' => $failed > 0 ? ($lastError ?? 'partial_failures') : null,
             'sent_at' => now(),
             'created_by' => auth()->id(),
         ]);
@@ -192,5 +250,28 @@ class CampaignController extends Controller
         }
 
         return $projectId;
+    }
+
+    private function normalizeMessage(string $message, string $format): string
+    {
+        if ($format === 'html') {
+            $message = strip_tags($message);
+        }
+        if ($format === 'markdown') {
+            $message = preg_replace('/\*\*(.*?)\*\*/', '$1', $message) ?? $message;
+            $message = preg_replace('/__(.*?)__/', '$1', $message) ?? $message;
+        }
+
+        return trim($message);
+    }
+
+    private function resolveImageUrl(Request $request, array $validated): ?string
+    {
+        if ($request->hasFile('image_file')) {
+            $path = $request->file('image_file')->store('campaigns', 'public');
+            return Storage::disk('public')->url($path);
+        }
+
+        return $validated['image_url'] ?? null;
     }
 }

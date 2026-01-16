@@ -17,10 +17,13 @@ class Campaign extends Model
     protected $fillable = [
         'title',
         'message',
+        'message_format',
+        'image_url',
         'audience',
         'sent_via',
         'topic',
         'sent_count',
+        'failed_count',
         'status',
         'error_message',
         'sent_at',
@@ -29,6 +32,7 @@ class Campaign extends Model
 
     protected $casts = [
         'sent_count' => 'integer',
+        'failed_count' => 'integer',
         'sent_at' => 'datetime',
     ];
 
