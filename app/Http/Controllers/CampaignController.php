@@ -186,20 +186,10 @@ class CampaignController extends Controller
 
     private function ensureFirebaseProjectId(): string
     {
-        $projectId = (string) setting('firebase_project_id', '');
-        if ($projectId !== '') {
-            return $projectId;
-        }
-
-        $projectId = (string) config('services.fcm.project_id', '');
+        $projectId = trim((string) setting('firebase_project_id', ''));
         if ($projectId === '') {
             return '';
         }
-
-        DB::table('app_settings')->updateOrInsert(
-            ['key' => 'firebase_project_id'],
-            ['value' => $projectId]
-        );
 
         return $projectId;
     }
