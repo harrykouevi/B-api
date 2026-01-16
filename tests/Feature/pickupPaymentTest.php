@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Hash;
 
 class pickupPaymentTest extends TestCase
 {
-    use DatabaseTransactions;
+    // use DatabaseTransactions;
 
     /**
      * A basic feature test example.
