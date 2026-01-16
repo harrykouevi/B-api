@@ -53,7 +53,7 @@ class InfoBipService{
             "body" => $body
         ]);
 
-        // Endpoint conforme à la documentation InfoBip
+    
         $apiUrl = $this->api_url.'/sms/2/text/advanced';
         $response = Http::withHeaders($this->headers)->post($apiUrl, $body);
 
