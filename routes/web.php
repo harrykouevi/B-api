@@ -26,6 +26,7 @@ use App\Http\Controllers\OptionTemplateController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayPalController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\SalonController;
 use App\Http\Controllers\SalonPayoutController;
 use App\Http\Controllers\SalonReviewController;
@@ -204,6 +205,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('payments', PaymentController::class)->except([
         'create', 'store', 'edit', 'update', 'destroy'
     ]);
+    Route::get('payment/revenu',[PaymentController::class, 'getCommissionList'])->name("payment.commission");
     Route::post('paymentMethods/remove-media', 'PaymentMethodController@removeMedia');
     Route::resource('paymentMethods', 'PaymentMethodController')->except([
         'show'
@@ -220,6 +222,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('notifications', 'NotificationController')->except([
         'create', 'store', 'update', 'edit',
     ]);
+    Route::get('campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+    Route::get('campaigns/firebase', [CampaignController::class, 'create'])->name('campaigns.create');
+    Route::post('campaigns/firebase', [CampaignController::class, 'store'])->name('campaigns.store');
     Route::resource('bookings', 'BookingController');
 
     Route::resource('earnings', 'EarningController')->except([

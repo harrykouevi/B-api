@@ -10,9 +10,11 @@ namespace App\Http\Controllers;
 
 use App\Criteria\Payments\PaymentsOfUserCriteria;
 use App\DataTables\PaymentDataTable;
+use App\DataTables\PlatformRevenueDataTable;
 use App\Models\PaymentMethod;
 use App\Models\PaymentStatus;
 use App\Repositories\PaymentRepository;
+use App\Types\PlatformRevenueType;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -62,5 +64,17 @@ class PaymentController extends Controller
          $paymentStatuses = PaymentStatus::all();
         $paymentMethods = PaymentMethod::all();
         return $paymentDataTable->render('payments.index', compact('paymentStatuses', 'paymentMethods'));
+    }
+
+    /**
+     * Display a listing of platform commissions and losses.
+     *
+     * @param PlatformRevenueDataTable $platformRevenueDataTable
+     * @return mixed
+     */
+    public function getCommissionList(PlatformRevenueDataTable $platformRevenueDataTable): mixed
+    {
+        $types = PlatformRevenueType::cases();
+        return $platformRevenueDataTable->render('platform_revenues.index', compact('types'));
     }
 }
