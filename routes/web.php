@@ -25,6 +25,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OptionTemplateController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PayPalController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\SalonController;
 use App\Http\Controllers\SalonPayoutController;
 use App\Http\Controllers\SalonReviewController;
@@ -168,6 +169,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('eServices', 'EServiceController')->except([
         'show'
     ]);
+
+    Route::resource('posts', PostController::class);
 
 
     Route::resource('faqCategories', 'FaqCategoryController')->except([
