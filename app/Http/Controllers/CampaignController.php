@@ -60,6 +60,9 @@ class CampaignController extends Controller
             'image_url' => 'nullable|url|max:2048',
             'image_file' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:4096',
             'audience' => 'required|string|in:all,salon,client',
+            'action_type' => 'nullable|string|in:home,salon,service,external_url',
+            'deep_link' => 'nullable|string|max:2048',
+            'cta_text' => 'nullable|string|max:120',
         ]);
 
         if (!setting('enable_notifications', false)) {
@@ -85,6 +88,29 @@ class CampaignController extends Controller
         $messagePlain = trim(html_entity_decode(strip_tags($messageRaw), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         $messageRaw = $messagePlain;
         $imageUrl = $this->resolveImageUrl($request, $validated);
+        $actionType = $validated['action_type'] ?? 'home';
+        $deepLink = $validated['deep_link'] ?? null;
+        $ctaText = $validated['cta_text'] ?? null;
+        $sentVia = $validated['audience'] === 'all' ? 'topic' : 'tokens';
+        $topic = $validated['audience'] === 'all' ? 'all' : null;
+
+        $campaign = Campaign::create([
+            'title' => $validated['title'],
+            'message' => $messageRaw,
+            'message_format' => $messageFormat,
+            'image_url' => $imageUrl,
+            'action_type' => $actionType,
+            'deep_link' => $deepLink,
+            'cta_text' => $ctaText,
+            'audience' => $validated['audience'],
+            'sent_via' => $sentVia,
+            'topic' => $topic,
+            'sent_count' => null,
+            'failed_count' => 0,
+            'status' => 'pending',
+            'sent_at' => null,
+            'created_by' => auth()->id(),
+        ]);
 
         if ($validated['audience'] === 'all') {
             try {
@@ -97,42 +123,27 @@ class CampaignController extends Controller
                         'all',
                         $messageRaw,
                         $messageFormat,
-                        $imageUrl
+                        $imageUrl,
+                        $campaign->id,
+                        $actionType,
+                        $deepLink,
+                        $ctaText
                     )
                 );
             } catch (Throwable $e) {
-                Campaign::create([
-                    'title' => $validated['title'],
-                    'message' => $messageRaw,
-                    'message_format' => $messageFormat,
-                    'image_url' => $imageUrl,
-                    'audience' => 'all',
-                    'sent_via' => 'topic',
-                    'topic' => 'all',
-                    'sent_count' => null,
-                    'failed_count' => 0,
+                $campaign->update([
                     'status' => 'failed',
                     'error_message' => $e->getMessage(),
                     'sent_at' => now(),
-                    'created_by' => auth()->id(),
                 ]);
                 Flash::error($e->getMessage());
                 return redirect()->back()->withInput();
             }
 
-            Campaign::create([
-                'title' => $validated['title'],
-                'message' => $messageRaw,
-                'message_format' => $messageFormat,
-                'image_url' => $imageUrl,
-                'audience' => 'all',
-                'sent_via' => 'topic',
-                'topic' => 'all',
-                'sent_count' => null,
-                'failed_count' => 0,
+            $campaign->update([
                 'status' => 'success',
+                'error_message' => null,
                 'sent_at' => now(),
-                'created_by' => auth()->id(),
             ]);
 
             Flash::success(trans('lang.campaign_sent_topic_success', ['topic' => 'all']));
@@ -155,7 +166,7 @@ class CampaignController extends Controller
         $failed = 0;
         $lastError = null;
         try {
-            $query->chunkById(200, function ($users) use (&$sent, &$failed, &$lastError, $validated, $messagePlain, $messageRaw, $messageFormat, $imageUrl) {
+            $query->chunkById(200, function ($users) use (&$sent, &$failed, &$lastError, $validated, $messagePlain, $messageRaw, $messageFormat, $imageUrl, $campaign, $actionType, $deepLink, $ctaText) {
                 if ($users->isEmpty()) {
                     return;
                 }
@@ -166,13 +177,17 @@ class CampaignController extends Controller
                             new CampaignNotification(
                                 $validated['title'],
                                 $messagePlain,
-                                $validated['audience'],
-                                false,
-                                'all',
-                                $messageRaw,
-                                $messageFormat,
-                                $imageUrl
-                            )
+                            $validated['audience'],
+                            false,
+                            'all',
+                            $messageRaw,
+                            $messageFormat,
+                            $imageUrl,
+                            $campaign->id,
+                            $actionType,
+                            $deepLink,
+                            $ctaText
+                        )
                         );
                         $sent++;
                     } catch (Throwable $e) {
@@ -182,60 +197,36 @@ class CampaignController extends Controller
                 }
             });
         } catch (Throwable $e) {
-            Campaign::create([
-                'title' => $validated['title'],
-                'message' => $messageRaw,
-                'message_format' => $messageFormat,
-                'image_url' => $imageUrl,
-                'audience' => $validated['audience'],
-                'sent_via' => 'tokens',
-                'topic' => null,
+            $campaign->update([
                 'sent_count' => $sent,
                 'failed_count' => $failed,
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
                 'sent_at' => now(),
-                'created_by' => auth()->id(),
             ]);
             Flash::error($e->getMessage());
             return redirect()->back()->withInput();
         }
 
         if ($sent === 0) {
-            Campaign::create([
-                'title' => $validated['title'],
-                'message' => $messageRaw,
-                'message_format' => $messageFormat,
-                'image_url' => $imageUrl,
-                'audience' => $validated['audience'],
-                'sent_via' => 'tokens',
-                'topic' => null,
+            $campaign->update([
                 'sent_count' => 0,
                 'failed_count' => $failed,
                 'status' => 'failed',
                 'error_message' => $lastError ?? 'no_recipients',
                 'sent_at' => now(),
-                'created_by' => auth()->id(),
             ]);
             Flash::warning(trans('lang.campaign_no_recipients'));
             return redirect()->back()->withInput();
         }
 
         $status = $failed > 0 ? 'partial' : 'success';
-        Campaign::create([
-            'title' => $validated['title'],
-            'message' => $messageRaw,
-            'message_format' => $messageFormat,
-            'image_url' => $imageUrl,
-            'audience' => $validated['audience'],
-            'sent_via' => 'tokens',
-            'topic' => null,
+        $campaign->update([
             'sent_count' => $sent,
             'failed_count' => $failed,
             'status' => $status,
             'error_message' => $failed > 0 ? ($lastError ?? 'partial_failures') : null,
             'sent_at' => now(),
-            'created_by' => auth()->id(),
         ]);
 
         Flash::success(trans('lang.campaign_sent_success', ['count' => $sent]));

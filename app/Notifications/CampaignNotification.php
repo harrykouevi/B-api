@@ -19,6 +19,10 @@ class CampaignNotification extends BaseNotification
     private string $messageRich;
     private string $messageFormat;
     private ?string $imageUrl;
+    private ?int $campaignId;
+    private ?string $actionType;
+    private ?string $deepLink;
+    private ?string $ctaText;
     private string $audience;
     private bool $sendToTopic;
     private string $topicName;
@@ -31,7 +35,11 @@ class CampaignNotification extends BaseNotification
         string $topicName = 'all',
         string $messageRich = '',
         string $messageFormat = 'plain',
-        ?string $imageUrl = null
+        ?string $imageUrl = null,
+        ?int $campaignId = null,
+        ?string $actionType = null,
+        ?string $deepLink = null,
+        ?string $ctaText = null
     )
     {
         $this->title = $title;
@@ -42,6 +50,10 @@ class CampaignNotification extends BaseNotification
         $this->messageRich = $messageRich;
         $this->messageFormat = $messageFormat;
         $this->imageUrl = $imageUrl;
+        $this->campaignId = $campaignId;
+        $this->actionType = $actionType;
+        $this->deepLink = $deepLink;
+        $this->ctaText = $ctaText;
     }
 
     /**
@@ -63,22 +75,52 @@ class CampaignNotification extends BaseNotification
      */
     public function toFcm(mixed $notifiable): FcmMessage
     {
+        $body = $this->message !== '' ? $this->message : ' ';
         $data = [
             'campaign' => '1',
             'title' => $this->title,
-            'message' => $this->message,
+            'message' => $body,
             'message_rich' => $this->messageRich,
             'message_format' => $this->messageFormat,
             'image_url' => $this->imageUrl ?? '',
+            'campaign_id' => $this->campaignId ? (string) $this->campaignId : '',
+            'action_type' => $this->actionType ?? '',
+            'deep_link' => $this->deepLink ?? '',
+            'cta_text' => $this->ctaText ?? '',
             'audience' => $this->audience,
         ];
 
-        $message = $this->getFcmMessage($notifiable, $this->title, $this->message, $data);
+        $message = $this->getFcmMessage($notifiable, $this->title, $body, $data);
         if (!empty($this->imageUrl)) {
             $message->content([
                 'title' => $this->title,
-                'body' => $this->message,
+                'body' => $body,
                 'image' => $this->imageUrl,
+            ]);
+            $message->apns([
+                'payload' => [
+                    'aps' => [
+                        'mutable-content' => 1,
+                        'alert' => [
+                            'title' => $this->title,
+                            'body' => $body,
+                        ],
+                    ],
+                ],
+                'fcm_options' => [
+                    'image' => $this->imageUrl,
+                ],
+            ]);
+        } else {
+            $message->apns([
+                'payload' => [
+                    'aps' => [
+                        'alert' => [
+                            'title' => $this->title,
+                            'body' => $body,
+                        ],
+                    ],
+                ],
             ]);
         }
         if ($this->sendToTopic) {

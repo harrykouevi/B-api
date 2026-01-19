@@ -74,6 +74,21 @@
 
                     <div class="d-flex flex-column col-sm-12 col-md-6">
                         <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+                            {!! Form::label('action_type', trans('lang.campaign_action_type'), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+                            <div class="col-md-9">
+                                {!! Form::select('action_type', [
+                                    'home' => trans('lang.campaign_action_type_home'),
+                                    'salon' => trans('lang.campaign_action_type_salon'),
+                                    'service' => trans('lang.campaign_action_type_service'),
+                                    'external_url' => trans('lang.campaign_action_type_external_url'),
+                                ], old('action_type', 'home'), ['class' => 'form-control']) !!}
+                                <div class="form-text text-muted">{{ trans('lang.campaign_action_type_help') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column col-sm-12 col-md-6">
+                        <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
                             {!! Form::label('image_file', trans('lang.campaign_image_file'), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
                             <div class="col-md-9">
                                 {!! Form::file('image_file', ['class' => 'form-control']) !!}
@@ -88,6 +103,26 @@
                             <div class="col-md-9">
                                 {!! Form::text('image_url', old('image_url'), ['class' => 'form-control', 'placeholder' => trans('lang.campaign_image_url_placeholder')]) !!}
                                 <div class="form-text text-muted">{{ trans('lang.campaign_image_url_help') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column col-sm-12 col-md-6">
+                        <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+                            {!! Form::label('deep_link', trans('lang.campaign_deep_link'), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+                            <div class="col-md-9">
+                                {!! Form::text('deep_link', old('deep_link'), ['class' => 'form-control', 'placeholder' => trans('lang.campaign_deep_link_placeholder')]) !!}
+                                <div class="form-text text-muted">{{ trans('lang.campaign_deep_link_help') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column col-sm-12 col-md-6">
+                        <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+                            {!! Form::label('cta_text', trans('lang.campaign_cta_text'), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+                            <div class="col-md-9">
+                                {!! Form::text('cta_text', old('cta_text'), ['class' => 'form-control', 'placeholder' => trans('lang.campaign_cta_text_placeholder')]) !!}
+                                <div class="form-text text-muted">{{ trans('lang.campaign_cta_text_help') }}</div>
                             </div>
                         </div>
                     </div>

@@ -62,6 +62,8 @@ class CampaignDataTable extends DataTable
                     $class = 'badge badge-success';
                 } elseif ($campaign->status === 'partial') {
                     $class = 'badge badge-warning';
+                } elseif ($campaign->status === 'pending') {
+                    $class = 'badge badge-info';
                 } else {
                     $class = 'badge badge-danger';
                 }
