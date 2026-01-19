@@ -48,13 +48,13 @@ class InfoBipService{
             ]
         ];
 
-        Log::info("InfoBipService message:", [
-            "headers" => $this->headers,
+        $apiUrl = $this->api_url.'/sms/2/text/advanced';
+
+        Log::info("InfoBipService SMS - URL et payload:", [
+            "base_url" => $this->api_url,
+            "full_url" => $apiUrl,
             "body" => $body
         ]);
-
-    
-        $apiUrl = $this->api_url.'/sms/2/text/advanced';
         $response = Http::withHeaders($this->headers)->post($apiUrl, $body);
 
         Log::info("Réponse de l'envoi du SMS:", [
@@ -108,6 +108,13 @@ class InfoBipService{
         ];
 
         $apiUrl = $this->api_url.'/whatsapp/1/message/template';
+
+        Log::info('InfoBipService WhatsApp - URL et payload:', [
+            'base_url' => $this->api_url,
+            'full_url' => $apiUrl,
+            'body' => $body,
+        ]);
+
         $response = Http::withHeaders($this->headers)->post($apiUrl, $body);
 
         Log::info('Réponse WhatsApp OTP', [
