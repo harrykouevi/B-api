@@ -1,0 +1,245 @@
+<?php
+/*
+ * File name: PostDataTable.php
+ * Last modified: 2026.01.19 at 15:53:30
+ * Author:
+ * Copyright (c) 2026
+ */
+
+namespace App\DataTables;
+
+use App\Models\CustomField;
+use App\Models\Post;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Yajra\DataTables\DataTableAbstract;
+use Yajra\DataTables\EloquentDataTable;
+use Yajra\DataTables\Html\Builder;
+use Yajra\DataTables\Services\DataTable;
+
+class PostDataTable extends DataTable
+{
+    /**
+     * custom fields columns
+     * @var array
+     */
+    public static array $customFields = [];
+
+    /**
+     * Build DataTable class.
+     *
+     * @param mixed $query Results from query() method.
+     * @return DataTableAbstract
+     */
+    public function dataTable(mixed $query): DataTableAbstract
+    {
+        $dataTable = new EloquentDataTable($query);
+        $dataTable->filter(function ($query) {
+           
+            // Filtre par type de transaction
+            if (request()->has('search') && (!is_null(request('search')['value']) || request('search')['value'] != '')) {
+                $search = request('search')['value'] ;
+                $columns = $this->getColumns();
+
+                $query->where(function ($q) use ($columns, $search) {
+                    foreach ($columns as $column) {
+                        if ($column['searchable'] ?? false) {
+                            if (str_contains($column['name'], '.')) {
+                                $parts = explode('.', $column['name']);
+                                $colName = $parts[0] . '.' . $parts[1]; 
+                            } else {
+                                $colName = $column['name'];
+                            }
+                            $q->orWhere($colName, 'like', "%{$search}%");
+                        }
+                    }
+                });
+            }
+
+        });
+        $columns = array_column($this->getColumns(), 'data');
+        
+        $dataTable = $dataTable
+            ->editColumn('image', function ($eService) {
+                return getMediaColumn($eService, 'image');
+            })
+            ->editColumn('name', function ($eService) {
+                if ($eService['featured']) {
+                    return $eService['name'] . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.e_service_featured') . "</span>";
+                }
+                return $eService['name'];
+            })
+            ->editColumn('price', function ($eService) {
+                return getPriceColumn($eService);
+            })
+            ->editColumn('discount_price', function ($eService) {
+                if (empty($eService['discount_price'])) {
+                    return '-';
+                } else {
+                    return getPriceColumn($eService, 'discount_price');
+                }
+            })
+            ->editColumn('updated_at', function ($eService) {
+                return getDateColumn($eService, 'updated_at');
+            })
+            ->editColumn('categories', function ($eService) {
+                return getLinksColumnByRouteName($eService->categories, 'categories.edit', 'id', 'path_names');
+            })
+            ->editColumn('salon.name', function ($eService) {
+                return getLinksColumnByRouteName([$eService->salon], 'salons.edit', 'id', 'name');
+            })
+            ->editColumn('available', function ($eService) {
+                return getBooleanColumn($eService, 'available');
+            })
+            ->addColumn('action', 'e_services.datatables_actions')
+            ->rawColumns(array_merge($columns, ['action']));
+
+        return $dataTable;
+    }
+
+    /**
+     * Get columns.
+     *
+     * @return array
+     */
+    protected function getColumns(): array
+    {
+        $columns = [
+            
+            [
+                'data' => 'image',
+                'title' => trans('lang.e_service_image'),
+                'searchable' => false, 'orderable' => false, 'exportable' => false, 'printable' => false,
+            ],
+            [
+                'data' => 'name',
+                'name' => 'e_services.name',
+                'title' => trans('lang.e_service_name'),
+                'searchable' => true,
+                'orderable' => true
+
+            ],
+            [
+                'data' => 'salon.name',
+                'name' => 'salon.name',
+                'title' => trans('lang.e_service_salon_id'),
+                'orderable' => true
+
+            ],
+            [
+                'data' => 'price',
+                'title' => trans('lang.e_service_price'),
+
+            ],
+            [
+                'data' => 'discount_price',
+                'title' => trans('lang.e_service_discount_price'),
+
+            ],
+            [
+                'data' => 'categories',
+                'name' => 'categories.path_names', 
+                'title' => trans('lang.e_service_categories'),
+                'searchable' => true,
+                'orderable' => true
+            ],
+            [
+                'data' => 'available',
+                'title' => trans('lang.e_service_available'),
+
+            ],
+            [
+                'data' => 'updated_at',
+                'title' => trans('lang.e_service_updated_at'),
+                'searchable' => false,
+                'orderable' => true
+            ]
+        ];
+
+        $hasCustomField = in_array(Post::class, setting('custom_field_models', []));
+        if ($hasCustomField) {
+            $customFieldsCollection = CustomField::where('custom_field_model', Post::class)->where('in_table', '=', true)->get();
+            foreach ($customFieldsCollection as $key => $field) {
+                array_splice($columns, $field->order - 1, 0, [[
+                    'data' => 'custom_fields.' . $field->name . '.view',
+                    'title' => trans('lang.e_service_' . $field->name),
+                    'orderable' => false,
+                    'searchable' => false,
+                ]]);
+            }
+        }
+        return $columns;
+    }
+
+    /**
+     * Get query source of dataTable.
+     *
+     * @param Post $model
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function query(Post $model): \Illuminate\Database\Eloquent\Builder
+    {
+        // if (auth()->user()->hasRole('salon owner')) {
+        //     return $model->newQuery()->with("salon")->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
+        //         ->groupBy('e_services.id')
+        //         ->where('salon_users.user_id', auth()->id())
+        //         ->select('e_services.*');
+        // }
+        // return $model->newQuery()->with("salon")->select("$model->table.*");
+
+
+        $query = $model->newQuery()
+            ->with(['salon', 'categories']) // relation Eloquent
+            ->leftJoin('e_service_categories', 'e_services.id', '=', 'e_service_categories.e_service_id')
+            ->leftJoin('categories', 'categories.id', '=', 'e_service_categories.category_id')
+            ->select('e_services.*', 'categories.path_names as category_path');
+
+        if (auth()->user()->hasRole('salon owner')) {
+            $query->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
+                ->where('salon_users.user_id', auth()->id())
+                ->groupBy('e_services.id');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Optional method if you want to use html builder.
+     *
+     * @return Builder
+     */
+    public function html(): Builder
+    {
+        return $this->builder()
+            ->columns($this->getColumns())
+            ->minifiedAjax()
+            ->addAction(['width' => '80px', 'printable' => false, 'responsivePriority' => '100'])
+            ->parameters(array_merge(
+                config('datatables-buttons.parameters'), [
+                    'language' => json_decode(
+                        file_get_contents(base_path('resources/lang/' . app()->getLocale() . '/datatable.json')
+                        ), true)
+                ]
+            ));
+    }
+
+    /**
+     * Export PDF using DOMPDF
+     * @return mixed
+     */
+    public function pdf(): mixed
+    {
+        $data = $this->getDataForPrint();
+        $pdf = PDF::loadView($this->printPreview, compact('data'));
+        return $pdf->download($this->filename() . '.pdf');
+    }
+
+    /**
+     * Get filename for export.
+     *
+     * @return string
+     */
+    protected function filename(): string
+    {
+        return 'e_servicesdatatable_' . time();
+    }
+}
