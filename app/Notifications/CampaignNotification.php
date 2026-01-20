@@ -97,21 +97,23 @@ class CampaignNotification extends BaseNotification
                 'body' => $body,
                 'image' => $this->imageUrl,
             ]);
-            $message->apns([
-                'payload' => [
-                    'aps' => [
-                        'mutable-content' => 1,
-                        'alert' => [
-                            'title' => $this->title,
-                            'body' => $body,
+            if (method_exists($message, 'apns')) {
+                $message->apns([
+                    'payload' => [
+                        'aps' => [
+                            'mutable-content' => 1,
+                            'alert' => [
+                                'title' => $this->title,
+                                'body' => $body,
+                            ],
                         ],
                     ],
-                ],
-                'fcm_options' => [
-                    'image' => $this->imageUrl,
-                ],
-            ]);
-        } else {
+                    'fcm_options' => [
+                        'image' => $this->imageUrl,
+                    ],
+                ]);
+            }
+        } elseif (method_exists($message, 'apns')) {
             $message->apns([
                 'payload' => [
                     'aps' => [
