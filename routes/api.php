@@ -25,7 +25,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
-
+use App\Http\Controllers\API\PostAPIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +55,7 @@ Route::prefix('salon_owner')->group(function () {
     Route::middleware('auth:api')->group(function () {
         Route::resource('salons', 'API\SalonOwner\SalonAPIController')->only(['index', 'show']);
         Route::get('e_services', 'API\SalonOwner\EServiceAPIController@index');
+        
         Route::resource('availability_hours', 'API\AvailabilityHourAPIController')->only(['store', 'update', 'destroy']);
         Route::resource('awards', 'API\AwardAPIController')->only(['store', 'update', 'destroy']);
         Route::resource('experiences', 'API\ExperienceAPIController')->only(['store', 'update', 'destroy']);
@@ -165,7 +166,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink'])->name('affiliates.generate');
     Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion'])->name('affiliates.confirm');;
-
+    Route::get('posts', [PostAPIController::class, 'index']);
     Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
     Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);
     
