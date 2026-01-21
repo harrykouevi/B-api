@@ -19,6 +19,12 @@
                     <i class="nav-icon fas fa-bell"></i>@endif<p  class="text-xs" >{{trans('lang.notification_plural')}}</p></a>
         </li>
     @endcan
+    @can('campaigns.index')
+        <li class="nav-item">
+            <a class="nav-link {{ Request::is('campaigns*') ? 'active' : '' }}" href="{!! route('campaigns.index') !!}">@if($icons)
+                    <i class="nav-icon fas fa-bullhorn"></i>@endif<p  class="text-xs" >{{ trans('lang.campaign_menu') }}</p></a>
+        </li>
+    @endcan
     @can('favorites.index')
         <li class="nav-item">
             <a class="nav-link {{ Request::is('favorites*') ? 'active' : '' }}" href="{!! route('favorites.index') !!}">@if($icons)
@@ -35,6 +41,21 @@
             <p  class="text-xs" >{{trans('lang.user_plural')}}</p></a>
     </li>
 @endcan
+{{-- @can('posts.index') --}}
+    <li class="nav-item has-treeview {{ (Request::is('post*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('postReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*') ) && !Request::is('postPayouts*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{ (Request::is('post*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('postReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*')) && !Request::is('postPayouts*') ? 'active' : '' }}"> @if($icons)
+                <i class="nav-icon fas fa-users-cog"></i>@endif
+            <p  class="text-xs" >{{trans('lang.post_plural')}} <i class="right fas fa-angle-left"></i>
+            </p>
+        </a>
+        <ul class="nav nav-treeview">
+            <li class="nav-item">
+                <a class="nav-link {{ Request::is('posts*') ? 'active' : '' }}" href="{!! route('posts.index') !!}">@if($icons)
+                        <i class="nav-icon fas fa-list-alt"></i>@endif<p  class="text-xs" >{{trans('lang.post_plural')}}</p></a>
+            </li>
+        </ul>
+    </li>
+{{-- @endcan --}}
 @can('salons.index')
     <li class="nav-item has-treeview {{ (Request::is('salon*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('salonReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*') ) && !Request::is('salonPayouts*') ? 'menu-open' : '' }}">
         <a href="#" class="nav-link {{ (Request::is('salon*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('salonReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*')) && !Request::is('salonPayouts*') ? 'active' : '' }}"> @if($icons)
@@ -258,8 +279,8 @@
 @endif
 <li class="nav-header">{{trans('lang.payment_plural')}}</li>
 @can('payments.index')
-    <li class="nav-item has-treeview {{ Request::is('payments*') || Request::is('paymentMethods*') || Request::is('paymentStatuses*')|| Request::is('salonPayouts*') ? 'menu-open' : '' }}">
-        <a href="#" class="nav-link {{ Request::is('payments*') || Request::is('paymentMethods*') || Request::is('paymentStatuses*')|| Request::is('salonPayouts*') ? 'active' : '' }}"> @if($icons)
+    <li class="nav-item has-treeview {{ Request::is('payments*') || Request::is('payment/commission*') || Request::is('paymentMethods*') || Request::is('paymentStatuses*')|| Request::is('salonPayouts*') ? 'menu-open' : '' }}">
+        <a href="#" class="nav-link {{ Request::is('payments*') || Request::is('payment/commission*') || Request::is('paymentMethods*') || Request::is('paymentStatuses*')|| Request::is('salonPayouts*') ? 'active' : '' }}"> @if($icons)
                 <i class="nav-icon fas fa-money-check-alt"></i>@endif
             <p  class="text-xs" >{{trans('lang.payment_plural')}}<i class="right fas fa-angle-left"></i>
             </p>
@@ -270,6 +291,12 @@
                 <li class="nav-item">
                     <a class="nav-link {{ Request::is('payments*') ? 'active' : '' }}" href="{!! route('payments.index') !!}">@if($icons)
                             <i class="nav-icon fas fa-money-check-alt"></i>@endif<p  class="text-xs" >{{trans('lang.payment_table')}}</p></a>
+                </li>
+            @endcan
+            @can('payment.commission')
+                <li class="nav-item">
+                    <a class="nav-link {{ Request::is('payment/commission*') ? 'active' : '' }}" href="{!! route('payment.commission') !!}">@if($icons)
+                            <i class="nav-icon fas fa-percentage"></i>@endif<p  class="text-xs" >{{ trans('lang.platform_revenue_table') }}</p></a>
                 </li>
             @endcan
             @can('paymentMethods.index')
@@ -499,4 +526,3 @@
         </ul>
     </li>
 @endcan
-

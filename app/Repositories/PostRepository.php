@@ -1,15 +1,20 @@
 <?php
+/*
+ * File name: PostRepository.php
+ * Last modified: 2024.04.18 at 17:21:53
+ * Author: SmarterVision - https://codecanyon.net/user/smartervision
+ * Copyright (c) 2024
+ */
 
 namespace App\Repositories;
 
-use App\Models\TestPost;
+use App\Models\Post;
 use InfyOm\Generator\Common\BaseRepository;
 use Prettus\Repository\Contracts\CacheableInterface;
 use Prettus\Repository\Traits\CacheableRepository;
 
-
 /**
- * 
+ * Class PostRepository
  * @package App\Repositories
  * @version January 19, 2026, 3:59 pm UTC
  *
@@ -35,7 +40,7 @@ class PostRepository extends BaseRepository implements  CacheableInterface
      **/
     public function model(): string
     {
-        return TestPost::class;
+        return Post::class;
     }
 
     /**
