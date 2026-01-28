@@ -10,6 +10,10 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\ValidationException;
+use InfyOm\Generator\Utils\ResponseUtil;
+
 class UploadRequest extends FormRequest
 {
     /**
@@ -22,6 +26,28 @@ class UploadRequest extends FormRequest
         return true;
     }
 
+      /**
+     * Handle a failed validation attempt.
+     *
+     * @param Validator $validator
+     * @return void
+     *
+     * @throws ValidationException
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        if ($this->isJson()) {
+            $errors = array_values($validator->errors()->getMessages());
+            $errorsResponse = ResponseUtil::makeError($errors);
+            throw new ValidationException($validator, response()->json($errorsResponse));
+        } else {
+            throw (new ValidationException($validator))
+                ->errorBag($this->errorBag)
+                ->redirectTo($this->getRedirectUrl());
+        }
+
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -31,7 +57,8 @@ class UploadRequest extends FormRequest
     {
         
         return [
-            'file' => 'image|mimes:jpeg,png,jpg,gif,svg',
+            'file' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
+            'field' => 'required|string',
         ];
     }
 }

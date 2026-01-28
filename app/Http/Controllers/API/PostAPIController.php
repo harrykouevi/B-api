@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Criteria\Posts\PostsOfUserCriteria;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreatePostRequest;
 use App\Repositories\PostRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -10,17 +12,22 @@ use Illuminate\Http\Request;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
+use Illuminate\Validation\ValidationException;
+use App\Repositories\UploadRepository;
+
+
 
 class PostAPIController extends Controller
 {
     /** @varPostRepository */
     private PostRepository $postRepository;
 
-    public function __construct(PostRepository $postRepo)
+    /** @var UploadRepository */
+    private UploadRepository $uploadRepository;
+
+    public function __construct(PostRepository $postRepo, UploadRepository $uploadRepository)
     {
-       
-        
-        
+        $this->uploadRepository = $uploadRepository;
         $this->postRepository = $postRepo;
         parent::__construct();
     }
@@ -45,5 +52,92 @@ class PostAPIController extends Controller
        
 
         return $this->sendResponse($posts, 'Posts retrieved successfully');
+    }
+
+    /**
+     * Store a newly created EService in storage.
+     *
+     * @param CreatePostRequest $request
+     *
+     * @return JsonResponse
+     */
+    public function store(CreatePostRequest $request): JsonResponse
+    {
+        try {
+            $input = $request->all();
+            if (auth()->user()->hasAnyRole(['salon owner'])) {
+                $input['users'] = [auth()->id()];
+                $input['published_at'] = now();
+                $input['visibility'] = 'public';
+                $input['status'] = 'published';
+
+                $post = $this->postRepository->create($input);
+                if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
+                    foreach ($input['image'] as $fileUuid) {
+                       
+                        $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
+                        //  dd($cacheUpload->getMedia('image')->first());
+                        $mediaItem = $cacheUpload->getMedia('image')->first();
+                        $mediaItem->copy($post, 'image');
+                    }
+                }
+            }
+         
+        } catch (ValidationException $e) {
+           
+            return $this->sendError(array_values($e->errors()),422);
+        } catch (Exception $e) {
+           
+            return $this->sendError($e->getMessage() , 500);
+        }
+       
+        // return $this->sendResponse($post, __('lang.saved_successfully', ['operator' => __('lang.post')]));
+        return $this->sendResponse($post, 'User retrieved successfully');
+
+    }
+
+     /**
+     * Display the specified Post.
+     * GET|HEAD /posts/{id}
+     *
+     * @param int $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function show(int $id, Request $request): JsonResponse
+    {
+        try {
+            $this->postRepository->pushCriteria(new RequestCriteria($request));
+            $this->postRepository->pushCriteria(new LimitOffsetCriteria($request));
+        } catch (RepositoryException $e) {
+            return $this->sendError($e->getMessage());
+        }
+        $post = $this->postRepository->findWithoutFail($id);
+        if (empty($post)) {
+            return $this->sendError('Post not found');
+        }
+        $this->filterModel($request, $post);
+        $array = $this->orderAvailabilityHours($post);
+        return $this->sendResponse($array, 'Post retrieved successfully');
+    }
+
+     /**
+     * Remove the specified EService from storage.
+     *
+     * @param int $id
+     *
+     * @return JsonResponse
+     * @throws RepositoryException
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $this->postRepository->pushCriteria(new PostsOfUserCriteria(auth()->id()));
+        $post = $this->postRepository->findWithoutFail($id);
+        if (empty($post)) {
+            return $this->sendError('Post not found');
+        }
+        $this->postRepository->delete($id);
+        return $this->sendResponse($post, __('lang.deleted_successfully', ['operator' => __('lang.post')]));
+
     }
 }

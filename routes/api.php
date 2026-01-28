@@ -156,6 +156,9 @@ Route::resource('options', 'API\OptionAPIController');
 
 Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
 
+Route::resource('posts', PostAPIController::class )->only(['index']);
+
+
 // Routes for creating and updating EServices from templates (authenticated)
 Route::middleware('auth:api')->group(function () {
     Route::post('e_services/from-template', 'API\EServiceAPIController@storeFromTemplate')->name('e_services.storeFromTemplate');
@@ -166,7 +169,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink'])->name('affiliates.generate');
     Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion'])->name('affiliates.confirm');;
-    Route::get('posts', [PostAPIController::class, 'index']);
     Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
     Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);
     
@@ -258,4 +260,7 @@ Route::middleware('auth:api')->group(function () {
     
     Route::get('bookings/{id}/can-cancel', [BookingAPIController::class, 'canCancel'])
         ->name('bookings.can.cancel');
+
+    Route::resource('posts', PostAPIController::class )->only(['store']);
+    
 });

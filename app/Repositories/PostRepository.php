@@ -30,7 +30,7 @@ class PostRepository extends BaseRepository implements  CacheableInterface
      * @var array
      */
     protected $fieldSearchable = [
-        'description',
+        'caption',
         'salon_id',
         'user_id',
     ];

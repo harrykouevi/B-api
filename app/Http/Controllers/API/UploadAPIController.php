@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Prettus\Validator\Exceptions\ValidatorException;
+use Illuminate\Support\Str;
 
 class UploadAPIController extends Controller
 {
@@ -45,6 +46,7 @@ class UploadAPIController extends Controller
             'exception' => $request->all(),
         ]);
         try {
+            $input['uuid'] = $input['uuid'] ?? (string) Str::uuid();
             $upload = $this->uploadRepository->create($input);
             $upload->addMedia($input['file'])
                 ->withCustomProperties(['uuid' => $input['uuid'], 'user_id' => auth()->id()])

@@ -59,38 +59,26 @@ class PostDataTable extends DataTable
         $columns = array_column($this->getColumns(), 'data');
         
         $dataTable = $dataTable
-            ->editColumn('image', function ($eService) {
-                return getMediaColumn($eService, 'image');
+            ->editColumn('image', function ($post) {
+                return getMediaColumn($post, 'image');
             })
-            ->editColumn('name', function ($eService) {
-                if ($eService['featured']) {
-                    return $eService['name'] . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.e_service_featured') . "</span>";
+            ->editColumn('name', function ($post) {
+                if ($post['featured']) {
+                    return $post['name'] . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.post_featured') . "</span>";
                 }
-                return $eService['name'];
+                return $post['name'];
             })
-            ->editColumn('price', function ($eService) {
-                return getPriceColumn($eService);
+          
+            
+            ->editColumn('updated_at', function ($post) {
+                return getDateColumn($post, 'updated_at');
             })
-            ->editColumn('discount_price', function ($eService) {
-                if (empty($eService['discount_price'])) {
-                    return '-';
-                } else {
-                    return getPriceColumn($eService, 'discount_price');
-                }
+            
+            ->editColumn('salon.name', function ($post) {
+                return getLinksColumnByRouteName([$post->salon], 'salons.edit', 'id', 'name');
             })
-            ->editColumn('updated_at', function ($eService) {
-                return getDateColumn($eService, 'updated_at');
-            })
-            ->editColumn('categories', function ($eService) {
-                return getLinksColumnByRouteName($eService->categories, 'categories.edit', 'id', 'path_names');
-            })
-            ->editColumn('salon.name', function ($eService) {
-                return getLinksColumnByRouteName([$eService->salon], 'salons.edit', 'id', 'name');
-            })
-            ->editColumn('available', function ($eService) {
-                return getBooleanColumn($eService, 'available');
-            })
-            ->addColumn('action', 'e_services.datatables_actions')
+            
+            ->addColumn('action', 'posts.datatables_actions')
             ->rawColumns(array_merge($columns, ['action']));
 
         return $dataTable;
@@ -107,13 +95,13 @@ class PostDataTable extends DataTable
             
             [
                 'data' => 'image',
-                'title' => trans('lang.e_service_image'),
+                'title' => trans('lang.post_image'),
                 'searchable' => false, 'orderable' => false, 'exportable' => false, 'printable' => false,
             ],
             [
-                'data' => 'name',
-                'name' => 'e_services.name',
-                'title' => trans('lang.e_service_name'),
+                'data' => 'caption',
+                'name' => 'posts.caption',
+                'title' => trans('lang.post_caption'),
                 'searchable' => true,
                 'orderable' => true
 
@@ -121,35 +109,14 @@ class PostDataTable extends DataTable
             [
                 'data' => 'salon.name',
                 'name' => 'salon.name',
-                'title' => trans('lang.e_service_salon_id'),
+                'title' => trans('lang.post_salon_id'),
                 'orderable' => true
 
             ],
-            [
-                'data' => 'price',
-                'title' => trans('lang.e_service_price'),
-
-            ],
-            [
-                'data' => 'discount_price',
-                'title' => trans('lang.e_service_discount_price'),
-
-            ],
-            [
-                'data' => 'categories',
-                'name' => 'categories.path_names', 
-                'title' => trans('lang.e_service_categories'),
-                'searchable' => true,
-                'orderable' => true
-            ],
-            [
-                'data' => 'available',
-                'title' => trans('lang.e_service_available'),
-
-            ],
+           
             [
                 'data' => 'updated_at',
-                'title' => trans('lang.e_service_updated_at'),
+                'title' => trans('lang.post_updated_at'),
                 'searchable' => false,
                 'orderable' => true
             ]
@@ -161,7 +128,7 @@ class PostDataTable extends DataTable
             foreach ($customFieldsCollection as $key => $field) {
                 array_splice($columns, $field->order - 1, 0, [[
                     'data' => 'custom_fields.' . $field->name . '.view',
-                    'title' => trans('lang.e_service_' . $field->name),
+                    'title' => trans('lang.post_' . $field->name),
                     'orderable' => false,
                     'searchable' => false,
                 ]]);
@@ -178,25 +145,15 @@ class PostDataTable extends DataTable
      */
     public function query(Post $model): \Illuminate\Database\Eloquent\Builder
     {
-        // if (auth()->user()->hasRole('salon owner')) {
-        //     return $model->newQuery()->with("salon")->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
-        //         ->groupBy('e_services.id')
-        //         ->where('salon_users.user_id', auth()->id())
-        //         ->select('e_services.*');
-        // }
-        // return $model->newQuery()->with("salon")->select("$model->table.*");
-
-
+        
         $query = $model->newQuery()
-            ->with(['salon', 'categories']) // relation Eloquent
-            ->leftJoin('e_service_categories', 'e_services.id', '=', 'e_service_categories.e_service_id')
-            ->leftJoin('categories', 'categories.id', '=', 'e_service_categories.category_id')
-            ->select('e_services.*', 'categories.path_names as category_path');
+            ->with(['salon']) // relation Eloquent
+           ->select('posts.*');
 
         if (auth()->user()->hasRole('salon owner')) {
-            $query->join('salon_users', 'salon_users.salon_id', '=', 'e_services.salon_id')
+            $query->join('salon_users', 'salon_users.salon_id', '=', 'posts.salon_id')
                 ->where('salon_users.user_id', auth()->id())
-                ->groupBy('e_services.id');
+                ->groupBy('posts.id');
         }
 
         return $query;
@@ -240,6 +197,6 @@ class PostDataTable extends DataTable
      */
     protected function filename(): string
     {
-        return 'e_servicesdatatable_' . time();
+        return 'postsdatatable_' . time();
     }
 }

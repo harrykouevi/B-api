@@ -16,7 +16,9 @@ use Spatie\Image\Manipulations;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 
 /**
@@ -24,9 +26,9 @@ use Illuminate\Support\Str;
  * @package App\Models
  * @version January 19, 2026, 03:59 pm UTC
  *
- * @property string description
+ * @property string caption
  * @property integer salon_id
- * @property integer user_id
+ * @property integer author_id
  */
 class Post extends Model implements HasMedia
 {
@@ -34,8 +36,7 @@ class Post extends Model implements HasMedia
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
 
-    // use HasTranslations;
-    use HasFactory;
+    use HasFactory , HasUuids;
 
     /**
      * Validation rules
@@ -43,19 +44,19 @@ class Post extends Model implements HasMedia
      * @var array
      */
     public static array $rules = [
-        'description' => 'required',
+        'caption' => 'required',
         'salon_id' => 'nullable|exists:salons,id',
-        'user_id' => 'nullable|exists:users,id',
+        'author_id' => 'nullable|exists:users,id',
     ];
 
     public array $translatable = [
-        'description',
+        'caption',
     ];
     public $table = 'posts';
     public $fillable = [
-        'description',
+        'caption',
         'salon_id',
-        'user_id'
+        'author_id'
     ];
     /**
      * The attributes that should be casted to native types.
@@ -64,8 +65,8 @@ class Post extends Model implements HasMedia
      */
     protected $casts = [
         'image' => 'string',
-        'description' => 'string',
-        'user_id' => 'integer',
+        'caption' => 'string',
+        'author_id' => 'integer',
         'salon_id' => 'integer',
     ];
     /**
@@ -74,7 +75,6 @@ class Post extends Model implements HasMedia
      * @var array
      */
     protected $appends = [
-        'custom_fields',
         'has_media',
     ];
 
@@ -91,12 +91,12 @@ class Post extends Model implements HasMedia
 
         // Avant la création
         static::creating(function ($s) {
-            $s->slug = Str::slug($s->description);
+            $s->slug = Str::slug($s->caption);
         });
 
         // Avant la mise à jour
         static::updating(function ($s) {
-            $s->slug = Str::slug($s->description);
+            $s->slug = Str::slug($s->caption);
         });
     }
 
@@ -156,7 +156,7 @@ class Post extends Model implements HasMedia
      **/
     public function user(): BelongsTo
     {
-        return $this->belongsTo(Salon::class, 'user_id', 'id');
+        return $this->belongsTo(Salon::class, 'author_id', 'id');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Criteria\Salons\SalonsOfUserCriteria;
 use App\DataTables\PostDataTable;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
@@ -63,9 +64,8 @@ class PostController extends Controller
         $input = $request->all();
         try {
             
-
+            
             $post = $this->postRepository->create($input);
-            $post->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
                     $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
@@ -92,7 +92,7 @@ class PostController extends Controller
         $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
         $hasCustomField = in_array($this->postRepository->model(), setting('custom_field_models', []));
        
-        return view('e_services.create')->with("customFields", $html ?? false)->with("salon", $salon);
+        return view('posts.create')->with("customFields", $html ?? false)->with("salon", $salon);
     }
 
     /**

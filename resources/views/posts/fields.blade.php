@@ -19,11 +19,11 @@
     
 <!-- Description Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
-        {!! Form::label('description', trans("lang.post_description"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        {!! Form::label('description', trans("lang.post_caption"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            {!! Form::textarea('description', null, ['class' => 'form-control','placeholder'=>
-             trans("lang.post_description_placeholder")  ]) !!}
-            <div class="form-text text-muted">{{ trans("lang.post_description_help") }}</div>
+            {!! Form::textarea('caption', null, ['class' => 'form-control','placeholder'=>
+             trans("lang.post_caption_placeholder")  ]) !!}
+            <div class="form-text text-muted">{{ trans("lang.post_caption_help") }}</div>
         </div>
     </div>
 
@@ -73,7 +73,7 @@
 @prepend('scripts')
     <script type="text/javascript">
         var var16110647911349350349ble = [];
-        @if(isset($eService) && $post->hasMedia('image'))
+        @if(isset($post) && $post->hasMedia('image'))
         @forEach($post->getMedia('image') as $media)
         var16110647911349350349ble.push({
             name: "{!! $media->name !!}",
@@ -90,7 +90,7 @@
             addRemoveLinks: true,
             maxFiles: 5 - var16110647911349350349ble.length,
             init: function () {
-                @if(isset($eService) && $post->hasMedia('image'))
+                @if(isset($post) && $post->hasMedia('image'))
                 var16110647911349350349ble.forEach(media => {
                     dzInit(this, media, media.thumb);
                 });
@@ -109,7 +109,7 @@
             removedfile: function (file) {
                 dzRemoveFileMultiple(
                     file, var16110647911349350349ble, '{!! url("eServices_xxxxxxxxxxxxx/remove-media") !!}',
-                    'image', '{!! isset($eService) ? $post->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}'
+                    'image', '{!! isset($post) ? $post->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}'
                 );
             }
         });
