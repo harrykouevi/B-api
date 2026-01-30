@@ -19,7 +19,6 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\MediaCollections\Models\Concerns\HasUuid;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 
 
@@ -39,8 +38,9 @@ class Post extends Model implements HasMedia
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
 
-    use HasFactory , HasUuid , HasUuids ;
+    use HasFactory , HasUuid ;
 
+    public $table = 'posts';
     
     /**
      * Validation rules
@@ -53,20 +53,16 @@ class Post extends Model implements HasMedia
         'author_id' => 'nullable|exists:users,id',
     ];
 
-    public array $translatable = [
-        'caption',
-    ];
-    public $table = 'posts';
-
     protected $hidden = [
         'id'
     ];
     
 
-    public function getPublicIdAttribute()
-    {
-        return $this->uuid;
-    }
+    public array $translatable = [
+        'caption',
+    ];
+
+    
     
     public $fillable = [
         'uuid',

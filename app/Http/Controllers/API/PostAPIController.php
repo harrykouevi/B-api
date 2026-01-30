@@ -86,6 +86,7 @@ class PostAPIController extends Controller
                     }
                 }
                 $post->loadMedia('image');
+                Log::info([$post->toArray()]) ;
             }
          
         } catch (ValidationException $e) {
