@@ -23,7 +23,7 @@ use Tests\TestCase;
 
 class UploadApiControllerTest extends TestCase
 {
-    // use DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * A basic feature test example.
@@ -77,7 +77,10 @@ class UploadApiControllerTest extends TestCase
             $cacheUpload = app(UploadRepository::class)->getByUuid($uploadedUuid);
             $media = $cacheUpload->getMedia('image')->first();
             Log::info([$media->getPath()]) ;
-
+            
+            dd([
+                'response' => $response1->json()      // contenu réel
+            ]);
 
         } catch (\Exception $e) {
             Log::error('FAIL:'. $e->getMessage() , [
