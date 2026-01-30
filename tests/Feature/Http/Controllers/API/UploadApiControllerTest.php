@@ -23,7 +23,7 @@ use Tests\TestCase;
 
 class UploadApiControllerTest extends TestCase
 {
-    // use DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * A basic feature test example.
