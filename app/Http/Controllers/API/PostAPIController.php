@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Criteria\Posts\PostsOfUserCriteria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
+use App\Models\Media;
 use App\Repositories\PostRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,9 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Illuminate\Validation\ValidationException;
 use App\Repositories\UploadRepository;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
 
 
 
@@ -72,15 +76,16 @@ class PostAPIController extends Controller
                 $input['status'] = 'published';
 
                 $post = $this->postRepository->create($input);
+                $m = clone($post) ;
                 if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                     foreach ($input['image'] as $fileUuid) {
-                       
                         $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                        //  dd($cacheUpload->getMedia('image')->first());
                         $mediaItem = $cacheUpload->getMedia('image')->first();
-                        $mediaItem->copy($post, 'image');
+                        $mediaItem->copy($m, 'image');
+
                     }
                 }
+                $post->loadMedia('image');
             }
          
         } catch (ValidationException $e) {
@@ -90,10 +95,7 @@ class PostAPIController extends Controller
            
             return $this->sendError($e->getMessage() , 500);
         }
-       
-        // return $this->sendResponse($post, __('lang.saved_successfully', ['operator' => __('lang.post')]));
-        return $this->sendResponse($post, 'User retrieved successfully');
-
+        return $this->sendResponse($post, __('lang.saved_successfully', ['operator' => __('lang.post')]));
     }
 
      /**
@@ -104,35 +106,51 @@ class PostAPIController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function show(int $id, Request $request): JsonResponse
+    public function show( $id, Request $request): JsonResponse
     {
         try {
-            $this->postRepository->pushCriteria(new RequestCriteria($request));
             $this->postRepository->pushCriteria(new LimitOffsetCriteria($request));
+            $this->postRepository->pushCriteria(new RequestCriteria($request));
+
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
-        $post = $this->postRepository->findWithoutFail($id);
-        if (empty($post)) {
-            return $this->sendError('Post not found');
+
+        if(is_numeric($id)){ 
+            $post = $this->postRepository->findWithoutFail($id);
+        }else{
+            if(Str::isUuid($id)){ 
+                $post = $this->postRepository->getByUuid($id) ;
+            }else{
+                return $this->sendError('Post not found');
+            }
         }
-        $this->filterModel($request, $post);
-        $array = $this->orderAvailabilityHours($post);
-        return $this->sendResponse($array, 'Post retrieved successfully');
+       
+        return $this->sendResponse($post, 'Post retrieved successfully');
     }
 
      /**
      * Remove the specified EService from storage.
      *
-     * @param int $id
+     * @param int|string $id
      *
      * @return JsonResponse
      * @throws RepositoryException
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy( $id): JsonResponse
     {
         $this->postRepository->pushCriteria(new PostsOfUserCriteria(auth()->id()));
-        $post = $this->postRepository->findWithoutFail($id);
+
+        if(is_numeric($id)){ 
+            $post = $this->postRepository->findWithoutFail($id);
+        }else{
+            if(Str::isUuid($id)){ 
+                $post = $this->postRepository->getByUuid($id) ;
+            }else{
+                return $this->sendError('Post not found');
+            }
+        }
+        
         if (empty($post)) {
             return $this->sendError('Post not found');
         }
