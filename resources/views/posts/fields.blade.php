@@ -28,6 +28,10 @@
     </div>
 
 </div>
+{{-- Champs pour uploader des vidéos le nom de l'input est video_file
+ --}}
+
+
 <div class="d-flex flex-column col-sm-12 col-md-3 px-4">
     {{-- <div class="d-flex flex-row justify-content-between align-items-center mb-3">
         {!! Form::label('featured', trans("lang.post_featured"),['class' => 'control-label my-0 mx-3']) !!} {!! Form::hidden('featured', 0, ['id'=>"hidden_featured"]) !!}
