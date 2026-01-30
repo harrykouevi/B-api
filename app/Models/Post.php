@@ -18,7 +18,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Spatie\MediaLibrary\MediaCollections\Models\Concerns\HasUuid;
+
+
 
 
 /**
@@ -36,28 +38,40 @@ class Post extends Model implements HasMedia
         getFirstMediaUrl as protected getFirstMediaUrlTrait;
     }
 
-    use HasFactory , HasUuids;
+    use HasFactory , HasUuid ;
 
+    public $table = 'posts';
+    
     /**
      * Validation rules
      *
      * @var array
      */
     public static array $rules = [
-        'caption' => 'required',
+        'caption' => 'required|string',
         'salon_id' => 'nullable|exists:salons,id',
         'author_id' => 'nullable|exists:users,id',
     ];
 
+    protected $hidden = [
+        'id'
+    ];
+    
+
     public array $translatable = [
         'caption',
     ];
-    public $table = 'posts';
+
+    
+    
     public $fillable = [
+        'uuid',
         'caption',
         'salon_id',
         'author_id'
     ];
+
+   
     /**
      * The attributes that should be casted to native types.
      *
@@ -78,10 +92,6 @@ class Post extends Model implements HasMedia
         'has_media',
     ];
 
-    protected $hidden = [
-        "created_at",
-        "updated_at",
-    ];
 
   
 

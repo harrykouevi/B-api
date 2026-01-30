@@ -185,7 +185,7 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('salons', SalonAPIController::class)->only([
         'store', 'update', 'destroy'
     ]);
-    Route::post('uploads/store', [UploadAPIController::class ,'store']);
+    Route::post('uploads/store', [UploadAPIController::class ,'store'])->name('uploads.store');
     Route::post('uploads/clear',  [UploadAPIController::class ,'clear']);
     Route::post('uploads/delete-by-url', [UploadAPIController::class, 'deleteByUrl']);
     Route::delete('uploads/delete-by-path', [UploadAPIController::class, 'deleteByPath']);
@@ -261,6 +261,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('bookings/{id}/can-cancel', [BookingAPIController::class, 'canCancel'])
         ->name('bookings.can.cancel');
 
-    Route::resource('posts', PostAPIController::class )->only(['store']);
+    Route::resource('posts', PostAPIController::class )->only(['store','show','destroy']);
     
 });

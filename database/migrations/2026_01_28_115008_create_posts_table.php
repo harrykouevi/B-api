@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::dropIfExists('posts');
        
         Schema::create('posts', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->increments('id');
+            $table->uuid('uuid');
             $table->bigInteger('author_id')->nullable()->unsigned();
             $table->integer('salon_id')->nullable()->unsigned();
             

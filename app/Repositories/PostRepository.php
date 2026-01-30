@@ -10,8 +10,8 @@ namespace App\Repositories;
 
 use App\Models\Post;
 use InfyOm\Generator\Common\BaseRepository;
-use Prettus\Repository\Contracts\CacheableInterface;
-use Prettus\Repository\Traits\CacheableRepository;
+use Illuminate\Database\Eloquent\Model;
+
 
 /**
  * Class PostRepository
@@ -22,15 +22,15 @@ use Prettus\Repository\Traits\CacheableRepository;
  * @method Post find($id, $columns = ['*'])
  * @method Post first($columns = ['*'])
  */
-class PostRepository extends BaseRepository implements  CacheableInterface
+class PostRepository extends BaseRepository
 {
 
- use CacheableRepository;   
     /**
      * @var array
      */
     protected $fieldSearchable = [
         'caption',
+        'uuid',
         'salon_id',
         'user_id',
     ];
@@ -55,5 +55,15 @@ class PostRepository extends BaseRepository implements  CacheableInterface
             }
         }
         return $eServices;
+    }
+
+
+    public function getByUuid($uuid = ''): null|Model
+    {
+        if (empty($uuid)) {
+            return null;
+        }
+
+        return Post::findByUuid($uuid);
     }
 }
