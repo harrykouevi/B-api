@@ -164,9 +164,9 @@ class Post extends Model implements HasMedia
     /**
      * @return BelongsTo
      **/
-    public function user(): BelongsTo
+    public function author(): BelongsTo
     {
-        return $this->belongsTo(Salon::class, 'author_id', 'id');
+        return $this->belongsTo(User::class, 'author_id', 'id');
     }
 
     /**
