@@ -78,7 +78,6 @@ class Post extends Model implements HasMedia
      * @var array
      */
     protected $casts = [
-        'image' => 'string',
         'caption' => 'string',
         'author_id' => 'integer',
         'salon_id' => 'integer',
@@ -107,6 +106,15 @@ class Post extends Model implements HasMedia
         // Avant la mise à jour
         static::updating(function ($s) {
             $s->slug = Str::slug($s->caption);
+        });
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($post) {
+            if (!$post->uuid) {
+                $post->uuid = (string) Str::uuid();
+            }
         });
     }
 
@@ -194,17 +202,7 @@ class Post extends Model implements HasMedia
         return $this->targets->map(fn ($target) => $target->model);
     }
 
-    /**
-     * Retrieve only targets of a given model type
-     */
-    public function targetsOf(string $modelClass)
-    {
-        return $this->targets()
-            ->whereHasMorph('model', [$modelClass])
-            ->get();
-    }
-
-
+   
    
  
 }

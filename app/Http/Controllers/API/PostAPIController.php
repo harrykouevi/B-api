@@ -53,6 +53,7 @@ class PostAPIController extends Controller
         try {
             $this->postRepository->pushCriteria(new RequestCriteria($request));
             $this->postRepository->pushCriteria(new LimitOffsetCriteria($request));
+            $this->postRepository->withTargets();
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
@@ -79,6 +80,10 @@ class PostAPIController extends Controller
                 $input['published_at'] = now();
                 $input['visibility'] = 'public';
                 $input['status'] = 'published';
+                $input['uuid'] = (
+                        isset($input['uuid']) &&
+                        Str::isUuid($input['uuid'])
+                    )? $input['uuid'] : (string) Str::uuid();
 
                 $post = $this->postRepository->create($input);
                 $m = clone($post) ;
@@ -112,6 +117,7 @@ class PostAPIController extends Controller
                         
                     }
                 }
+                $post->targetModels();
                 Log::info([$post->toArray()]) ;
             }
          
@@ -138,6 +144,7 @@ class PostAPIController extends Controller
         try {
             $this->postRepository->pushCriteria(new LimitOffsetCriteria($request));
             $this->postRepository->pushCriteria(new RequestCriteria($request));
+            $this->postRepository->withTargets();
 
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
@@ -147,7 +154,7 @@ class PostAPIController extends Controller
             $post = $this->postRepository->findWithoutFail($id);
         }else{
             if(Str::isUuid($id)){ 
-                $post = $this->postRepository->getByUuid($id) ;
+                $post = $this->postRepository->findByField('uuid', $id)->first();
             }else{
                 return $this->sendError('Post not found');
             }

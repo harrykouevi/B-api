@@ -70,6 +70,12 @@ class PostTarget extends Model
         "updated_at",
     ];
 
+
+    public function model()
+    {
+        return $this->morphTo();
+    }
+
     public function post()
     {
         return $this->belongsTo(Post::class);
