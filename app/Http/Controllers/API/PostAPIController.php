@@ -92,12 +92,12 @@ class PostAPIController extends Controller
                 }
                 $post->loadMedia('image');
 
-                if (isset($input['e_service']) && $input['e_service'] ) {
+                if (isset($input['e_service_id']) && $input['e_service_id'] ) {
                    
                     $data =[] ; 
                     $data['post_id'] = $m->id;
                     $data['model_type'] = 'App\Models\EService' ;
-                    $data['model_id'] = $input['e_service'];
+                    $data['model_id'] = $input['e_service_id'];
                     $cacheUpload = $this->postTargetRepository->create($data);
                         
                 }

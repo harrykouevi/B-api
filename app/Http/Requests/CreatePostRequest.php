@@ -53,7 +53,7 @@ class CreatePostRequest extends FormRequest
     public function rules(): array
     {
         return [...Post::$rules ,
-        'service' => 'nullable|exists:eservices,id',  
+        'e_service_id' => 'nullable|exists:eservices,id',  
 
         'target.*' => 'nullable|array',  
         'target.*.model' => 'required|string',  
