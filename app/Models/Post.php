@@ -177,6 +177,34 @@ class Post extends Model implements HasMedia
         return $this->belongsTo(Salon::class, 'salon_id', 'id');
     }
 
+    /**
+     * A post can have many targets (polymorphic)
+     */
+    public function targets()
+    {
+        return $this->hasMany(PostTarget::class);
+    }
+
+    /**
+     * Shortcut: retrieve only the real target models
+     * (Service, Event, etc.)
+     */
+    public function targetModels()
+    {
+        return $this->targets->map(fn ($target) => $target->model);
+    }
+
+    /**
+     * Retrieve only targets of a given model type
+     */
+    public function targetsOf(string $modelClass)
+    {
+        return $this->targets()
+            ->whereHasMorph('model', [$modelClass])
+            ->get();
+    }
+
+
    
  
 }

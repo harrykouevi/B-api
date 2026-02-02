@@ -52,6 +52,27 @@ class CreatePostRequest extends FormRequest
      */
     public function rules(): array
     {
-        return Post::$rules;
+        return [...Post::$rules ,
+        'service' => 'nullable|exists:eservices,id',  
+
+        'target.*' => 'nullable|array',  
+        'target.*.model' => 'required|string',  
+        'target.*.model_id' => [
+            'required',
+            function ($attribute, $value, $fail) {
+                $index = explode('.', $attribute)[1];
+                $modelName = $this->input("target.$index.model");
+                $modelClass = 'App\Models\\' . $modelName;
+
+                if (!class_exists($modelClass)) {
+                    $fail('Invalid target model.');
+                    return;
+                }
+
+                if (!$modelClass::where('id', $value)->exists()) {
+                    $fail('The selected target id does not exist.');
+                }
+            }
+        ],]; 
     }
 }

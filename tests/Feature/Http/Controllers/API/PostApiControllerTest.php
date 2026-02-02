@@ -2,31 +2,26 @@
 
 namespace Tests\Feature\Http\Controllers\Api;
 
-
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
 use App\Models\User;
-use App\Repositories\UploadRepository;
+use App\Repositories\PostRepository;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
 
-
-
 use Tests\TestCase;
 
-class UploadApiControllerTest extends TestCase
+class PostApiControllerTest extends TestCase
 {
     use DatabaseTransactions;
-
     /**
      * A basic feature test example.
      */
     public function test_example(): void
     {
-        try{ 
+         try{ 
             // Fake le storage pour Spatie Media Library ^pour que l'image soit supprimer
             // Storage::fake('public');
 
@@ -45,39 +40,21 @@ class UploadApiControllerTest extends TestCase
             ]);
             $user->assignRole(2);
 
+           
 
-            $file = UploadedFile::fake()->image('water.jpg');
-            
 
-            $this->actingAs($user,'api');
-
-            // Préparer les données POST
-            $data = [
-                'file' => $file,
-                'field' => 'image', // nom de la collection
-            ];
-            $response = $this->postJson(route('api.uploads.store'), $data);
-            $uploadedUuid = $response->json('data');
-            $this->assertNotEmpty($uploadedUuid);
-
-            // Préparer les données POST
-            $data = [
-                'caption' => 'gefef feff ef rfrffgrr frf',
-                'image' => [$uploadedUuid], // nom de la collection
-            ];
-
-            // Appeler la route HTTP
-            $response1 = $this->postJson(route('api.posts.store'), $data);
-            $response1->assertStatus(200);
-
-            $cacheUpload = app(UploadRepository::class)->getByUuid($uploadedUuid);
-            $media = $cacheUpload->getMedia('image')->first();
-            Log::info([$media->getPath()]) ;
-            
-            dd([
-                'response' => $response1->json()      // contenu réel
+           
+            $response = $this->actingAs($user, 'api')->postJson(route('api.posts.store'), [
+                "author_id"=> $user->id, 
+                "e_service"=> 210, 
+                "salon_id"=> 62, 
+                "caption" =>  " zrzr rzzrz rzrzr rzrz"
             ]);
 
+            dd($response->json());
+            $this->assertNotEmpty($uploadedUuid);
+
+            $response->assertStatus(200);
         } catch (\Exception $e) {
             Log::error('FAIL:'. $e->getMessage() , [
                  'trace' => $e->getTraceAsString()

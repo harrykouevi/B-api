@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
 use App\Models\Media;
 use App\Repositories\PostRepository;
+use App\Repositories\PostTargetRepository;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,15 +24,19 @@ use Illuminate\Support\Str;
 
 class PostAPIController extends Controller
 {
-    /** @varPostRepository */
+    /** @var PostTargetRepository */
+    private PostTargetRepository $postTargetRepository ;
+
+    /** @var PostRepository */
     private PostRepository $postRepository;
 
     /** @var UploadRepository */
     private UploadRepository $uploadRepository;
 
-    public function __construct(PostRepository $postRepo, UploadRepository $uploadRepository)
+    public function __construct(PostRepository $postRepo, UploadRepository $uploadRepository , PostTargetRepository  $postTargetRepository )
     {
         $this->uploadRepository = $uploadRepository;
+        $this->postTargetRepository = $postTargetRepository ;
         $this->postRepository = $postRepo;
         parent::__construct();
     }
@@ -86,6 +91,27 @@ class PostAPIController extends Controller
                     }
                 }
                 $post->loadMedia('image');
+
+                if (isset($input['e_service']) && $input['e_service'] ) {
+                   
+                    $data =[] ; 
+                    $data['post_id'] = $m->id;
+                    $data['model_type'] = 'App\Models\EService' ;
+                    $data['model_id'] = $input['e_service'];
+                    $cacheUpload = $this->postTargetRepository->create($data);
+                        
+                }
+
+                if (isset($input['target']) && $input['target'] && is_array($input['target'])) {
+                    foreach ($input['target'] as $target) {
+                        $data =[] ; 
+                        $data['post_id'] = $m->id;
+                        $data['model_type'] = 'App\Models\EService' ;
+                        $data['model_id'] = $input['e_service'];
+                        //$cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
+                        
+                    }
+                }
                 Log::info([$post->toArray()]) ;
             }
          
