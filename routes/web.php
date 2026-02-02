@@ -35,6 +35,7 @@ use App\Http\Controllers\StripeController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WalletTransactionController;
+use App\Http\Controllers\API\VideoController;
 
 Route::get('login/{service}', 'Auth\LoginController@redirectToProvider');
 
@@ -271,3 +272,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/cinetpay/transfer/webhook/{userId}', [App\Http\Controllers\API\CinetpayAPIController::class, 'ping'])->name('cinetpay.transfer.webhook.ping');
 
 });
+
+// Video upload route
+Route::post('/videos/upload', [VideoController::class, 'upload'])
+    ->name('videos.upload')
+    ->middleware(['auth:api', 'can:videos.upload']);

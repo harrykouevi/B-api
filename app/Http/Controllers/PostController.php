@@ -63,7 +63,8 @@ class PostController extends Controller
     {
         $input = $request->all();
         try {
-            
+            //j'envoie la vidéo dans le cloudflare 
+            //A la fin de l'enregistrement je recupere l'id de la vidéo et je le stocke dans la table posts
             
             $post = $this->postRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {

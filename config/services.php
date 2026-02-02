@@ -114,6 +114,11 @@ return [
         'api_key' => env('INFOBIP_API_KEY'),
         'sender' => env('INFOBIP_SENDER'),
     ],
+    'cloudflare' => [
+    'token' => env('CLOUDFLARE_TOKEN'),
+    'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+],
+
    
 
 ];

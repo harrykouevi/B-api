@@ -17,7 +17,7 @@
         </div>
     </div>
     
-<!-- Description Field -->
+    <!-- Description Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row ">
         {!! Form::label('description', trans("lang.post_caption"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
@@ -28,12 +28,10 @@
     </div>
 
 </div>
-{{-- Champs pour uploader des vidéos le nom de l'input est video_file
- --}}
-
 
 <div class="d-flex flex-column col-sm-12 col-md-3 px-4">
-    {{-- <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+    {{-- 
+    <div class="d-flex flex-row justify-content-between align-items-center mb-3">
         {!! Form::label('featured', trans("lang.post_featured"),['class' => 'control-label my-0 mx-3']) !!} {!! Form::hidden('featured', 0, ['id'=>"hidden_featured"]) !!}
         <span class="icheck-{{setting('theme_color')}}">
             {!! Form::checkbox('featured', 1, null) !!} <label for="featured"></label> </span>
@@ -57,8 +55,10 @@
         {!! Form::label('available', trans("lang.post_available"),['class' => 'control-label my-0 mx-3']) !!} {!! Form::hidden('available', 0, ['id'=>"hidden_available"]) !!}
         <span class="icheck-{{setting('theme_color')}}">
             {!! Form::checkbox('available', 1, null) !!} <label for="available"></label> </span>
-    </div> --}}
+    </div> 
+    --}}
 </div>
+
 @if($customFields)
     <div class="clearfix"></div>
     <div class="col-12 custom-field-container">
@@ -66,6 +66,7 @@
         {!! $customFields !!}
     </div>
 @endif
+
 <!-- Submit Field -->
 <div class="form-group col-12 d-flex flex-column flex-md-row justify-content-md-end justify-content-sm-center border-top pt-4">
     <button type="submit" class="btn bg-{{setting('theme_color')}} mx-md-3 my-lg-0 my-xl-0 my-md-0 my-2">
@@ -73,12 +74,24 @@
     <a href="{!! route('posts.index') !!}" class="btn btn-default"><i class="fa fa-undo"></i> {{trans('lang.cancel')}}</a>
 </div>
 
+{{-- Champs pour uploader des vidéos le nom de l'input est video_file --}}
+<!-- Video Field -->
+<div class="form-group align-items-start d-flex flex-column flex-md-row">
+    {!! Form::label('video', 'Vidéo', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+    <div class="col-md-9">
+        <div class="dropzone video" id="video"></div>
+        <div class="form-text text-muted">
+            Vidéo hébergée via Cloudflare Stream
+        </div>
+    </div>
+</div>
 
 @prepend('scripts')
-    <script type="text/javascript">
-        var var16110647911349350349ble = [];
-        @if(isset($post) && $post->hasMedia('image'))
-        @forEach($post->getMedia('image') as $media)
+<script type="text/javascript">
+    // --- Image Dropzone ---
+    var var16110647911349350349ble = [];
+    @if(isset($post) && $post->hasMedia('image'))
+    @foreach($post->getMedia('image') as $media)
         var16110647911349350349ble.push({
             name: "{!! $media->name !!}",
             size: "{!! $media->size !!}",
@@ -87,38 +100,51 @@
             thumb: "{!! $media->getUrl('thumb'); !!}",
             collection_name: "{!! $media->collection_name !!}"
         });
-        @endforeach
-        @endif
-        var dz_var16110647911349350349ble = $(".dropzone.image").dropzone({
-            url: "{!!url('uploads/store')!!}",
-            addRemoveLinks: true,
-            maxFiles: 5 - var16110647911349350349ble.length,
-            init: function () {
-                @if(isset($post) && $post->hasMedia('image'))
-                var16110647911349350349ble.forEach(media => {
-                    dzInit(this, media, media.thumb);
-                });
-                @endif
-            },
-            accept: function (file, done) {
-                dzAccept(file, done, this.element, "{!!config('media-library.icons_folder')!!}");
-            },
-            sending: function (file, xhr, formData) {
-                dzSendingMultiple(this, file, formData, '{!! csrf_token() !!}');
-            },
-            complete: function (file) {
-                dzCompleteMultiple(this, file);
-                dz_var16110647911349350349ble[0].mockFile = file;
-            },
-            removedfile: function (file) {
-                dzRemoveFileMultiple(
-                    file, var16110647911349350349ble, '{!! url("eServices_xxxxxxxxxxxxx/remove-media") !!}',
-                    'image', '{!! isset($post) ? $post->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}'
-                );
-            }
-        });
-        dz_var16110647911349350349ble[0].mockFile = var16110647911349350349ble;
-        dropzoneFields['image'] = dz_var16110647911349350349ble;
-   
+    @endforeach
+    @endif
+
+    var dz_var16110647911349350349ble = $(".dropzone.image").dropzone({
+        url: "{!!url('uploads/store')!!}",
+        addRemoveLinks: true,
+        maxFiles: 5 - var16110647911349350349ble.length,
+        clickable: ".dropzone.image, [data-dropzone='image']", // ✅ rend le bouton image cliquable
+        init: function () {
+            @if(isset($post) && $post->hasMedia('image'))
+            var16110647911349350349ble.forEach(media => {
+                dzInit(this, media, media.thumb);
+            });
+            @endif
+        },
+        accept: function (file, done) { dzAccept(file, done, this.element, "{!!config('media-library.icons_folder')!!}"); },
+        sending: function (file, xhr, formData) { dzSendingMultiple(this, file, formData, '{!! csrf_token() !!}'); },
+        complete: function (file) { dzCompleteMultiple(this, file); },
+        removedfile: function (file) {
+            dzRemoveFileMultiple(file, var16110647911349350349ble, '{!! url("eServices_xxxxxxxxxxxxx/remove-media") !!}', 'image', '{!! isset($post) ? $post->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}');
+        }
+    });
+    dropzoneFields['image'] = dz_var16110647911349350349ble;
+
+    // --- Video Dropzone ---
+    var dz_video = $(".dropzone.video").dropzone({
+        url: "{{ route('videos.upload') }}",
+        acceptedFiles: "video/*",
+        maxFiles: 1,
+        timeout: 0,
+        addRemoveLinks: true,
+        clickable: ".dropzone.video, [data-dropzone='video']", // ✅ permet de cliquer sur le div + futur bouton
+        sending: function (file, xhr, formData) { formData.append('_token', '{{ csrf_token() }}'); },
+        success: function (file, response) {
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'cloudflare_video_id',
+                value: response.video_uid
+            }).appendTo('form');
+        },
+        removedfile: function (file) {
+            $('input[name="cloudflare_video_id"]').remove();
+            file.previewElement.remove();
+        }
+    });
+    dropzoneFields['video'] = dz_video;
 </script>
-@endpush
+@endprepend
