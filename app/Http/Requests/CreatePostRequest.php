@@ -15,7 +15,7 @@ class CreatePostRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        if (auth()->user()->hasAnyRole(['salon owner'])) {
+        if (auth()->user()->hasAnyRole(['admin','salon owner'])) {
             return true;
         }
         return false;
