@@ -25,7 +25,20 @@
         <p>{!! $post->description !!}</p>
     </div>
 </div>
-
+<td>
+    @if(!empty($post->vimeo_id))
+        <iframe 
+            src="https://player.vimeo.com/video/{{ $post->vimeo_id }}" 
+            width="200" 
+            height="112" 
+            frameborder="0" 
+            allow="autoplay; fullscreen" 
+            allowfullscreen>
+        </iframe>
+    @else
+        <span class="badge badge-secondary">Aucune vidéo</span>
+    @endif
+</td>
 <!-- Created At Field -->
 <div class="form-group row col-6">
     {!! Form::label('created_at', 'Created At:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}

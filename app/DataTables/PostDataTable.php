@@ -34,7 +34,7 @@ class PostDataTable extends DataTable
     {
         $dataTable = new EloquentDataTable($query);
         $dataTable->filter(function ($query) {
-           
+            
             // Filtre par type de transaction
             if (request()->has('search') && (!is_null(request('search')['value']) || request('search')['value'] != '')) {
                 $search = request('search')['value'] ;
@@ -43,11 +43,11 @@ class PostDataTable extends DataTable
                 $query->where(function ($q) use ($columns, $search) {
                     foreach ($columns as $column) {
                         if ($column['searchable'] ?? false) {
-                            if (str_contains($column['name'], '.')) {
+                            if (isset($column['name']) && str_contains($column['name'], '.')) {
                                 $parts = explode('.', $column['name']);
                                 $colName = $parts[0] . '.' . $parts[1]; 
                             } else {
-                                $colName = $column['name'];
+                                $colName = $column['name'] ?? $column['data'];
                             }
                             $q->orWhere($colName, 'like', "%{$search}%");
                         }
@@ -56,8 +56,7 @@ class PostDataTable extends DataTable
             }
 
         });
-        $columns = array_column($this->getColumns(), 'data');
-        
+
         $dataTable = $dataTable
             ->editColumn('image', function ($post) {
                 return getMediaColumn($post, 'image');
@@ -68,18 +67,26 @@ class PostDataTable extends DataTable
                 }
                 return $post['name'];
             })
-          
-            
+            // MODIFICATION ICI : Transformation de l'ID en Lecteur Vidéo
+            ->editColumn('vimeo_id', function ($post) {
+                if (!empty($post->vimeo_id)) {
+                    return '<iframe src="https://player.vimeo.com/video/'.$post->vimeo_id.'" 
+                            width="140" height="80" frameborder="0" 
+                            allow="autoplay; fullscreen" allowfullscreen></iframe>';
+                }
+                return '<span class="badge badge-secondary">Pas de vidéo</span>';
+            })
             ->editColumn('updated_at', function ($post) {
                 return getDateColumn($post, 'updated_at');
             })
-            
             ->editColumn('salon.name', function ($post) {
                 return getLinksColumnByRouteName([$post->salon], 'salons.edit', 'id', 'name');
             })
-            
-            ->addColumn('action', 'posts.datatables_actions')
-            ->rawColumns(array_merge($columns, ['action']));
+            ->addColumn('action', 'posts.datatables_actions');
+
+        // On récupère toutes les colonnes pour autoriser le rendu HTML
+        $columns = array_column($this->getColumns(), 'data');
+        $dataTable = $dataTable->rawColumns(array_merge($columns, ['action', 'vimeo_id']));
 
         return $dataTable;
     }
@@ -92,7 +99,6 @@ class PostDataTable extends DataTable
     protected function getColumns(): array
     {
         $columns = [
-            
             [
                 'data' => 'image',
                 'title' => trans('lang.post_image'),
@@ -104,16 +110,22 @@ class PostDataTable extends DataTable
                 'title' => trans('lang.post_caption'),
                 'searchable' => true,
                 'orderable' => true
-
+            ],
+            // AJOUT DE LA COLONNE VIDÉO DANS LE TABLEAU
+            [
+                'data' => 'vimeo_id',
+                'title' => 'Vidéo Vimeo',
+                'searchable' => false,
+                'orderable' => false,
+                'exportable' => false,
+                'printable' => false,
             ],
             [
                 'data' => 'salon.name',
                 'name' => 'salon.name',
                 'title' => trans('lang.post_salon_id'),
                 'orderable' => true
-
             ],
-           
             [
                 'data' => 'updated_at',
                 'title' => trans('lang.post_updated_at'),
@@ -145,10 +157,9 @@ class PostDataTable extends DataTable
      */
     public function query(Post $model): \Illuminate\Database\Eloquent\Builder
     {
-        
         $query = $model->newQuery()
-            ->with(['salon']) // relation Eloquent
-           ->select('posts.*');
+            ->with(['salon'])
+            ->select('posts.*');
 
         if (auth()->user()->hasRole('salon owner')) {
             $query->join('salon_users', 'salon_users.salon_id', '=', 'posts.salon_id')

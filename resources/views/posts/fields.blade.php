@@ -27,6 +27,7 @@
         </div>
     </div>
 
+
 </div>
 
 <div class="d-flex flex-column col-sm-12 col-md-3 px-4">
@@ -84,6 +85,20 @@
             Vidéo hébergée via Cloudflare Stream
         </div>
     </div>
+</div>
+
+<div class="form-group mb-3">
+    <label for="vimeo_id">ID de la vidéo Vimeo</label>
+    <input type="text" 
+           name="vimeo_id" 
+           id="vimeo_id" 
+           class="form-control @error('vimeo_id') is-invalid @enderror" 
+           placeholder="Ex: 123456789"
+           value="{{ old('vimeo_id', $post->vimeo_id ?? '') }}">
+    <small class="text-muted">Copiez l'ID à la fin de l'URL de votre vidéo Vimeo.</small>
+    @error('vimeo_id')
+        <span class="invalid-feedback">{{ $message }}</span>
+    @enderror
 </div>
 
 @prepend('scripts')

@@ -65,40 +65,49 @@ class PostAPIController extends Controller
      *
      * @return JsonResponse
      */
-    public function store(CreatePostRequest $request): JsonResponse
-    {
-        try {
-            $input = $request->all();
-            if (auth()->user()->hasAnyRole(['salon owner'])) {
-                $input['users'] = [auth()->id()];
-                $input['published_at'] = now();
-                $input['visibility'] = 'public';
-                $input['status'] = 'published';
+   public function store(CreatePostRequest $request): JsonResponse
+{
+    try {
+        $input = $request->all();
 
-                $post = $this->postRepository->create($input);
-                $m = clone($post) ;
-                if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
-                    foreach ($input['image'] as $fileUuid) {
-                        $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                        $mediaItem = $cacheUpload->getMedia('image')->first();
-                        $mediaItem->copy($m, 'image');
+        if (auth()->user()->hasAnyRole(['salon owner'])) {
+            $input['users'] = [auth()->id()];
+            $input['published_at'] = now();
+            $input['visibility'] = 'public';
+            $input['status'] = 'published';
 
-                    }
-                }
-                $post->loadMedia('image');
-                Log::info([$post->toArray()]) ;
+            // AJOUT : On récupère l'ID Vimeo du formulaire s'il existe
+            // On peut aussi faire un petit nettoyage pour ne garder que les chiffres
+            if (isset($input['vimeo_id'])) {
+                $input['vimeo_id'] = preg_replace('/[^0-9]/', '', $input['vimeo_id']);
             }
-         
-        } catch (ValidationException $e) {
-           
-            return $this->sendError(array_values($e->errors()),422);
-        } catch (Exception $e) {
-           
-            return $this->sendError($e->getMessage() , 500);
-        }
-        return $this->sendResponse($post, __('lang.saved_successfully', ['operator' => __('lang.post')]));
-    }
 
+            // La création via repository inclura automatiquement vimeo_id si tu l'as ajouté au $fillable du modèle
+            $post = $this->postRepository->create($input);
+            
+            $m = clone($post);
+            
+            // Gestion des images (inchangée)
+            if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
+                foreach ($input['image'] as $fileUuid) {
+                    $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
+                    $mediaItem = $cacheUpload->getMedia('image')->first();
+                    $mediaItem->copy($m, 'image');
+                }
+            }
+            
+            $post->loadMedia('image');
+            Log::info([$post->toArray()]);
+        }
+     
+    } catch (ValidationException $e) {
+        return $this->sendError(array_values($e->errors()), 422);
+    } catch (Exception $e) {
+        return $this->sendError($e->getMessage(), 500);
+    }
+    
+    return $this->sendResponse($post, __('lang.saved_successfully', ['operator' => __('lang.post')]));
+}
      /**
      * Display the specified Post.
      * GET|HEAD /posts/{id}
