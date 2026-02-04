@@ -105,7 +105,6 @@ class Post extends Model implements HasMedia
         });
     }
 
-<<<<<<< HEAD
     /**
      * Accesseur pour générer l'URL d'intégration Vimeo
      * @return string|null
@@ -117,7 +116,6 @@ class Post extends Model implements HasMedia
             : null;
     }
 
-=======
     protected static function booted()
     {
         static::creating(function ($post) {
@@ -128,7 +126,6 @@ class Post extends Model implements HasMedia
     }
 
   
->>>>>>> Sprint12-Fil-d-actualité-2
     /**
      * @param Media|null $media
      * @throws InvalidManipulation
@@ -179,10 +176,7 @@ class Post extends Model implements HasMedia
      **/
     public function author(): BelongsTo
     {
-<<<<<<< HEAD
         // Correction : On utilise généralement User::class ici si author_id pointe vers users
-=======
->>>>>>> Sprint12-Fil-d-actualité-2
         return $this->belongsTo(User::class, 'author_id', 'id');
     }
 
@@ -193,9 +187,6 @@ class Post extends Model implements HasMedia
     {
         return $this->belongsTo(Salon::class, 'salon_id', 'id');
     }
-<<<<<<< HEAD
-}
-=======
 
     /**
      * A post can have many targets (polymorphic)
@@ -218,4 +209,3 @@ class Post extends Model implements HasMedia
    
  
 }
->>>>>>> Sprint12-Fil-d-actualité-2

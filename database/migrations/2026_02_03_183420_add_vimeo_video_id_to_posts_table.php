@@ -12,14 +12,14 @@ return new class extends Migration
     public function up()
 {
     Schema::table('posts', function (Blueprint $table) {
-        $table->string('vimeo_video_id')->nullable();
+        $table->string('vimeo_id')->nullable();  // Changement de vimeo_video_id à vimeo_id
     });
 }
 
 public function down()
 {
     Schema::table('posts', function (Blueprint $table) {
-        $table->dropColumn('vimeo_video_id');
+        $table->dropColumn('vimeo_id');  // Suppression de la bonne colonne
     });
 }
 
