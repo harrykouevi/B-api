@@ -78,9 +78,9 @@ class PostController extends Controller
             Flash::error($e->getMessage());
         }
 
-        Flash::success(__('lang.saved_successfully', ['operator' => __('lang.e_service')]));
+        Flash::success(__('lang.saved_successfully', ['operator' => __('lang.post')]));
 
-        return redirect(route('eServices.index'));
+        return redirect(route('posts.index'));
     }
 
     /**

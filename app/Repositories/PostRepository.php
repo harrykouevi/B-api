@@ -8,6 +8,7 @@
 
 namespace App\Repositories;
 
+use App\Models\EService;
 use App\Models\Post;
 use InfyOm\Generator\Common\BaseRepository;
 use Illuminate\Database\Eloquent\Model;
@@ -58,12 +59,37 @@ class PostRepository extends BaseRepository
     }
 
 
-    public function getByUuid($uuid = ''): null|Model
-    {
-        if (empty($uuid)) {
-            return null;
-        }
+  
 
-        return Post::findByUuid($uuid);
+    public function withTargets()
+    {
+        return $this->with([
+            'targets',
+            'targets.model' => function ($morph) {
+                $morph->morphWith([
+                    \App\Models\Eservice::class => [],
+                ]);
+            }
+        ]);
+    }
+
+    /**
+     * Optionnel : si tu veux une version avec eager loading pour certaines relations par type
+     */
+    public function withTargetsAndRelations()
+    {
+        $this->with([
+            'targets',
+            'targets.model' => function ($morph) {
+                $morph->morphWith([
+                    \App\Models\Eservice::class => ['salon', 'categories'],
+                    // ajouter d’autres modèles et relations si nécessaire
+                ]);
+            },
+        ]);
+
+        return $this;
     }
 }
+
+

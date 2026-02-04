@@ -74,7 +74,6 @@ class Post extends Model implements HasMedia
      * @var array
      */
     protected $casts = [
-        'image' => 'string',
         'caption' => 'string',
         'author_id' => 'integer',
         'salon_id' => 'integer',
@@ -106,6 +105,7 @@ class Post extends Model implements HasMedia
         });
     }
 
+<<<<<<< HEAD
     /**
      * Accesseur pour générer l'URL d'intégration Vimeo
      * @return string|null
@@ -117,6 +117,18 @@ class Post extends Model implements HasMedia
             : null;
     }
 
+=======
+    protected static function booted()
+    {
+        static::creating(function ($post) {
+            if (!$post->uuid) {
+                $post->uuid = (string) Str::uuid();
+            }
+        });
+    }
+
+  
+>>>>>>> Sprint12-Fil-d-actualité-2
     /**
      * @param Media|null $media
      * @throws InvalidManipulation
@@ -165,9 +177,12 @@ class Post extends Model implements HasMedia
     /**
      * @return BelongsTo
      **/
-    public function user(): BelongsTo
+    public function author(): BelongsTo
     {
+<<<<<<< HEAD
         // Correction : On utilise généralement User::class ici si author_id pointe vers users
+=======
+>>>>>>> Sprint12-Fil-d-actualité-2
         return $this->belongsTo(User::class, 'author_id', 'id');
     }
 
@@ -178,4 +193,29 @@ class Post extends Model implements HasMedia
     {
         return $this->belongsTo(Salon::class, 'salon_id', 'id');
     }
+<<<<<<< HEAD
 }
+=======
+
+    /**
+     * A post can have many targets (polymorphic)
+     */
+    public function targets()
+    {
+        return $this->hasMany(PostTarget::class);
+    }
+
+    /**
+     * Shortcut: retrieve only the real target models
+     * (Service, Event, etc.)
+     */
+    public function targetModels()
+    {
+        return $this->targets->map(fn ($target) => $target->model);
+    }
+
+   
+   
+ 
+}
+>>>>>>> Sprint12-Fil-d-actualité-2
