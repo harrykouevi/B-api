@@ -480,12 +480,7 @@ class UserAPIController extends Controller
         }
     }
 
-    /**
-     * Send OTP code via SMS or WhatsApp for phone verification during registration.
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
+    
     public function checkPhone(Request $request): JsonResponse
     {
         try {
@@ -506,6 +501,12 @@ class UserAPIController extends Controller
             return $this->sendError($e->getMessage(), 500);
         }
     }
+    /**
+     * Send OTP code via SMS or WhatsApp for phone verification during registration.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
 
     /**
      *
