@@ -88,6 +88,7 @@ Route::post('password/phone/request', [UserAPIController::class, 'sendResetLinkP
 Route::post('password/phone/reset', [UserAPIController::class, 'resetPasswordPhoneMethod'])->name('users.password.phone.reset');
 Route::post('phone/otp/send', [UserAPIController::class, 'sendPhoneVerificationOtp'])->name('users.phone.otp.send');
 Route::post('phone/otp/verify', [UserAPIController::class, 'verifyPhoneOtp'])->name('users.phone.otp.verify');
+Route::post('check-phone', [UserAPIController::class, 'checkPhone'])->name('users.check-phone');
 Route::get('user', 'API\UserAPIController@user');
 Route::get('logout', 'API\UserAPIController@logout');
 Route::get('settings', 'API\UserAPIController@settings');
