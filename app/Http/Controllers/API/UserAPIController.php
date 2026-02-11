@@ -480,8 +480,35 @@ class UserAPIController extends Controller
         }
     }
 
+    
+    public function checkPhone(Request $request): JsonResponse
+    {
+        try {
+            $this->validate($request, [
+                'phone_number' => 'required|max:255',
+            ]);
+
+            $phoneNumber = $request->input('phone_number');
+            $exists = User::where('phone_number', $phoneNumber)->exists();
+
+            return $this->sendResponse(
+                ['exists' => $exists],
+                $exists ? 'User found' : 'User not found'
+            );
+        } catch (ValidationException $e) {
+            return $this->sendError(array_values($e->errors()), 422);
+        } catch (\Exception $e) {
+            return $this->sendError($e->getMessage(), 500);
+        }
+    }
     /**
      * Send OTP code via SMS or WhatsApp for phone verification during registration.
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+
+    /**
      *
      * @param Request $request
      * @return JsonResponse
