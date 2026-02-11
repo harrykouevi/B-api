@@ -50,6 +50,8 @@ class Post extends Model implements HasMedia
         'salon_id' => 'nullable|exists:salons,id',
         'author_id' => 'nullable|exists:users,id',
         'vimeo_id'  => 'nullable|string', // Règle pour l'ID Vimeo
+        'nombre_likes', // Pour ton diagramme
+        'is_liked',     // Pour que l'app mobile sache si l'utilisateur actuel a aimé
     ];
 
     protected $hidden = [
@@ -65,7 +67,8 @@ class Post extends Model implements HasMedia
         'caption',
         'salon_id',
         'author_id',
-        'vimeo_id' // Ajouté pour permettre l'enregistrement massif
+        'vimeo_id', // Ajouté pour permettre l'enregistrement massif
+        'like_count' //  
     ];
 
     /**
@@ -88,7 +91,23 @@ class Post extends Model implements HasMedia
     protected $appends = [
         'has_media',
         'vimeo_embed_url', // Accesseur pour l'iframe
+        'nombre_likes', //   nombre de likes
+        'is_liked',    
     ];
+             // L'Accessor pour le nombre de likes
+    public function getNombreLikesAttribute()
+    {
+        return Like::where('post_id', $this->id)->count();
+    }
+
+    // L'Accessor pour savoir si l'utilisateur actuel a aimé
+    public function getIsLikedAttribute()
+    {
+        if (!auth()->check()) return false;
+        return Like::where('post_id', $this->id)
+                   ->where('user_id', auth()->id())
+                   ->exists();
+    }
 
     protected static function boot(): void
     {
@@ -204,8 +223,22 @@ class Post extends Model implements HasMedia
     {
         return $this->targets->map(fn ($target) => $target->model);
     }
+/**
+ * Relation avec les Likes
+ */
+public function likes(): \Illuminate\Database\Eloquent\Relations\HasMany
+{
+    return $this->hasMany(Like::class);
+}
+
+public function comments()
+{
+    return $this->hasMany(Comment::class);
+}
 
    
-   
- 
+ public function getNombreCommentairesAttribute()
+{
+    return $this->comments()->count();
+}
 }

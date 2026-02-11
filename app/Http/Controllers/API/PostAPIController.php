@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\API;
-
+use App\Models\Comment;
+ use App\Http\Controllers\API\DB;
 use App\Criteria\Posts\PostsOfUserCriteria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
@@ -18,7 +19,8 @@ use Illuminate\Validation\ValidationException;
 use App\Repositories\UploadRepository;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-
+use App\Models\Like;
+use App\Models\Post;
 
 
 
@@ -210,4 +212,98 @@ class PostAPIController extends Controller
         return $this->sendResponse($post, __('lang.deleted_successfully', ['operator' => __('lang.post')]));
 
     }
+    /**
+ * POST /api/posts/{id}/like
+ */
+/**
+ * POST /api/posts/{id}/like
+ */
+public function like($id): JsonResponse
+{
+    if (is_numeric($id)) {
+        $post = $this->postRepository->findWithoutFail($id);
+    } else {
+        $post = Str::isUuid($id) ? $this->postRepository->findByField('uuid', $id)->first() : null;
+    }
+
+    if (empty($post)) {
+        return $this->sendError('Post not found');
+    }
+
+    $like = Like::where('user_id', auth()->id())->where('post_id', $post->id)->first();
+
+    if (!$like) {
+        Like::create([
+            'user_id' => auth()->id(),
+            'post_id' => $post->id,
+        ]);
+
+        // FORÇAGE : On cible l'ID numérique (1) explicitement
+        \DB::table('posts')->where('id', $post->id)->increment('like_count');
+    }
+
+    return $this->sendResponse($post->fresh(), 'Post liked successfully');
+}
+
+/**
+ * DELETE /api/posts/{id}/like
+ */
+public function unlike($id): JsonResponse
+{
+    if (is_numeric($id)) {
+        $post = $this->postRepository->findWithoutFail($id);
+    } else {
+        $post = Str::isUuid($id) ? $this->postRepository->findByField('uuid', $id)->first() : null;
+    }
+
+    if (empty($post)) {
+        return $this->sendError('Post not found');
+    }
+
+    $deleted = Like::where('user_id', auth()->id())
+        ->where('post_id', $post->id)
+        ->delete();
+
+    if ($deleted) {
+        // FORÇAGE : On décrémente sur l'ID numérique
+        DB::table('posts')->where('id', $post->id)->decrement('like_count');
+    }
+
+    return $this->sendResponse($post->fresh(), 'Post unliked successfully');
+}
+/**
+ * POST /api/posts/{id}/comments
+ */
+public function storeComment(Request $request, $id): JsonResponse
+{
+    // 1. Validation du contenu (Étape "Contenu" de ton flux)
+    $request->validate([
+        'content' => 'required|string|min:1',
+    ]);
+
+    // 2. Recherche du post (Logique UUID/ID)
+    if (is_numeric($id)) {
+        $post = $this->postRepository->findWithoutFail($id);
+    } else {
+        $post = Str::isUuid($id) ? $this->postRepository->findByField('uuid', $id)->first() : null;
+    }
+
+    if (empty($post)) {
+        return $this->sendError('Post not found');
+    }
+
+    // 3. Stockage (Étape "Auteur, Contenu, Date")
+    // Laravel remplit 'created_at' (la date) automatiquement
+    $comment = Comment::create([
+        'content' => $request->input('content'),
+        'user_id' => auth()->id(), // L'auteur connecté
+        'post_id' => $post->id,    // Le lien vers le post (ID: 1 par ex)
+    ]);
+
+    // 4. Mise à jour du compteur physique
+    \DB::table('posts')->where('id', $post->id)->increment('comment_count');
+
+    // On retourne le commentaire avec les infos de l'auteur pour l'affichage mobile
+    return $this->sendResponse($comment->load('user'), 'Commentaire ajouté avec succès');
+}
 }

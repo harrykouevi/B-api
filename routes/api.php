@@ -171,8 +171,14 @@ Route::middleware('auth:api')->group(function () {
     Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion'])->name('affiliates.confirm');;
     Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
     Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);
-    
     Route::post('affiliate/conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
+      // Route pour Liker (POST)
+    Route::post('posts/{id}/like', [PostAPIController::class, 'like']);
+
+      // Route pour Retirer le Like (DELETE)
+    Route::delete('posts/{id}/like', [PostAPIController::class, 'unlike']);
+     // Route pour stocker les Commentaires 
+      Route::post('posts/{id}/comments', [PostAPIController::class, 'storeComment']);
 
     Route::group(['middleware' => ['role:salon owner']], function () {
         Route::prefix('salon_owner')->group(function () {
