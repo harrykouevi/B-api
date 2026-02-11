@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\API;
 use App\Models\Comment;
- use App\Http\Controllers\API\DB;
+use App\Http\Controllers\API\DB;
 use App\Criteria\Posts\PostsOfUserCriteria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
