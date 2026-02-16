@@ -35,11 +35,9 @@ class PostDataTable extends DataTable
         $dataTable = new EloquentDataTable($query);
         $dataTable->filter(function ($query) {
             
-            // Filtre par type de transaction
             if (request()->has('search') && (!is_null(request('search')['value']) || request('search')['value'] != '')) {
                 $search = request('search')['value'] ;
                 $columns = $this->getColumns();
-
                 $query->where(function ($q) use ($columns, $search) {
                     foreach ($columns as $column) {
                         if ($column['searchable'] ?? false) {
@@ -57,8 +55,14 @@ class PostDataTable extends DataTable
 
         });
 
+
         $dataTable = $dataTable
-            ->editColumn('image', function ($post) {
+            ->editColumn('media', function ($post) {
+                if (!is_null($post->vimeo_id)) {
+                    return '<iframe src="https://player.vimeo.com/video/'.$post->vimeo_id.'" 
+                            width="140" height="80" frameborder="0" 
+                            allow="autoplay; fullscreen" allowfullscreen></iframe>';
+                }
                 return getMediaColumn($post, 'image');
             })
             ->editColumn('name', function ($post) {
@@ -67,17 +71,27 @@ class PostDataTable extends DataTable
                 }
                 return $post['name'];
             })
-            // MODIFICATION ICI : Transformation de l'ID en Lecteur Vidéo
-            ->editColumn('vimeo_id', function ($post) {
-                if (!empty($post->vimeo_id)) {
-                    return '<iframe src="https://player.vimeo.com/video/'.$post->vimeo_id.'" 
-                            width="140" height="80" frameborder="0" 
-                            allow="autoplay; fullscreen" allowfullscreen></iframe>';
-                }
-                return '<span class="badge badge-secondary">Pas de vidéo</span>';
+           
+            ->editColumn('view_count', function ($post) {
+                
+                return  '<span class="badge badge-secondary">'.$post->view_count.'</span>';
+            })
+
+            ->editColumn('like_count', function ($post) {
+                
+                return  '<span class="badge badge-secondary">'.$post->like_count.'</span>';
+
+            })
+            ->editColumn('comment_count', function ($post) {
+                
+                return  '<span class="badge badge-secondary">'.$post->comment_count.'</span>';
+
             })
             ->editColumn('updated_at', function ($post) {
                 return getDateColumn($post, 'updated_at');
+            })
+            ->editColumn('user.name', function ($post) {
+                return getLinksColumnByRouteName([$post->user], 'users.edit', 'id', 'name');
             })
             ->editColumn('salon.name', function ($post) {
                 return getLinksColumnByRouteName([$post->salon], 'salons.edit', 'id', 'name');
@@ -100,8 +114,8 @@ class PostDataTable extends DataTable
     {
         $columns = [
             [
-                'data' => 'image',
-                'title' => trans('lang.post_image'),
+                'data' => 'media',
+                'title' => trans('lang.post_media'),
                 'searchable' => false, 'orderable' => false, 'exportable' => false, 'printable' => false,
             ],
             [
@@ -112,19 +126,42 @@ class PostDataTable extends DataTable
                 'orderable' => true
             ],
             // AJOUT DE LA COLONNE VIDÉO DANS LE TABLEAU
+            // [
+            //     'data' => 'vimeo_id',
+            //     'title' => 'Vidéo Vimeo',
+            //     'searchable' => false,
+            //     'orderable' => false,
+            //     'exportable' => false,
+            //     'printable' => false,
+            // ],
             [
-                'data' => 'vimeo_id',
-                'title' => 'Vidéo Vimeo',
-                'searchable' => false,
-                'orderable' => false,
-                'exportable' => false,
-                'printable' => false,
+                'data' => 'user.name',
+                'title' => trans('lang.user_id'),
             ],
+           
             [
                 'data' => 'salon.name',
-                'name' => 'salon.name',
                 'title' => trans('lang.post_salon_id'),
+                'searchable' => true,
                 'orderable' => true
+            ],
+             [
+                'data' => 'view_count',
+                'title' => trans('lang.view_count'),
+                'orderable' => true
+
+            ],
+             [
+                'data' => 'like_count',
+                'title' => trans('lang.like_count'),
+                'orderable' => true
+
+            ],
+            [
+                'data' => 'comment_count',
+                'title' => trans('lang.comment_count'),
+                'orderable' => true
+
             ],
             [
                 'data' => 'updated_at',
@@ -158,7 +195,7 @@ class PostDataTable extends DataTable
     public function query(Post $model): \Illuminate\Database\Eloquent\Builder
     {
         $query = $model->newQuery()
-            ->with(['salon'])
+            ->with(['salon',"user"])
             ->select('posts.*');
 
         if (auth()->user()->hasRole('salon owner')) {

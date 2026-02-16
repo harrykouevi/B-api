@@ -15,6 +15,7 @@ use App\Http\Controllers\API\BookingAPIController;
 use App\Http\Controllers\API\CategoryAPIController;
 use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
+use App\Http\Controllers\API\FavoritePostAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\ServiceTemplateAPIController;
 use App\Http\Controllers\API\OptionTemplateAPIController;
@@ -42,7 +43,7 @@ Route::get('/test', function (Request $request) {
     dd(env('APP_LOCALE')) ;
 })->name('test');
 
-Route::prefix('salon_owner')->group(function () {
+Route::prefix('salon_owner')->as('salon_owner.')->group(function () {
     // Route::post('login', 'API\SalonOwner\UserAPIController@login')->name('api.login');
     Route::post('register', [UOwnerAPIController::class,'register']);
     Route::post('v2/register', [UOwnerAPIController::class,'v2_register']);
@@ -52,6 +53,7 @@ Route::prefix('salon_owner')->group(function () {
     Route::get('settings', [UOwnerAPIController::class]);
     Route::get('translations', 'API\TranslationAPIController@translations');
     Route::get('supported_locales', 'API\TranslationAPIController@supportedLocales');
+    
     Route::middleware('auth:api')->group(function () {
         Route::resource('salons', 'API\SalonOwner\SalonAPIController')->only(['index', 'show']);
         Route::get('e_services', 'API\SalonOwner\EServiceAPIController@index');
@@ -62,8 +64,21 @@ Route::prefix('salon_owner')->group(function () {
         Route::get('salon_levels', 'API\SalonLevelAPIController@index');
         Route::get('taxes', 'API\SalonOwner\TaxAPIController@index');
         Route::get('employees', 'API\SalonOwner\UserAPIController@employees');
+    
+        Route::group(['middleware' => ['role:salon owner']], function () {
+            Route::post('users/{user}', 'API\UserAPIController@update');
+            Route::get('dashboard', 'API\DashboardAPIController@provider');
+            Route::resource('notifications', 'API\NotificationAPIController');
+            Route::put('payments/{id}', 'API\PaymentAPIController@update')->name('payments.update');
+        });
+    
     });
+
+
+   
 });
+
+
 
 
 Route::post('login', 'API\UserAPIController@login');
@@ -155,40 +170,39 @@ Route::resource('booking_statuses', 'API\BookingStatusAPIController')->except([
 Route::resource('option_groups', 'API\OptionGroupAPIController');
 Route::resource('options', 'API\OptionAPIController');
 
-Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
 
-Route::resource('posts', PostAPIController::class )->only(['index']);
+
 
 
 // Routes for creating and updating EServices from templates (authenticated)
 Route::middleware('auth:api')->group(function () {
+    
+
     Route::post('e_services/from-template', 'API\EServiceAPIController@storeFromTemplate')->name('e_services.storeFromTemplate');
     Route::put('e_services/{id}/from-template', 'API\EServiceAPIController@updateFromTemplate')->name('e_services.updateFromTemplate');
-});
 
-Route::middleware('auth:api')->group(function () {
     Route::get('affiliate', [AffiliateAPIController::class, 'show']);
     Route::post('affiliate/generate-link', [AffiliateAPIController::class, 'generateLink'])->name('affiliates.generate');
     Route::get('affiliate/confirm-conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion'])->name('affiliates.confirm');;
     Route::post('/send-email-verification-otp', [UserAPIController::class, 'sendEmailVerificationOtp']);
     Route::post('/verify-email-otp', [UserAPIController::class, 'verifyEmailOtp']);
     Route::post('affiliate/conversion/{affiliateLinkId}', [AffiliateAPIController::class, 'confirmConversion']);
-      // Route pour Liker (POST)
-    Route::post('posts/{id}/like', [PostAPIController::class, 'like']);
 
-      // Route pour Retirer le Like (DELETE)
-    Route::delete('posts/{id}/like', [PostAPIController::class, 'unlike']);
-     // Route pour stocker les Commentaires 
-      Route::post('posts/{id}/comments', [PostAPIController::class, 'storeComment']);
+    Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
 
-    Route::group(['middleware' => ['role:salon owner']], function () {
-        Route::prefix('salon_owner')->group(function () {
-            Route::post('users/{user}', 'API\UserAPIController@update');
-            Route::get('dashboard', 'API\DashboardAPIController@provider');
-            Route::resource('notifications', 'API\NotificationAPIController');
-            Route::put('payments/{id}', 'API\PaymentAPIController@update')->name('payments.update');
-        });
-    });
+
+  
+    Route::post('posts/{id}/views', [PostAPIController::class, 'addView'])->name('posts.addview');
+
+    // Route pour Liker (POST)
+    Route::post('posts/{id}/like', [PostAPIController::class, 'like'])->name('posts.like');
+
+    // Route pour Retirer le Like (DELETE)
+    Route::delete('posts/{id}/like', [PostAPIController::class, 'unlike'])->name('posts.unlike');
+    // Route pour stocker les Commentaires 
+    Route::post('posts/{id}/comments', [PostAPIController::class, 'storeComment'])->name('posts.storecomment');
+
+    
     Route::resource('salons', SalonAPIController::class)->only([
         'store', 'update', 'destroy'
     ]);
@@ -210,8 +224,19 @@ Route::middleware('auth:api')->group(function () {
 
     Route::resource('categories', 'API\CategoryAPIController')->only(['store']);
 
+    Route::resource('posts', PostAPIController::class )->only(['index','store','show','destroy']);
+
+    Route::prefix('me')->as('me.')->group(function () {
+        Route::get('posts', [PostAPIController::class , 'myPosts'])->name('posts.index');
+        Route::get('favorites/posts', [PostAPIController::class , 'myFavoritePosts'])->name('posts.favorite');
+    });
+ 
 
     Route::resource('favorites', 'API\FavoriteAPIController');
+    Route::resource('favorite-posts', FavoritePostAPIController::class)->only([
+    'store','destroy'
+    ]);
+
     Route::resource('addresses', AddressAPIController::class);
 
     Route::get('notifications/count', 'API\NotificationAPIController@count');
@@ -268,6 +293,5 @@ Route::middleware('auth:api')->group(function () {
     Route::get('bookings/{id}/can-cancel', [BookingAPIController::class, 'canCancel'])
         ->name('bookings.can.cancel');
 
-    Route::resource('posts', PostAPIController::class )->only(['store','show','destroy']);
     
 });

@@ -1657,6 +1657,41 @@ class PermissionsTableSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ),
+            array(
+                'id' => 241,
+                'name' => 'posts.create',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 242,
+                'name' => 'posts.store',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 243,
+                'name' => 'posts.edit',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 244,
+                'name' => 'posts.update',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
+            array(
+                'id' => 245,
+                'name' => 'posts.destroy',
+                'guard_name' => 'web',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ),
         ));
 
 

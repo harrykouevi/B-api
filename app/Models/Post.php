@@ -11,6 +11,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Image\Exceptions\InvalidManipulation;
 use Spatie\Image\Manipulations;
 use Spatie\MediaLibrary\HasMedia;
@@ -50,8 +51,6 @@ class Post extends Model implements HasMedia
         'salon_id' => 'nullable|exists:salons,id',
         'author_id' => 'nullable|exists:users,id',
         'vimeo_id'  => 'nullable|string', // Règle pour l'ID Vimeo
-        'nombre_likes', // Pour ton diagramme
-        'is_liked',     // Pour que l'app mobile sache si l'utilisateur actuel a aimé
     ];
 
     protected $hidden = [
@@ -68,7 +67,6 @@ class Post extends Model implements HasMedia
         'salon_id',
         'author_id',
         'vimeo_id', // Ajouté pour permettre l'enregistrement massif
-        'like_count' //  
     ];
 
     /**
@@ -91,11 +89,15 @@ class Post extends Model implements HasMedia
     protected $appends = [
         'has_media',
         'vimeo_embed_url', // Accesseur pour l'iframe
-        'nombre_likes', //   nombre de likes
-        'is_liked',    
+        'like_count', //   nombre de likes
+        'is_liked',  
+        'is_favorite',
+        'view_count',
+        'comment_count'
+
     ];
              // L'Accessor pour le nombre de likes
-    public function getNombreLikesAttribute()
+    public function getLikeCountAttribute()
     {
         return Like::where('post_id', $this->id)->count();
     }
@@ -223,22 +225,65 @@ class Post extends Model implements HasMedia
     {
         return $this->targets->map(fn ($target) => $target->model);
     }
-/**
- * Relation avec les Likes
- */
-public function likes(): \Illuminate\Database\Eloquent\Relations\HasMany
-{
-    return $this->hasMany(Like::class);
-}
 
-public function comments()
-{
-    return $this->hasMany(Comment::class);
-}
+    /**
+     * Relation avec les Likes
+     */
+    public function likes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Like::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    
+    public function getCommentCountAttribute()
+    {
+        return $this->comments()->count();
+    }
+
+    public function getViewCountAttribute()
+    {
+        return $this->views()->count();
+    }
+
+    /**
+     * Check if is a favorite for current user
+     * @return bool
+     */
+    public function getIsFavoriteAttribute(): bool
+    {
+        return $this->favorites()->count() > 0;
+    }
+
+
+    /**
+     * @return HasMany
+     **/
+    public function favorites(): HasMany
+    {
+        return $this->hasMany(FavoritePost::class, 'post_id')->where('favorite_posts.user_id', auth()->id());
+    }
+
 
    
- public function getNombreCommentairesAttribute()
-{
-    return $this->comments()->count();
-}
+    /**
+     * @return HasMany
+     **/
+    public function views()
+    {
+        return $this->hasMany(PostView::class);
+    }
+
+    /**
+     * @return BelongsTo
+     **/
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'author_id', 'id');
+    }
+
 }
