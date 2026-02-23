@@ -4,15 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
 class Comment extends Model
 {
+    use SoftDeletes; 
     // On autorise le remplissage de ces colonnes
     protected $fillable = [
         'content',
         'user_id',
-        'post_id'
-    ];
+        'post_id',
+         'is_reported', 
+         'report_count', 
+         'is_hidden'
+         ];
+    
 
     /**
      * Relation : Un commentaire appartient à un utilisateur (l'auteur)

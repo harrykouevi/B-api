@@ -10,13 +10,21 @@ use Illuminate\Support\Facades\Notification;
 
 class SendPostCreationNotification implements ShouldQueue
 {
-    public function handle(PostCreated $event)
-    {
-        // 1. On récupère TOUS les utilisateurs (sauf l'auteur du post)
-        // On peut filtrer par 'active' si tu as une colonne pour ça
-        $users = User::where('id', '!=', $event->post->user_id)->get();
+   public function handle(PostCreated $event)
+{
+    // On récupère le post
+    $post = $event->post;
 
-        // 2. Envoi groupé (très optimisé par Laravel)
-        Notification::send($users, new PostPublishedNotification($event->post));
+    // On évite d'envoyer la notif si le post n'a pas d'auteur (sécurité)
+    if (!$post->user_id) {
+        return;
     }
+
+    // On récupère les utilisateurs (Sauf l'auteur)
+    // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
+    User::where('id', '!=', $post->user_id)
+        ->chunk(100, function ($users) use ($post) {
+            Notification::send($users, new PostPublishedNotification($post));
+        });
+}
 }

@@ -3,46 +3,75 @@
 namespace App\Notifications;
 
 use App\Models\Comment;
+use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 
-class NewCommentReceived extends Notification
+class NewCommentReceived extends BaseNotification
 {
     use Queueable;
 
-    public $comment;
+    private Comment $comment;
 
-    /**
-     * Le constructeur reçoit l'objet Commentaire
-     */
     public function __construct(Comment $comment)
     {
         $this->comment = $comment;
     }
 
     /**
-     * On définit les canaux : on utilise uniquement 'database'
-     * Cela va créer une ligne dans ta table 'notifications'
+     * Canaux d'envoi
      */
-    public function via($notifiable)
+    public function via(mixed $notifiable): array
     {
-        return ['database'];
+        $types = ['database'];
+        if (setting('enable_notifications', false)) {
+            $types[] = 'fcm';
+        }
+        return $types;
     }
 
     /**
-     * C'est ici qu'on définit ce que l'auteur du post verra sous sa cloche.
-     * Ces données seront transformées en JSON dans la colonne 'data' de ta base.
+     * Envoi à Firebase via le package Benwilkins
      */
-    public function toArray($notifiable)
+    public function toFcm($notifiable): FcmMessage
+    {
+        $commentatorName = $this->comment->user->name ?? 'Un utilisateur';
+        $postTitle = $this->comment->post->title ?? 'votre post';
+
+        $title = "Nouveau commentaire !";
+        $body = "{$commentatorName} a commenté votre post : \"{$postTitle}\"";
+
+        $data = [
+            'post_id'    => (string) $this->comment->post_id,
+            'comment_id' => (string) $this->comment->id,
+            'type'       => 'new_comment',
+        ];
+
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
+    }
+
+    /**
+     * Icône de la notification (obligatoire pour BaseNotification)
+     */
+    protected function getIconUrl(): string
+    {
+        // On affiche la photo de profil de celui qui a commenté
+        if ($this->comment->user && $this->comment->user->hasMedia('avatar')) {
+            return $this->comment->user->getFirstMediaUrl('avatar', 'thumb');
+        }
+
+        return asset('images/logo_default.png');
+    }
+
+    /**
+     * Stockage en base de données (pour la cloche de l'app)
+     */
+    public function toArray(mixed $notifiable): array
     {
         return [
-            'comment_id'  => $this->comment->id,
-            'post_id'     => $this->comment->post_id,
-            'author_id'   => $this->comment->user_id,
-            'author_name' => $this->comment->user->name, // Le nom de celui qui a commenté
-            'title'       => 'Nouveau commentaire',
-            'message'     => $this->comment->user->name . ' a commenté votre post.',
-            'content'     => "Str"::limit($this->comment->content, 50), // Un extrait du commentaire
+            'post_id'          => $this->comment->post_id,
+            'comment_id'       => $this->comment->id,
+            'commentator_name' => $this->comment->user->name ?? 'Un utilisateur',
+            'message'          => "a commented on your post.",
         ];
     }
 }

@@ -18,19 +18,8 @@ use Prettus\Repository\Contracts\RepositoryInterface;
  */
 class PostsOfUserCriteria implements CriteriaInterface
 {
-    /**
-     * @var ?int
-     */
-    private ?int $userId;
-
-    /**
-     * PostsOfUserCriteria constructor.
-     */
-    public function __construct($userId)
-    {
-        $this->userId = $userId;
-    }
-
+   
+ 
     /**
      * Apply criteria in query repository
      *
@@ -41,13 +30,20 @@ class PostsOfUserCriteria implements CriteriaInterface
      */
     public function apply($model, RepositoryInterface $repository): mixed
     {
-        if (auth()->check() && auth()->user()->hasRole('salon owner')) {
-            return $model->join('salon_users', 'salon_users.salon_id', '=', 'posts.salon_id')
-                ->groupBy('posts.id')
-                ->where('salon_users.user_id', $this->userId)
-                ->select('posts.*');
-        } else {
-            return $model->select('posts.*')->groupBy('posts.id');
+        if (auth()->check() ){
+            if (auth()->check() && auth()->user()->hasRole('admin')) {
+                return $model;
+            }
+            if( auth()->user()->hasRole('salon owner')) {
+                return $model->join('salon_users', 'salon_users.salon_id', '=', 'posts.salon_id')
+                    ->groupBy('posts.id')
+                    ->where('salon_users.user_id', auth()->id())
+                    ->select('posts.*');
+            } else {
+                return $model->where('user_id', auth()->id())->select('posts.*')->groupBy('posts.id');
+            }
         }
+
+        return $model->whereRaw('1 = 0');
     }
 }

@@ -196,7 +196,7 @@ class SendBookingStatusNotificationsListener
                 } elseif ($booking->bookingStatus->order < 40) {
                     // Avant l'arrivée (order 20-30) → notifier le client
                     Log::info("SendBookingStatusNotificationsListener - Status 20-39 (Avant arrivée domicile), notifier client", [
-                        'booking_id' => $booking->id,
+                   'booking_id' => $booking->id,
                         'status_order' => $booking->bookingStatus->order
                     ]);
                     $this->notifyClient($booking);

@@ -2,43 +2,73 @@
 
 namespace App\Notifications;
 
-use App\Models\Post; // Import du modèle Post
+use App\Models\Post;
+use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
 
-class PostPublishedNotification extends Notification
+class PostPublishedNotification extends BaseNotification
 {
     use Queueable;
 
-    public $post; // On déclare la variable pour pouvoir l'utiliser plus bas
+    private Post $post;
 
-    /**
-     * Le constructeur doit recevoir le Post créé
-     */
     public function __construct(Post $post)
     {
         $this->post = $post;
     }
 
     /**
-     * On définit le canal : 'database' pour la cloche dans l'app
+     * Canaux d'envoi
      */
-    public function via($notifiable)
+    public function via(mixed $notifiable): array
     {
-        return ['database'];
+        $types = ['database'];
+        if (setting('enable_notifications', false)) {
+            $types[] = 'fcm';
+        }
+        return $types;
     }
 
     /**
-     * Les données qui seront stockées en JSON dans ta base de données
+     * Création du message FCM en utilisant la logique de BaseNotification
      */
-    public function toArray($notifiable)
+    public function toFcm($notifiable): FcmMessage
+    {
+        $title = "Nouveau post sur Charm !";
+        $body = ($this->post->user->name ?? 'Un utilisateur') . " a publié une nouvelle vidéo.";
+        
+        $data = [
+            'post_id' => (string) $this->post->id,
+            'type'    => 'new_post',
+        ];
+
+        return $this->getFcmMessage($notifiable, $title, $body, $data);
+    }
+
+    /**
+     * Obligatoire car défini en "abstract" dans BaseNotification
+     * On définit l'image qui apparaîtra dans la petite icône de notification
+     */
+    protected function getIconUrl(): string
+    {
+        // On essaie de mettre la miniature de la vidéo, sinon une image par défaut
+        if (isset($this->post->custom_fields['thumbnail'])) {
+            return $this->post->custom_fields['thumbnail'];
+        }
+        
+        return asset('images/logo_default.png'); // Assure-toi que ce fichier existe
+    }
+
+    /**
+     * Stockage en base de données pour l'historique (la cloche)
+     */
+    public function toArray(mixed $notifiable): array
     {
         return [
             'post_id'     => $this->post->id,
             'author_name' => $this->post->user->name ?? 'Un utilisateur',
-            'title'       => 'Nouveau post publié',
             'message'     => ($this->post->user->name ?? 'Quelqu\'un') . " a publié une nouvelle vidéo.",
-            'thumbnail'   => $this->post->custom_fields['thumbnail'] ?? null,
+            'image'       => $this->getIconUrl(),
         ];
     }
 }
