@@ -1,7 +1,7 @@
 <?php
 /*
- * File name: PostDataTable.php
- * Last modified: 2026.01.19 at 15:53:30
+ * File name: StoryDataTable.php
+ * Last modified: 2026.02.24 at 11:53:30
  * Author:
  * Copyright (c) 2026
  */
@@ -17,7 +17,7 @@ use Yajra\DataTables\Html\Builder;
 use Yajra\DataTables\Services\DataTable;
 use Illuminate\Support\Facades\Gate;
 
-class PostDataTable extends DataTable
+class StoryDataTable extends DataTable
 {
     /**
      * custom fields columns

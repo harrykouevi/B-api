@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Criteria\Salons\SalonsOfUserCriteria;
-use App\DataTables\PostDataTable;
-use App\Http\Requests\CreatePostRequest;
-use App\Http\Requests\UpdatePostRequest;
+use App\DataTables\StoryDataTable;
+use App\Http\Requests\CreateStoryRequest;
+use App\Http\Requests\UpdateStoryRequest;
 use App\Repositories\PostRepository;
+use App\Repositories\StoryRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\UploadRepository;
 use Illuminate\Http\RedirectResponse;
@@ -19,8 +20,11 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
 
 
-class PostController extends Controller
+class StoryController extends Controller
 {
+     /** @var  StoryRepository */
+    private StoryRepository $storyRepository;
+
      /** @var  PostRepository */
     private PostRepository $postRepository;
 
@@ -45,12 +49,12 @@ class PostController extends Controller
     }
 
     /*
-     * @param PostDataTable $postDataTable
+     * @param StoryDataTable $postDataTable
      * @return Response
      */
-    public function index(PostDataTable $postDataTable): mixed
+    public function index(StoryDataTable $storyDataTable): mixed
     {
-        return $postDataTable->render('posts.index');
+        return $storyDataTable->render('stories.index');
     }
 
     /**
@@ -60,7 +64,7 @@ class PostController extends Controller
      *
      * @return RedirectResponse
      */
-    public function store(CreatePostRequest $request): RedirectResponse
+    public function store(CreateStoryRequest $request): RedirectResponse
     {
         $input = $request->all();
         try {
@@ -81,7 +85,7 @@ class PostController extends Controller
 
         Flash::success(__('lang.saved_successfully', ['operator' => __('lang.post')]));
 
-        return redirect(route('posts.index'));
+        return redirect(route('stories.index'));
     }
 
     /**
@@ -94,7 +98,7 @@ class PostController extends Controller
         $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
         $hasCustomField = in_array($this->postRepository->model(), setting('custom_field_models', []));
        
-        return view('posts.create')->with("customFields", $html ?? false)->with("salon", $salon);
+        return view('stories.create')->with("customFields", $html ?? false)->with("salon", $salon);
     }
 
     /**
@@ -115,12 +119,12 @@ class PostController extends Controller
         }
 
         if (is_null($post)) {
-            Flash::error('Post not found');
+            Flash::error('Story not found');
 
             return redirect(route('eServices.index'));
         }
 
-        return view('posts.show')->with('post', $post);
+        return view('stories.show')->with('post', $post);
     }
 
     /**
@@ -156,7 +160,7 @@ class PostController extends Controller
      * @return RedirectResponse
      * @throws RepositoryException
      */
-    public function update(int $id, UpdatePostRequest $request): RedirectResponse
+    public function update(int $id, UpdateStoryRequest $request): RedirectResponse
     {
         $this->postRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
         $post = $this->postRepository->findWithoutFail($id);
@@ -212,16 +216,16 @@ class PostController extends Controller
 
         if (is_null($post)) {
 
-            Flash::error('Post not found');
+            Flash::error('Story not found');
 
-            return redirect(route('posts.index'));
+            return redirect(route('stories.index'));
         }
 
         $this->postRepository->delete($post->id);
 
         Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.post')]));
 
-        return redirect(route('posts.index'));
+        return redirect(route('stories.index'));
     }
 
     /**

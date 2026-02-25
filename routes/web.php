@@ -36,6 +36,9 @@ use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WalletTransactionController;
 use App\Http\Controllers\API\VideoController;
+use App\Http\Controllers\CommentAPIController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\StoryController;
 
 Route::get('login/{service}', 'Auth\LoginController@redirectToProvider');
 
@@ -173,6 +176,10 @@ Route::middleware('auth')->group(function () {
     ]);
 
     Route::resource('posts', PostController::class);
+    Route::resource('stories', StoryController::class);
+
+    Route::resource('comments', CommentController::class);
+
 
 
     Route::resource('faqCategories', 'FaqCategoryController')->except([

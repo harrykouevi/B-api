@@ -198,7 +198,7 @@ class PostAPIController extends Controller
      * Display the specified Post.
      * GET|HEAD /posts/{id}
      *
-     * @param int $id
+     * @param  $id
      * @param Request $request
      * @return JsonResponse
      */

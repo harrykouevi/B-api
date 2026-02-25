@@ -92,6 +92,7 @@ class Post extends Model implements HasMedia
         'like_count', //   nombre de likes
         'is_liked',  
         'is_favorite',
+        'favory_count',
         'view_count',
         'comment_count'
 
@@ -209,12 +210,21 @@ class Post extends Model implements HasMedia
         return $this->belongsTo(Salon::class, 'salon_id', 'id');
     }
 
+ 
     /**
      * A post can have many targets (polymorphic)
      */
     public function targets()
     {
         return $this->hasMany(PostTarget::class);
+    }
+
+    /**
+     * A post can have many reports (polymorphic)
+     */
+    public function reports()
+    {
+        return $this->morphMany(Report::class, 'model');
     }
 
     /**
@@ -261,11 +271,29 @@ class Post extends Model implements HasMedia
 
 
     /**
+     * @return integer
+     */
+    public function getFavoryCountAttribute()
+    {
+        return $this->favories()->count() ;
+    }
+
+
+
+    /**
      * @return HasMany
      **/
     public function favorites(): HasMany
     {
         return $this->hasMany(FavoritePost::class, 'post_id')->where('favorite_posts.user_id', auth()->id());
+    }
+
+    /**
+     * @return HasMany
+     **/
+    public function favories(): HasMany
+    {
+        return $this->hasMany(FavoritePost::class, 'post_id');
     }
 
 
