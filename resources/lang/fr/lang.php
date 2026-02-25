@@ -1234,7 +1234,7 @@ return [
     'award_salon_id_help' => 'Sélectionnez un salon',
     'award_salon_id_placeholder' => 'Sélectionnez un salon',
     'award_updated_at' => 'Mis à jour à',
-    'post' => 'Vivre',
+    'post' => 'Publication',
     'post_plural' => 'Publications',
     'post_desc' => 'Gestion des publications',
     'post_edit' => 'Modifier une publication',

@@ -20,6 +20,22 @@ class Comment extends Model
     
 
     /**
+     * New Attributes
+     *
+     * @var array
+     */
+    protected $appends = [
+        
+        'report_count'
+
+    ];
+
+    public function getReportCountAttribute()
+    {
+        return $this->reports()->count();
+    }
+
+    /**
      * Relation : Un commentaire appartient à un utilisateur (l'auteur)
      */
     public function user(): BelongsTo
@@ -34,4 +50,13 @@ class Comment extends Model
     {
         return $this->belongsTo(Post::class, 'post_id');
     }
+
+     /**
+     * A post can have many reports (polymorphic)
+     */
+    public function reports()
+    {
+        return $this->morphMany(Report::class, 'model');
+    }
+
 }

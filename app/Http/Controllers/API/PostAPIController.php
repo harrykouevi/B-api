@@ -205,7 +205,15 @@ class PostAPIController extends Controller
     }
  
 
-    public function show($id, Request $request): JsonResponse
+      /**
+     * Display the specified Post.
+     * GET|HEAD /posts/{id}
+     *
+     * @param  $id
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function show( $id, Request $request): JsonResponse
     {
         try {
             $this->postRepository->pushCriteria(new LimitOffsetCriteria($request));

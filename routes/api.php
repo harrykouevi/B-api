@@ -198,7 +198,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('posts/{id}/like', [PostAPIController::class, 'like'])->name('posts.like');
 
     // Route pour Retirer le Like (DELETE)
-    Route::delete('posts/{id}/like', [PostAPIController::class, 'unlike'])->name('posts.unlike');
+    Route::delete('posts/{id}/unlike', [PostAPIController::class, 'unlike'])->name('posts.unlike');
     // Route pour stocker les Commentaires 
     Route::post('posts/{id}/comments', [PostAPIController::class, 'storeComment'])->name('posts.storecomment');
 

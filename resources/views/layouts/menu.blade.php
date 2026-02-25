@@ -41,7 +41,7 @@
             <p  class="text-xs" >{{trans('lang.user_plural')}}</p></a>
     </li>
 @endcan
-{{-- @can('posts.index') --}}
+@can('posts.index')
     <li class="nav-item has-treeview {{ (Request::is('post*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('postReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*') ) && !Request::is('postPayouts*') ? 'menu-open' : '' }}">
         <a href="#" class="nav-link {{ (Request::is('post*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('postReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*')) && !Request::is('postPayouts*') ? 'active' : '' }}"> @if($icons)
                 <i class="nav-icon fas fa-users-cog"></i>@endif
@@ -49,13 +49,31 @@
             </p>
         </a>
         <ul class="nav nav-treeview">
+            @can('posts.index')
             <li class="nav-item">
                 <a class="nav-link {{ Request::is('posts*') ? 'active' : '' }}" href="{!! route('posts.index') !!}">@if($icons)
                         <i class="nav-icon fas fa-list-alt"></i>@endif<p  class="text-xs" >{{trans('lang.post_plural')}}</p></a>
             </li>
+            @endcan
+
+            @can('comments.index')
+            <li class="nav-item">
+                <a class="nav-link {{ Request::is('comments*') ? 'active' : '' }}" href="{!! route('comments.index') !!}">@if($icons)
+                        <i class="nav-icon fas fa-list-alt"></i>@endif<p  class="text-xs" >{{trans('lang.comment_plural')}}</p></a>
+            </li>
+            @endcan
+
+            @can('stories.index')
+            <li class="nav-item">
+                <a class="nav-link {{ Request::is('stories*') ? 'active' : '' }}" href="{!! route('stories.index') !!}">@if($icons)
+                        <i class="nav-icon fas fa-list-alt"></i>@endif<p  class="text-xs" >{{trans('lang.story_plural')}}</p></a>
+            </li>
+            @endcan
+            
         </ul>
+
     </li>
-{{-- @endcan --}}
+@endcan
 @can('salons.index')
     <li class="nav-item has-treeview {{ (Request::is('salon*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('salonReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*') ) && !Request::is('salonPayouts*') ? 'menu-open' : '' }}">
         <a href="#" class="nav-link {{ (Request::is('salon*') || Request::is('requestedSalons*') || Request::is('galleries*') || Request::is('salonReviews*') || Request::is('experiences*') || Request::is('awards*') || Request::is('addresses*') || Request::is('availabilityHours*')) && !Request::is('salonPayouts*') ? 'active' : '' }}"> @if($icons)

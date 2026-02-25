@@ -1,8 +1,8 @@
 <?php
 /*
- * File name: PostDataTable.php
- * Last modified: 2026.02.23
- * Author: Gemini
+ * File name: StoryDataTable.php
+ * Last modified: 2026.02.24 at 11:53:30
+ * Author:
  * Copyright (c) 2026
  */
 
@@ -17,14 +17,25 @@ use Yajra\DataTables\Html\Builder;
 use Yajra\DataTables\Services\DataTable;
 use Illuminate\Support\Facades\Gate;
 
-class PostDataTable extends DataTable
+class StoryDataTable extends DataTable
 {
+    /**
+     * custom fields columns
+     * @var array
+     */
     public static array $customFields = [];
 
+    /**
+     * Build DataTable class.
+     *
+     * @param mixed $query Results from query() method.
+     * @return DataTableAbstract
+     */
     public function dataTable(mixed $query): DataTableAbstract
     {
         $dataTable = new EloquentDataTable($query);
         $dataTable->filter(function ($query) {
+            
             if (request()->has('search') && (!is_null(request('search')['value']) || request('search')['value'] != '')) {
                 $search = request('search')['value'] ;
                 $columns = $this->getColumns();
@@ -42,7 +53,9 @@ class PostDataTable extends DataTable
                     }
                 });
             }
+
         });
+
 
         $dataTable = $dataTable
             ->editColumn('media', function ($post) {
@@ -59,17 +72,21 @@ class PostDataTable extends DataTable
                 }
                 return $post['name'];
             })
+           
             ->editColumn('view_count', function ($post) {
-                return '<span class="badge badge-secondary">'.$post->view_count.'</span>';
+                
+                return  '<span class="badge badge-secondary">'.$post->view_count.'</span>';
             })
+
             ->editColumn('like_count', function ($post) {
-                return '<span class="badge badge-secondary">'.$post->like_count.'</span>';
+                
+                return  '<span class="badge badge-secondary">'.$post->like_count.'</span>';
+
             })
-            /** MODIFICATION ICI : Nombre de commentaires cliquable **/
             ->editColumn('comment_count', function ($post) {
-                return '<a href="'.route('comments.index', ['post_id' => $post->id]).'" class="badge badge-info" data-toggle="tooltip" title="Cliquez pour modérer">
-                            <i class="fas fa-comments mr-1"></i>'.$post->comment_count.'
-                        </a>';
+                
+                return  '<span class="badge badge-secondary">'.$post->comment_count.'</span>';
+
             })
             ->editColumn('favory_count', function ($post) {
                 
@@ -121,13 +138,16 @@ class PostDataTable extends DataTable
 
         // // On récupère toutes les colonnes pour autoriser le rendu HTML
         $columns = array_column($this->getColumns(), 'data');
-        
-        /** MODIFICATION ICI : Ajout de comment_count dans rawColumns pour rendre le lien actif **/
-        $dataTable = $dataTable->rawColumns(array_merge($columns, ['action', 'vimeo_id', 'comment_count']));
+        $dataTable = $dataTable->rawColumns(array_merge($columns, ['action', 'vimeo_id']));
 
         return $dataTable;
     }
 
+    /**
+     * Get columns.
+     *
+     * @return array
+     */
     protected function getColumns(): array
     {
         $columns = [
@@ -143,30 +163,43 @@ class PostDataTable extends DataTable
                 'searchable' => true,
                 'orderable' => true
             ],
+            // AJOUT DE LA COLONNE VIDÉO DANS LE TABLEAU
+            // [
+            //     'data' => 'vimeo_id',
+            //     'title' => 'Vidéo Vimeo',
+            //     'searchable' => false,
+            //     'orderable' => false,
+            //     'exportable' => false,
+            //     'printable' => false,
+            // ],
             [
                 'data' => 'user.name',
                 'title' => trans('lang.user_id'),
             ],
+           
             [
                 'data' => 'salon.name',
                 'title' => trans('lang.post_salon_id'),
                 'searchable' => true,
                 'orderable' => true
             ],
-            [
+             [
                 'data' => 'view_count',
                 'title' => trans('lang.view_count'),
                 'orderable' => true
+
             ],
-            [
+             [
                 'data' => 'like_count',
                 'title' => trans('lang.like_count'),
                 'orderable' => true
+
             ],
             [
                 'data' => 'comment_count',
                 'title' => trans('lang.comment_count'),
                 'orderable' => true
+
             ],
              [
                 'data' => 'favory_count',
@@ -197,6 +230,12 @@ class PostDataTable extends DataTable
         return $columns;
     }
 
+    /**
+     * Get query source of dataTable.
+     *
+     * @param Post $model
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function query(Post $model): \Illuminate\Database\Eloquent\Builder
     {
         $query = $model->newQuery()
@@ -212,6 +251,11 @@ class PostDataTable extends DataTable
         return $query;
     }
 
+    /**
+     * Optional method if you want to use html builder.
+     *
+     * @return Builder
+     */
     public function html(): Builder
     {
         return $this->builder()
@@ -227,6 +271,10 @@ class PostDataTable extends DataTable
             ));
     }
 
+    /**
+     * Export PDF using DOMPDF
+     * @return mixed
+     */
     public function pdf(): mixed
     {
         $data = $this->getDataForPrint();
@@ -234,6 +282,11 @@ class PostDataTable extends DataTable
         return $pdf->download($this->filename() . '.pdf');
     }
 
+    /**
+     * Get filename for export.
+     *
+     * @return string
+     */
     protected function filename(): string
     {
         return 'postsdatatable_' . time();
