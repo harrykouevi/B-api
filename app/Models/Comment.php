@@ -13,9 +13,9 @@ class Comment extends Model
         'content',
         'user_id',
         'post_id',
-         'is_reported', 
-         'report_count', 
-         'is_hidden'
+        'is_reported', 
+        'report_count', 
+        'is_hidden'
          ];
     
 
