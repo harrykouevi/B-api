@@ -36,15 +36,15 @@ use App\Types\WalletType;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-
-
-
+use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\F;
+use App\Repositories\FollowRepository;
 class UserAPIController extends Controller
 {
     private UserRepository $userRepository;
     private UploadRepository $uploadRepository;
     private RoleRepository $roleRepository;
     private CustomFieldRepository $customFieldRepository;
+    private FollowRepository $followRepository;
     
     /**
      * @var PaymentService
@@ -68,7 +68,7 @@ class UserAPIController extends Controller
      */
     public function __construct(PartenerShipService $partenerShipService ,PaymentService $paymentService  , UserRepository $userRepository, 
         UploadRepository $uploadRepository, RoleRepository $roleRepository, CustomFieldRepository $customFieldRepo ,
-        OtpService $otpService)
+        OtpService $otpService, FollowRepository $followRepository)
     {
         parent::__construct();
         $this->userRepository = $userRepository;
@@ -79,6 +79,7 @@ class UserAPIController extends Controller
         $this->paymentService =  $paymentService ;
         $this->partenerShipService =  $partenerShipService ;
         $this->otpService =  $otpService ;
+        $this->followRepository = $followRepository ;
 
     }
 
@@ -694,4 +695,56 @@ class UserAPIController extends Controller
         }
         return $this->sendResponse($user, __('lang.deleted_successfully', ['operator' => __('lang.user')]));
     }
+    
+    
+
+
+
+  public function toggleFollow($followedId)
+{
+    $followerId = auth()->id(); // L'utilisateur connecté
+
+    try {
+        // 1. On vérifie l'existence de la cible (via UserRepo)
+        // Si l'utilisateur n'existe pas, une Exception est lancée ici
+        $targetUser = $this->userRepository->checkTargetUserExists($followedId);
+
+        // 2. On vérifie si le lien existe déjà (via FollowRepo)
+        $isAlreadyFollowing = $this->followRepository->VerifyexistingFollower($followerId, $followedId);
+
+        // 3. On effectue l'action technique (via UserRepo)
+        // La méthode toggle() s'occupe de faire +1 ou -1 en base de données
+        $result = $this->userRepository->toggleFollowUser($followerId, $followedId);
+
+        // 4. On prépare le message en fonction de l'état AVANT le toggle
+        if ($isAlreadyFollowing) {
+            $message = "Vous ne suivez plus " . $targetUser->name;
+        } else {
+            $message = "Vous suivez désormais " . $targetUser->name;
+        }
+
+        return $this->sendResponse($result, $message);
+
+    } catch (\Exception $e) {
+        // Si une erreur survient (utilisateur cible introuvable, etc.)
+        return $this->sendError($e->getMessage(), 404);
+    }
+}
+   public function followingList($id)
+{
+    try {
+        // On récupère la liste via le Repository
+        $following = $this->userRepository->getFollowingList($id);
+
+        // On vérifie si la liste est vide pour envoyer un message sympa
+        if ($following->isEmpty()) {
+            return $this->sendResponse([], "Cet utilisateur ne suit encore personne.");
+        }
+
+        return $this->sendResponse($following, "Liste des abonnements récupérée avec succès.");
+
+    } catch (\Exception $e) {
+        return $this->sendError("Utilisateur introuvable.", 404);
+    }
+}
 }

@@ -387,7 +387,31 @@ class PostAPIController extends Controller
         // On retourne le commentaire avec les infos de l'auteur pour l'affichage mobile
         return $this->sendResponse($comment->load('user'), 'Commentaire ajouté avec succès');
     }
-    
+    public function getComments($id): JsonResponse
+{
+    // 1. Recherche du post (On réutilise ta logique ID/UUID)
+    if (is_numeric($id)) {
+        $post = $this->postRepository->findWithoutFail($id);
+    } else {
+        $post = Str::isUuid($id) ? $this->postRepository->findByField('uuid', $id)->first() : null;
+    }
+
+    if (empty($post)) {
+        return $this->sendError('Post non trouvé');
+    }
+
+    // 2. Récupération des commentaires avec l'utilisateur
+    // On trie par les plus récents en premier
+    $comments = Comment::where('post_id', $post->id)
+        ->with(['user' => function($query) {
+            $query->select('id', 'name', 'avatar'); // On ne prend que le nécessaire
+        }])
+        ->orderBy('created_at', 'desc')
+        ->paginate(15); // Utilise la pagination pour les performances
+
+    // 3. Réponse
+    return $this->sendResponse($comments, 'Commentaires récupérés avec succès');
+}
     // 1. Lister les commentaires signalés
     public function indexReportedComments()
     {

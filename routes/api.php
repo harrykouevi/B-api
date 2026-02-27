@@ -199,9 +199,15 @@ Route::middleware('auth:api')->group(function () {
 
     // Route pour Retirer le Like (DELETE)
     Route::delete('posts/{id}/unlike', [PostAPIController::class, 'unlike'])->name('posts.unlike');
-    // Route pour stocker les Commentaires 
+     // Route pour stocker les Commentaires
     Route::post('posts/{id}/comments', [PostAPIController::class, 'storeComment'])->name('posts.storecomment');
+     // Route pour récupérer les Commentaires
+    Route::get('posts/{id}/comments', [PostAPIController::class, 'getComments']);
+    // Route pour s'abonner / se désabonner (POST est plus sécurisé pour modifier des données)
+      Route::post('users/{id}/toggle-follow', [UserAPIController::class, 'toggleFollow']);
 
+     // Route pour récupérer la liste des abonnements (GET car c'est de la lecture)
+    Route::get('users/{id}/following', [UserAPIController::class, 'followingList']);
     
     Route::resource('salons', SalonAPIController::class)->only([
         'store', 'update', 'destroy'
@@ -294,19 +300,4 @@ Route::middleware('auth:api')->group(function () {
         ->name('bookings.can.cancel');
 
     
-});
-// Routes pour l'interface de modération centralisées dans PostApiController
-Route::prefix('admin/moderation')->group(function () {
-    
-    // Récupérer la liste des commentaires signalés
-    Route::get('comments', [PostApiController::class, 'indexReportedComments']);
-    
-    // Action : Masquer le commentaire (Shadowban / is_hidden)
-    Route::patch('comments/{id}/hide', [PostApiController::class, 'maskComment']);
-    
-    // Action : Supprimer le commentaire (Soft Delete)
-    Route::delete('comments/{id}', [PostApiController::class, 'destroyComment']);
-    
-    // Action : Approuver ou Rétablir un commentaire
-    Route::patch('comments/{id}/approve', [PostApiController::class, 'approveComment']);
 });
