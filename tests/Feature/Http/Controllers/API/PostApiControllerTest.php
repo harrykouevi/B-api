@@ -18,7 +18,7 @@ use Tests\TestCase;
 
 class PostApiControllerTest extends TestCase
 {
-    // use DatabaseTransactions;
+    use DatabaseTransactions;
     /**
      * A basic feature test example.
      */
@@ -140,6 +140,47 @@ class PostApiControllerTest extends TestCase
             $data = $response->json();
 
          
+            $response->assertStatus(ResponseAlias::HTTP_OK);
+
+        } catch (\Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
+        }
+
+        
+    }
+
+    public function testGetComments()
+    {
+
+
+        try{ 
+          
+            $user = $this->createUser();
+            $post = $this->createPost($user) ;
+
+            $this->actingAs($user,'api');
+
+            
+            for($i=0; $i < 10; $i++){
+                $data = [
+                    'content' =>   "un commentaire depose $i" ,
+                ];
+                $this->postJson(route('api.posts.storecomment',$post->id), $data);
+                
+            }
+            
+            $queryParameters = [
+                // 'with' => 'post',
+                // 'search' => 'categories.id:3',
+                // 'searchFields' => 'categories.id:=',
+            ];
+            
+            $response = $this->json('get', route('api.posts.comments',$post->uuid) , $queryParameters);
+        
+            $d = $response->json();
+             dd($d) ;
             $response->assertStatus(ResponseAlias::HTTP_OK);
 
         } catch (\Exception $e) {

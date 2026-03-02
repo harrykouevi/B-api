@@ -40,7 +40,7 @@ class PostsOfUserCriteria implements CriteriaInterface
                     ->where('salon_users.user_id', auth()->id())
                     ->select('posts.*');
             } else {
-                return $model->where('user_id', auth()->id())->select('posts.*')->groupBy('posts.id');
+                return $model->where('author_id', auth()->id())->select('posts.*')->groupBy('posts.id');
             }
         }
 

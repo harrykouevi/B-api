@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
+// use Illuminate\Database\Eloquent\SoftDeletes;
 class Comment extends Model
 {
-    use SoftDeletes; 
+    public $table = 'comments';
+    // use SoftDeletes; 
+
     // On autorise le remplissage de ces colonnes
     protected $fillable = [
         'content',
@@ -16,7 +18,7 @@ class Comment extends Model
         'is_reported', 
         'report_count', 
         'is_hidden'
-         ];
+    ];
     
 
     /**
@@ -25,9 +27,14 @@ class Comment extends Model
      * @var array
      */
     protected $appends = [
-        
         'report_count'
+    ];
 
+    /**
+     * Validation rules
+     */
+    public static array $rules = [
+        'content' => 'required|string|min:1',
     ];
 
     public function getReportCountAttribute()

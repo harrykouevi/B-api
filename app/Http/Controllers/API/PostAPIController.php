@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\API;
+
+use App\Criteria\Comments\CommentsReportedCriteria;
 use App\Events\PostCreated; // N'oublie pas l'import en haut !
 
 
@@ -26,6 +28,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str; 
 use App\Models\Like;
 use App\Models\Post;
+use App\Repositories\CommentRepository;
 use Illuminate\Support\Facades\Auth;
 use App\Repositories\PostViewRepository;
 use App\Services\CloudService;
@@ -41,6 +44,9 @@ class PostAPIController extends Controller
      /** @var PostRepository */
     private PostRepository $postRepository;
 
+     /** @var CommentRepository */
+    private CommentRepository $commentRepository;
+
     /** @var UploadRepository */
     private UploadRepository $uploadRepository;
 
@@ -49,12 +55,14 @@ class PostAPIController extends Controller
 
     public function __construct(PostRepository $postRepo, UploadRepository $uploadRepository ,
         PostViewRepository  $postViewRepository ,
+        CommentRepository $commentRepo,
         CloudService $cloudService,
         PostTargetRepository  $postTargetRepository )
     {
         $this->uploadRepository = $uploadRepository;
         $this->postTargetRepository = $postTargetRepository;
         $this->postRepository = $postRepo;
+        $this->commentRepository = $commentRepo;
         $this->postViewRepository = $postViewRepository ;
         $this->cloudService = $cloudService ;
         parent::__construct();
@@ -402,34 +410,39 @@ class PostAPIController extends Controller
 
         // 4. Mise à jour du compteur physique
         DB::table('posts')->where('id', $post->id)->increment('comment_count');
-          event(new CommentPosted($comment));
+        event(new CommentPosted($comment));
         // On retourne le commentaire avec les infos de l'auteur pour l'affichage mobile
         return $this->sendResponse($comment->load('user'), 'Commentaire ajouté avec succès');
     }
 
 
-    public function getComments($id): JsonResponse
+    public function getComments(Request $request,$id): JsonResponse
     {
-        // 1. Recherche du post (On réutilise ta logique ID/UUID)
-        if (is_numeric($id)) {
-            $post = $this->postRepository->findWithoutFail($id);
-        } else {
-            $post = Str::isUuid($id) ? $this->postRepository->findByField('uuid', $id)->first() : null;
+        
+
+        try {
+            // Grace a ceci le mobile peut faire le trie si il veut
+            // Grace a ceci le mobile peut Récupérer les commentaires avec l'utilisateur si il veut
+            $this->commentRepository->pushCriteria(new LimitOffsetCriteria($request));
+            $this->commentRepository->pushCriteria(new RequestCriteria($request));
+
+            // 1. Recherche du post (On réutilise ta logique ID/UUID)
+            if (is_numeric($id)) {
+                $post = $this->postRepository->findWithoutFail($id);
+            } else {
+                $post = Str::isUuid($id) ? $this->postRepository->findByField('uuid', $id)->first() : null;
+            }
+
+            if (empty($post)) {
+                return $this->sendError('Post non trouvé');
+            }
+
+        } catch (RepositoryException $e) {
+            return $this->sendError($e->getMessage());
         }
 
-        if (empty($post)) {
-            return $this->sendError('Post non trouvé');
-        }
-
-        // 2. Récupération des commentaires avec l'utilisateur
-        // On trie par les plus récents en premier
-        $comments = Comment::where('post_id', $post->id)
-            ->with(['user' => function($query) {
-                $query->select('id', 'name', 'avatar'); // On ne prend que le nécessaire
-            }])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15); // Utilise la pagination pour les performances
-
+        $comments = $this->commentRepository->findByField('post_id', $post->id)->all() ;
+            
         // 3. Réponse
         return $this->sendResponse($comments, 'Commentaires récupérés avec succès');
     }
@@ -437,56 +450,24 @@ class PostAPIController extends Controller
     
 
     // 1. Lister les commentaires signalés
-    public function indexReportedComments()
+    public function indexReportedComments(Request $request)
     {
-        $reported = Comment::where('is_reported', true)
-            ->with(['user:id,name,avatar', 'post:id,title,thumbnail_url'])
-            ->orderBy('report_count', 'desc')
-            ->get();
+        try {
+            // Grace a ceci le mobile peut faire le trie si il veut
+            // Grace a ceci le mobile peut Récupérer les commentaires avec l'utilisateur si il veut
+            $this->commentRepository->pushCriteria(new CommentsReportedCriteria($request));
+            $this->commentRepository->pushCriteria(new LimitOffsetCriteria($request));
+            $this->commentRepository->pushCriteria(new RequestCriteria($request));
 
-        return response()->json([
-            'success' => true,
-            'data' => $reported
-        ]);
-    }
 
-    // 2. MASQUER (is_hidden)
-    public function maskComment($id)
-    {
-        $comment = Comment::findOrFail($id);
-        $comment->update([
-            'is_hidden' => true,
-            'is_reported' => false // On considère le problème traité
-        ]);
-
-        return response()->json(['message' => 'Commentaire masqué avec succès (Shadowban).']);
-    }
-
-    // 3. SUPPRIMER (Soft Delete)
-    public function destroyComment($id)
-    {
-        $comment = Comment::findOrFail($id);
-        $comment->delete(); // Laravel remplit automatiquement deleted_at
-
-        return response()->json(['message' => 'Commentaire supprimé définitivement de la vue publique.']);
-    }
-
-    // 4. APPROUVER / RÉTABLIR
-    public function approveComment($id)
-    {
-        // On utilise withTrashed() au cas où le commentaire était supprimé
-        $comment = Comment::withTrashed()->findOrFail($id);
-        
-        $comment->update([
-            'is_reported' => false,
-            'report_count' => 0,
-            'is_hidden' => false
-        ]);
-
-        if ($comment->trashed()) {
-            $comment->restore(); // On le sort de la corbeille s'il y était
+        } catch (RepositoryException $e) {
+            return $this->sendError($e->getMessage());
         }
 
-        return response()->json(['message' => 'Commentaire rétabli et signalé comme sain.']);
+        $comments = $this->commentRepository->all();
+
+        return $this->sendResponse($comments, 'Comments retrieved successfully');
+
     }
+
 }

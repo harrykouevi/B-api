@@ -202,7 +202,7 @@ Route::middleware('auth:api')->group(function () {
      // Route pour stocker les Commentaires
     Route::post('posts/{id}/comments', [PostAPIController::class, 'storeComment'])->name('posts.storecomment');
      // Route pour récupérer les Commentaires
-    Route::get('posts/{id}/comments', [PostAPIController::class, 'getComments']);
+    Route::get('posts/{id}/comments', [PostAPIController::class, 'getComments'])->name('posts.comments');
     // Route pour s'abonner / se désabonner (POST est plus sécurisé pour modifier des données)
       Route::post('users/{id}/toggle-follow', [UserAPIController::class, 'toggleFollow']);
 
