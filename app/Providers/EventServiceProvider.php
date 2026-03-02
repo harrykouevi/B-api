@@ -33,6 +33,8 @@ use App\Listeners\UpdatePaymentListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use App\Events\PostCreated;
+use App\Listeners\SendPostCreationNotification;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -58,6 +60,12 @@ class EventServiceProvider extends ServiceProvider
         DoPaymentEvent::class => [
             CreatingPaymentListener::class,
         ],
+        PostCreated::class => [
+        SendPostCreationNotification::class,
+    ],
+    'App\Events\CommentCreated' => [
+        'App\Listeners\SendCommentNotification',
+    ],
 
         BookingPaymentUpdatedEvent::class => [
             UpdateBookingPaymentListener::class,

@@ -47,6 +47,7 @@ class User extends Authenticatable implements HasMedia
     use HasRoles;
     use HasFactory;
 
+
     /**
      * Validation rules
      *

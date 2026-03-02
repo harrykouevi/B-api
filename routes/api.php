@@ -199,9 +199,15 @@ Route::middleware('auth:api')->group(function () {
 
     // Route pour Retirer le Like (DELETE)
     Route::delete('posts/{id}/unlike', [PostAPIController::class, 'unlike'])->name('posts.unlike');
-    // Route pour stocker les Commentaires 
+     // Route pour stocker les Commentaires
     Route::post('posts/{id}/comments', [PostAPIController::class, 'storeComment'])->name('posts.storecomment');
+     // Route pour récupérer les Commentaires
+    Route::get('posts/{id}/comments', [PostAPIController::class, 'getComments']);
+    // Route pour s'abonner / se désabonner (POST est plus sécurisé pour modifier des données)
+      Route::post('users/{id}/toggle-follow', [UserAPIController::class, 'toggleFollow']);
 
+     // Route pour récupérer la liste des abonnements (GET car c'est de la lecture)
+    Route::get('users/{id}/following', [UserAPIController::class, 'followingList']);
     
     Route::resource('salons', SalonAPIController::class)->only([
         'store', 'update', 'destroy'
