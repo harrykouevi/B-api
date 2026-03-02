@@ -95,6 +95,35 @@ class PostApiControllerTest extends TestCase
         
     }
 
+    public function testMyFavoritePosts()
+    {
+
+        try{ 
+          
+            $user = $this->createUser();
+            $queryParameters = [
+                // 'with' => 'post',
+                // 'search' => 'categories.id:3',
+                // 'searchFields' => 'categories.id:=',
+            ];
+            
+    
+            $this->actingAs($user,'api');
+            $response = $this->json('get', route('api.me.posts.favorite') , $queryParameters);
+        
+             $d = $response->json();
+             dd($d) ;
+         
+            $response->assertStatus(ResponseAlias::HTTP_OK);
+
+        } catch (\Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
+        }
+
+        
+    }
 
     public function testlike()
     {
