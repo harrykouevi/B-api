@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
 use App\Models\Like;
 use Illuminate\Support\Facades\Auth;
 use App\Repositories\PostViewRepository;
+use App\Services\CloudService;
 
 class PostAPIController extends Controller
 {
@@ -38,14 +39,19 @@ class PostAPIController extends Controller
     /** @var UploadRepository */
     private UploadRepository $uploadRepository;
 
+    /** @var CloudService */
+    private CloudService $cloudService;
+
     public function __construct(PostRepository $postRepo, UploadRepository $uploadRepository ,
         PostViewRepository  $postViewRepository ,
+        CloudService $cloudService,
         PostTargetRepository  $postTargetRepository )
     {
         $this->uploadRepository = $uploadRepository;
         $this->postTargetRepository = $postTargetRepository ;
         $this->postRepository = $postRepo;
         $this->postViewRepository = $postViewRepository ;
+        $this->cloudService = $cloudService ;
         parent::__construct();
     }
 
@@ -104,6 +110,11 @@ class PostAPIController extends Controller
     public function store(CreatePostRequest $request): JsonResponse
     {
         try {
+
+            $request->validate([
+                'image' => 'required|image|max:5120', // max 5MB
+            ]);
+
             $input = $request->all();
 
             if (auth()->user()->hasAnyRole(['salon owner'])) {
@@ -147,18 +158,27 @@ class PostAPIController extends Controller
                 $post->targetModels();
                 Log::info([$post->toArray()]) ;
             }
-
-           
+            
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
+
                 foreach ($input['image'] as $fileUuid) {
-                    $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                    $mediaItem = $cacheUpload->getMedia('image')->first();
-                    $mediaItem->copy($m, 'image');
+                    // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
+                    if(Str::isUuid($fileUuid)){ 
+
+                        $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
+                        $mediaItem = $cacheUpload->getMedia('image')->first();
+                        $mediaItem->copy($m, 'image');
+                    }else{ 
+                    
+                        $image = $request->file('image');
+                        $image = $fileUuid->file('image');
+                        $cloudresponse = $this->cloudService->sendImage($image) ;
+                    }
                 }
             }
-            
             $post->loadMedia('image');
-            Log::info([$post->toArray()]);
+
+
                     
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);

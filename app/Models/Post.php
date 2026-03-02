@@ -172,12 +172,15 @@ class Post extends Model implements HasMedia
      */
     public function getFirstMediaUrl($collectionName = 'default', string $conversion = ''): string
     {
+        if($collectionName == "cloud"){}
         $url = $this->getFirstMediaUrlTrait($collectionName);
         if (!$url) return ''; // Sécurité si pas d'URL
 
         $array = explode('.', $url);
         $extension = strtolower(end($array));
         if (in_array($extension, config('media-library.extensions_has_thumb'))) {
+            // dd([$url , asset($this->getFirstMediaUrlTrait($collectionName, $conversion))]) ;
+
             return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
         } else {
             return asset(config('media-library.icons_folder') . '/' . $extension . '.png');

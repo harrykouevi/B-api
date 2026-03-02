@@ -54,6 +54,7 @@ class CreatePostRequest extends FormRequest
     {
         return [...Post::$rules ,
         'e_service_id' => 'nullable|exists:e_services,id',  
+        'image' => 'nullable|image|max:5120', // max 5MB
 
         'target.*' => 'nullable|array',  
         'target.*.model' => 'required|string',  
