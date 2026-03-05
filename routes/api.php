@@ -8,6 +8,7 @@
 
 use App\Http\Controllers\API\AddressAPIController;
 
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\SalonAPIController;
 use App\Http\Controllers\API\AffiliateAPIController ;
@@ -27,7 +28,7 @@ use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
 use App\Http\Controllers\API\PostAPIController;
-
+ use App\Http\Controllers\API\StoryAPIController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -190,7 +191,9 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
 
-
+     Route::resource('stories', StoryAPIController::class)->only([
+        'index', 'store', 'destroy'
+    ]);
   
     Route::post('posts/{id}/views', [PostAPIController::class, 'addView'])->name('posts.addview');
 
