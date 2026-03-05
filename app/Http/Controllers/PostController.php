@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Criteria\Salons\SalonsOfUserCriteria;
 use App\DataTables\PostDataTable;
+use App\Events\AttachModelToVideoUploadEvent;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Repositories\PostRepository;
@@ -72,12 +73,9 @@ class PostController extends Controller
             $post = $this->postRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
-                    $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                    $mediaItem = $cacheUpload->getMedia('*')->first();
-                    // dd($mediaItem) ;
-                    // dd($mediaItem->custom_properties); 
-                    // $mediaItem->copy($post, 'image');
-                    $mediaItem->copy($post,'cloudmedia', config('filesystems.cloud'));
+                    
+                    event(new AttachModelToVideoUploadEvent($fileUuid, $post));
+
                 }
             }
         } catch (ValidatorException $e) {

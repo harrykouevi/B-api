@@ -8,6 +8,7 @@
 
 namespace App\Providers;
 
+use App\Events\AttachModelToVideoUploadEvent;
 use App\Events\BookingPaymentUpdatedEvent;
 use App\Events\BookingReportedEvent;
 use App\Events\BookingStatusChangedEvent;
@@ -35,6 +36,7 @@ use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Events\PostCreated;
 use App\Events\VideoUploadEvent;
+use App\Listeners\AttachModelToVideoUploadEventListener;
 use App\Listeners\SendPostCreationNotification;
 use App\Listeners\VideoUploadEventListener;
 
@@ -102,6 +104,10 @@ class EventServiceProvider extends ServiceProvider
 
         VideoUploadEvent ::class => [
             VideoUploadEventListener ::class,
+        ],
+
+        AttachModelToVideoUploadEvent ::class => [
+           AttachModelToVideoUploadEventListener ::class,
         ],
 
     ];
