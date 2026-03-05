@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InfyOm\Generator\Common\BaseRepository;
 
@@ -120,6 +121,7 @@ class UploadRepository extends BaseRepository
     {
         $other_inputs = [ ...$other_inputs ,
             'user_id' => Auth::user()->id,
+            'uuid' => $other_inputs['uuid'] ?? (string) Str::uuid()
             // 'status' => 'processing',
             //'type' => 'video',
         ] ;
@@ -127,7 +129,9 @@ class UploadRepository extends BaseRepository
         
         if (str_starts_with($file->getMimeType(), 'video/')) {
             $path = $file->store('uploads/videos', 'public');
-            event(new VideoUploadEvent($upload->id, $path , $model ?? $upload));
+            Log::info('Message de log 2');
+
+            event(new VideoUploadEvent($upload, $path , $model ?? $upload));
 
         }else{
             $disk = ($other_inputs['field'] === 'cloudmedia') ? config('filesystems.cloud') : config('filesystems.default');

@@ -60,8 +60,7 @@ class PostApiControllerTest extends TestCase
                 "author_id"=> $user->id, 
                 "e_service_id"=> 210, 
                 "salon_id"=> 62, 
-                "caption" =>  " zrzr rzzrz rzrzr rzrz",
-                'caption' => 'gefef feff ef rfrffgrr frf',
+                'caption' => 'harry feff ef rfrffgrr frf',
                 'file' => [$file], // nom de la collection
             ]);
 

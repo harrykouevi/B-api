@@ -13,6 +13,7 @@ use App\Models\Comment;
 use App\Criteria\Posts\PostsOfUserCriteria;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
+use App\Listeners\AttachModelToVideoUploadEventListener;
 use App\Repositories\PostRepository;
 use App\Repositories\PostTargetRepository;
 use Exception;
@@ -155,10 +156,7 @@ class PostAPIController extends Controller
                     foreach ($input['file'] as $fileUuid) {
                         // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
                         if(Str::isUuid($fileUuid)){ 
-                            $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                            $mediaItem = $cacheUpload->getMedia('*')->first();
-                            $mediaItem->copy($m, 'cloudmedia', config('filesystems.cloud'));
-                            
+                            event(new AttachModelToVideoUploadEventListener($fileUuid, $post));
                         }
                     }
 

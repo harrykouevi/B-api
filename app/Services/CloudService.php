@@ -17,6 +17,8 @@ class CloudService{
 
     public function uploadVideo($file)
     {
+        Log::info('Message de log 6');
+        
         $response = Http::withToken(config('services.cloudflare.stream_token'))
             ->attach(
                 'file',
@@ -27,9 +29,10 @@ class CloudService{
                 . config('services.cloudflare.account_id')
                 . "/stream");
 
-         Log::error('FAIL:' , [
-                 $response
-            ]);
+       
+        Log::info($response);
+        
+
         if (!$response->successful()) {
             throw new \Exception('Stream upload failed');
         }

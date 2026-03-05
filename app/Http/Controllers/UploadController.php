@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  use Illuminate\Support\Str;
  use App\Models\Media;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class UploadController extends Controller
 {
@@ -99,12 +100,12 @@ class UploadController extends Controller
      */
     public function store(UploadRequest $request): JsonResponse
     {
-        $input = $request->all();
         try {
-            $input['uuid'] = $input['uuid'] ?? (string) Str::uuid();
+            
             $file = $request->file('file');
-            $this->uploadRepository->createWithMedia($file,$input);
-            return $this->sendResponse($input['uuid'], "Uploaded Successfully");
+            Log::info('Message de log 1');
+            $upload = $this->uploadRepository->createWithMedia($file,$request->all());
+            return $this->sendResponse($upload->uuid, "Uploaded Successfully");
 
         } catch (ValidatorException $e) {
             return $this->sendResponse(false, $e->getMessage());

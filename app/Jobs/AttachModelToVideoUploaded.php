@@ -9,44 +9,74 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class AttachModelToVideoUploaded implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $uploadId;
+    public $tries = 5;
+    public $backoff = [10, 30, 60];
+
+    public $upload_uuId;
     public $path;
     public ?Model $model = null;
 
-    public function __construct( $uploadId, ?Model $model = null )
+    public function __construct( $upload_uuId, ?Model $model = null )
     {
         $this->onQueue('upload');
-        $this->uploadId = $uploadId;
+        $this->upload_uuId = $upload_uuId;
         $this->model = $model;
     }
 
     /**
      * Execute the job.
      */
-    public function handle( UploadRepository $uploadRepository ,): void
+    public function handle( UploadRepository $uploadRepository): void
     {
-        $cacheUpload = $uploadRepository->getByUuid($this->uploadId);
-       
-        $mediaItem = null;
-        $attempts = 0;
-        $maxAttempts = 10;
-
-        while ($mediaItem === null ) {
-            $mediaItem = $cacheUpload->getMedia('*')->first();
-
-            if ($mediaItem === null) {
-                sleep(5); // attendre 1 seconde
-                
+        
+        try {
+            $cacheUpload = $uploadRepository->getByUuid($this->upload_uuId);
+            if (!$cacheUpload) {
+                throw new \Exception('Upload not found');
             }
-        }
+            Log::info('Message de log 1+2');
+            Log::info([$cacheUpload->toArray()]);
 
-        if ($mediaItem) {
-            $mediaItem->copy($this->model, 'cloudmedia', config('filesystems.cloud'));
+            $media = $cacheUpload->getMedia('*')->first();
+            $streamUid = $media->getCustomProperty('stream_uid');
+            if($streamUid){
+
+                Log::info('is streamer', [
+                    $streamUid
+                ]);
+
+                $url = "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
+                $response = Http::head($url);
+
+                if ($response->status() !== 200) {
+                    Log::info('Manifest not ready, will retry...');
+                    throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
+                }
+
+                Log::info('Manifest ready', [
+                    'media_id' => $media->id,
+                    'model_id' => $this->model?->id
+                ]);
+            }
+
+            $media->copy($this->model, 'cloudmedia', config('filesystems.cloud'));
+
+        } catch (\Exception $e) {
+            Log::error('FAIL: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'upload_uuid' => $this->upload_uuId,
+                'model_id' => $this->model?->id ?? null
+            ]);
+
+            // relance l'exception pour que Laravel retry
+            throw $e;
         }
     }
 }
