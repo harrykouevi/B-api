@@ -31,12 +31,12 @@ class AttachModelToVideoUploadEventListener
         $attempts = 0;
         $maxAttempts = 10;
 
-        while ($mediaItem === null && $attempts < $maxAttempts) {
+        while ($mediaItem === null ) {
             $mediaItem = $cacheUpload->getMedia('*')->first();
 
             if ($mediaItem === null) {
                 sleep(5); // attendre 1 seconde
-                $attempts++;
+                
             }
         }
 
