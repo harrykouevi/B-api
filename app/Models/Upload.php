@@ -86,7 +86,6 @@ class Upload extends Model implements HasMedia
      */
     public function getMedia(string $collectionName = 'default', $filters = []): Collection
     {
-
         if (count($this->getMediaTrait($collectionName))) {
             return $this->getMediaTrait($collectionName, $filters);
         }

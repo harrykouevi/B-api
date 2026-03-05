@@ -10,10 +10,35 @@ namespace App\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CloudService{
 
-    public function sendImage($image ){
+
+    public function uploadVideo($file)
+    {
+        $response = Http::withToken(config('services.cloudflare.stream_token'))
+            ->attach(
+                'file',
+                fopen($file->getRealPath(), 'r'),
+                basename($file->getRealPath())
+            )
+            ->post("https://api.cloudflare.com/client/v4/accounts/"
+                . config('services.cloudflare.account_id')
+                . "/stream");
+
+         Log::error('FAIL:' , [
+                 $response
+            ]);
+        if (!$response->successful()) {
+            throw new \Exception('Stream upload failed');
+        }
+
+        return $response->json()['result'];
+    }
+
+
+    public function sendImagexxxx($image ){
          $response = Http::withToken(env('CLOUDFLARE_API_TOKEN'))
         ->attach(
             'file',
@@ -32,12 +57,6 @@ class CloudService{
         }
 
         $data = $response->json()['result'];
-
-        // Exemple : enregistrer en base
-        // Image::create([
-        //     'cf_id' => $data['id'],
-        //     'url' => $data['variants'][0],
-        // ]);
 
         return [
             'message' => 'Image uploadée avec succès',

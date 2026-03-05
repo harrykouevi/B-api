@@ -8,6 +8,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\VideoUploadEvent;
 use App\Http\Requests\UploadRequest;
 use App\Repositories\UploadRepository;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+ use Illuminate\Support\Str;
+ use App\Models\Media;
+use Illuminate\Support\Facades\Auth;
 
 class UploadController extends Controller
 {
@@ -97,11 +101,11 @@ class UploadController extends Controller
     {
         $input = $request->all();
         try {
-            $upload = $this->uploadRepository->create($input);
-            $upload->addMedia($input['file'])
-                ->withCustomProperties(['uuid' => $input['uuid'], 'user_id' => auth()->id()])
-                ->toMediaCollection($input['field']);
+            $input['uuid'] = $input['uuid'] ?? (string) Str::uuid();
+            $file = $request->file('file');
+            $this->uploadRepository->createWithMedia($file,$input);
             return $this->sendResponse($input['uuid'], "Uploaded Successfully");
+
         } catch (ValidatorException $e) {
             return $this->sendResponse(false, $e->getMessage());
         }
@@ -119,6 +123,35 @@ class UploadController extends Controller
             });
         }
         return $allMedias->toJson();
+    }
+
+
+    /**
+     * Retourne le status et la progression d'une vidéo pour le polling.
+     *
+     * @param Request $request
+     * @param string $uuid
+     * @return JsonResponse
+     */
+    public function getStatus(Request $request, string $uuid): JsonResponse
+    {
+        $upload = Upload::where('uuid', $uuid)->first();
+
+        if (!$upload) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'uuid' => $upload->uuid,
+            'status' => $upload->status,             // pending / uploading / processing / ready / error
+            'pct_complete' => $upload->pct_complete, // 0 → 100
+            'stream_uid' => $upload->stream_uid,     // utile pour le player Stream
+            'type' => $upload->type                  // video / image
+        ]);
     }
 
     /**

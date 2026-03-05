@@ -6,13 +6,13 @@
 
     <!-- Image Field -->
     <div class="form-group align-items-start d-flex flex-column flex-md-row">
-        {!! Form::label('image', trans("lang.post_image"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        {!! Form::label('media', trans("lang.post_media"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
         <div class="col-md-9">
-            <div style="width: 100%" class="dropzone image" id="image" data-field="image">
+            <div style="width: 100%" class="dropzone media" id="media" data-field="cloudmedia">
             </div>
-            <a href="#loadMediaModal" data-dropzone="image" data-toggle="modal" data-target="#mediaModal" class="btn btn-outline-{{setting('theme_color','primary')}} btn-sm float-right mt-1">{{ trans('lang.media_select')}}</a>
+            <a href="#loadMediaModal" data-dropzone="media" data-toggle="modal" data-target="#mediaModal" class="btn btn-outline-{{setting('theme_color','primary')}} btn-sm float-right mt-1">{{ trans('lang.media_select')}}</a>
             <div class="form-text text-muted w-50">
-                {{ trans("lang.post_image_help") }}
+                {{ trans("lang.post_media_help") }}
             </div>
         </div>
     </div>
@@ -75,38 +75,14 @@
     <a href="{!! route('posts.index') !!}" class="btn btn-default"><i class="fa fa-undo"></i> {{trans('lang.cancel')}}</a>
 </div>
 
-{{-- Champs pour uploader des vidéos le nom de l'input est video_file --}}
-<!-- Video Field -->
-<div class="form-group align-items-start d-flex flex-column flex-md-row">
-    {!! Form::label('video', 'Vidéo', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
-    <div class="col-md-9">
-        <div class="dropzone video" id="video"></div>
-        <div class="form-text text-muted">
-            Vidéo hébergée via Cloudflare Stream
-        </div>
-    </div>
-</div>
 
-<div class="form-group mb-3">
-    <label for="vimeo_id">ID de la vidéo Vimeo</label>
-    <input type="text" 
-           name="vimeo_id" 
-           id="vimeo_id" 
-           class="form-control @error('vimeo_id') is-invalid @enderror" 
-           placeholder="Ex: 123456789"
-           value="{{ old('vimeo_id', $post->vimeo_id ?? '') }}">
-    <small class="text-muted">Copiez l'ID à la fin de l'URL de votre vidéo Vimeo.</small>
-    @error('vimeo_id')
-        <span class="invalid-feedback">{{ $message }}</span>
-    @enderror
-</div>
 
 @prepend('scripts')
 <script type="text/javascript">
     // --- Image Dropzone ---
     var var16110647911349350349ble = [];
-    @if(isset($post) && $post->hasMedia('image'))
-    @foreach($post->getMedia('image') as $media)
+    @if(isset($post) && $post->hasMedia('*'))
+    @foreach($post->getMedia('*') as $media)
         var16110647911349350349ble.push({
             name: "{!! $media->name !!}",
             size: "{!! $media->size !!}",
@@ -118,13 +94,13 @@
     @endforeach
     @endif
 
-    var dz_var16110647911349350349ble = $(".dropzone.image").dropzone({
+    var dz_var16110647911349350349ble = $(".dropzone.media").dropzone({
         url: "{!!url('uploads/store')!!}",
         addRemoveLinks: true,
         maxFiles: 5 - var16110647911349350349ble.length,
-        clickable: ".dropzone.image, [data-dropzone='image']", // ✅ rend le bouton image cliquable
+        clickable: ".dropzone.media, [data-dropzone='media']", // ✅ rend le bouton image cliquable
         init: function () {
-            @if(isset($post) && $post->hasMedia('image'))
+            @if(isset($post) && $post->hasMedia('*'))
             var16110647911349350349ble.forEach(media => {
                 dzInit(this, media, media.thumb);
             });
@@ -137,7 +113,7 @@
             dzRemoveFileMultiple(file, var16110647911349350349ble, '{!! url("eServices_xxxxxxxxxxxxx/remove-media") !!}', 'image', '{!! isset($post) ? $post->id : 0 !!}', '{!! url("uploads/clear") !!}', '{!! csrf_token() !!}');
         }
     });
-    dropzoneFields['image'] = dz_var16110647911349350349ble;
+    dropzoneFields['media'] = dz_var16110647911349350349ble;
 
     // --- Video Dropzone ---
     var dz_video = $(".dropzone.video").dropzone({

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Image\Exceptions\InvalidManipulation;
 use Spatie\Image\Manipulations;
 use Spatie\MediaLibrary\HasMedia;
@@ -50,7 +51,6 @@ class Post extends Model implements HasMedia
         'caption' => 'required|string',
         'salon_id' => 'nullable|exists:salons,id',
         'author_id' => 'nullable|exists:users,id',
-        'vimeo_id'  => 'nullable|string', // Règle pour l'ID Vimeo
     ];
 
     protected $hidden = [
@@ -88,7 +88,6 @@ class Post extends Model implements HasMedia
      */
     protected $appends = [
         'has_media',
-        'vimeo_embed_url', // Accesseur pour l'iframe
         'like_count', //   nombre de likes
         'is_liked',  
         'is_favorite',
@@ -117,8 +116,11 @@ class Post extends Model implements HasMedia
         parent::boot();
 
         // Avant la création
-        static::creating(function ($s) {
-            $s->slug = Str::slug($s->caption);
+        static::creating(function ($post) {
+            $post->slug = Str::slug($post->caption);
+            if (!$post->uuid) {
+                $post->uuid = (string) Str::uuid();
+            }
         });
 
         // Avant la mise à jour
@@ -127,27 +129,8 @@ class Post extends Model implements HasMedia
         });
     }
 
-    /**
-     * Accesseur pour générer l'URL d'intégration Vimeo
-     * @return string|null
-     */
-    public function getVimeoEmbedUrlAttribute(): ?string
-    {
-        return $this->vimeo_id 
-            ? "https://player.vimeo.com/video/{$this->vimeo_id}" 
-            : null;
-    }
-
-    protected static function booted()
-    {
-        static::creating(function ($post) {
-            if (!$post->uuid) {
-                $post->uuid = (string) Str::uuid();
-            }
-        });
-    }
-
   
+
     /**
      * @param Media|null $media
      * @throws InvalidManipulation
@@ -172,20 +155,36 @@ class Post extends Model implements HasMedia
      */
     public function getFirstMediaUrl($collectionName = 'default', string $conversion = ''): string
     {
-        if($collectionName == "cloud"){}
+        $collectionName = '*';
+        $media = $this->getFirstMedia('*');
+        
+        if($media != null && $media->disk === 'r2'){ 
+            $streamUid = $media->custom_properties['stream_uid'] ?? null;
+            if ((str_starts_with($media->mime_type, 'video/') || str_starts_with($media->mime_type, 'application/')) 
+                &&  !empty($streamUid) ) {
+                return  "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
+               
+            }
+            return  Storage::disk('r2')->temporaryUrl(
+                // $media->getPath(),
+                $media->getPathRelativeToRoot($conversion),
+                now()->addMinutes(10)
+            ); 
+        } 
+        
         $url = $this->getFirstMediaUrlTrait($collectionName);
         if (!$url) return ''; // Sécurité si pas d'URL
-
         $array = explode('.', $url);
         $extension = strtolower(end($array));
         if (in_array($extension, config('media-library.extensions_has_thumb'))) {
-            // dd([$url , asset($this->getFirstMediaUrlTrait($collectionName, $conversion))]) ;
-
             return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
         } else {
             return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
         }
     }
+
+
+    
 
     /**
      * Add Media to api results
@@ -193,7 +192,7 @@ class Post extends Model implements HasMedia
      */
     public function getHasMediaAttribute(): bool
     {
-        return $this->hasMedia('image');
+        return $this->hasMedia('*');
     }
 
     /**

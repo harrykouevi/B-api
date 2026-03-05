@@ -6,7 +6,7 @@ use App\Models\Post;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use App\Models\User;
-use App\Repositories\PostRepository;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -18,13 +18,13 @@ use Tests\TestCase;
 
 class PostApiControllerTest extends TestCase
 {
-    use DatabaseTransactions;
+    // use DatabaseTransactions;
     /**
      * A basic feature test example.
      */
-    public function test_example(): void
+    public function testStore(): void
     {
-         try{ 
+        try{ 
             // Fake le storage pour Spatie Media Library ^pour que l'image soit supprimer
             // Storage::fake('public');
 
@@ -43,15 +43,26 @@ class PostApiControllerTest extends TestCase
             ]);
             $user->assignRole(2);
 
-           
-
-
+            // $file = UploadedFile::fake()->image('water.jpg');
+         
+            $file = new UploadedFile(
+                base_path('tests/video.mp4'),
+                'video.mp4',
+                'video/mp4',
+                null,
+                true // test mode
+            );
+            
+            $this->actingAs($user,'api');
            
             $response = $this->actingAs($user, 'api')->postJson(route('api.posts.store'), [
+             
                 "author_id"=> $user->id, 
-                "e_service"=> 210, 
+                "e_service_id"=> 210, 
                 "salon_id"=> 62, 
-                "caption" =>  " zrzr rzzrz rzrzr rzrz"
+                "caption" =>  " zrzr rzzrz rzrzr rzrz",
+                'caption' => 'gefef feff ef rfrffgrr frf',
+                'file' => [$file], // nom de la collection
             ]);
 
             dd($response->json());
@@ -123,6 +134,34 @@ class PostApiControllerTest extends TestCase
         }
 
         
+    }
+
+    public function testShow(){
+        
+
+        try{ 
+          
+            $user = $this->createUser();
+            $queryParameters = [
+                // 'with' => 'post',
+                // 'search' => 'categories.id:3',
+                // 'searchFields' => 'categories.id:=',
+            ];
+            
+    
+            $this->actingAs($user,'api');
+            $response = $this->json('get', route('api.posts.show','3e8bcb14-c8e4-46ab-8aa9-1589d7143895') , $queryParameters);
+        
+            $d = $response->json();
+            dd($d) ;
+         
+            $response->assertStatus(ResponseAlias::HTTP_OK);
+
+        } catch (\Exception $e) {
+            Log::error('FAIL:'. $e->getMessage() , [
+                 'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     public function testlike()

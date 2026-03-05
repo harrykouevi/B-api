@@ -8,9 +8,11 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as BaseMedia;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 
 /**
@@ -38,8 +40,24 @@ class Media extends BaseMedia implements HasMedia
 
     public function getUrlAttribute(): string
     {
+
+        if ($this->disk === 'r2') {
+            $streamUid = $this->custom_properties['stream_uid'] ?? null;
+            if ((str_starts_with($this->mime_type, 'video/') || str_starts_with($this->mime_type, 'application/')) 
+                &&  !empty($streamUid) ) {
+                return  "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
+               
+            }
+
+            return Storage::disk('r2')->temporaryUrl(
+                $this->getPathRelativeToRoot(),
+                now()->addMinutes(10)
+            );
+        }
         return $this->getFullUrl();
     }
+
+    
 
     public function getThumbAttribute(): string
     {
@@ -58,6 +76,24 @@ class Media extends BaseMedia implements HasMedia
      */
     public function getFirstMediaUrl(string $conversion = ''): string
     {
+        if ($this->disk === 'r2') {
+
+            $streamUid = $this->custom_properties['stream_uid'] ?? null;
+            if ((str_starts_with($this->mime_type, 'video/') || str_starts_with($this->mime_type, 'application/')) 
+                &&  !empty($streamUid) ) {
+                return  "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
+               
+            }
+
+            $path = $conversion
+                ? $this->getPathRelativeToRoot($conversion)
+                : $this->getPathRelativeToRoot();
+
+            return Storage::disk('r2')->temporaryUrl(
+                $path,
+                now()->addMinutes(10)
+            );
+        }
         $url = $this->getUrl();
         $array = explode('.', $url);
         $extension = strtolower(end($array));
@@ -67,6 +103,27 @@ class Media extends BaseMedia implements HasMedia
             return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
         }
     }
+
+
+    protected function customProperties(): Attribute
+    {
+        return Attribute::make(
+            // Lecture depuis la DB
+            get: function ($value) {
+                if (is_array($value)) return $value;
+
+                $value = trim($value, '"');
+                $value = stripslashes($value);
+                return json_decode($value, true) ?? [];
+            
+            },
+        );
+    }
+
+    
+
+
+    
 
     public function getIconAttribute(): string
     {

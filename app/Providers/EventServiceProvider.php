@@ -34,7 +34,9 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Events\PostCreated;
+use App\Events\VideoUploadEvent;
 use App\Listeners\SendPostCreationNotification;
+use App\Listeners\VideoUploadEventListener;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -61,11 +63,11 @@ class EventServiceProvider extends ServiceProvider
             CreatingPaymentListener::class,
         ],
         PostCreated::class => [
-        SendPostCreationNotification::class,
-    ],
-    'App\Events\CommentCreated' => [
-        'App\Listeners\SendCommentNotification',
-    ],
+            SendPostCreationNotification::class,
+        ],
+        'App\Events\CommentCreated' => [
+            'App\Listeners\SendCommentNotification',
+        ],
 
         BookingPaymentUpdatedEvent::class => [
             UpdateBookingPaymentListener::class,
@@ -96,6 +98,10 @@ class EventServiceProvider extends ServiceProvider
 
         SendOtpByInfoBipEvent::class => [
             SendOtpByInfoBipListener::class,
+        ],
+
+        VideoUploadEvent ::class => [
+            VideoUploadEventListener ::class,
         ],
 
     ];

@@ -60,19 +60,24 @@ class PostController extends Controller
      *
      * @return RedirectResponse
      */
-    public function store(CreatePostRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $input = $request->all();
+        
+        // dd($input) ;
         try {
             //j'envoie la vidéo dans le cloudflare 
             //A la fin de l'enregistrement je recupere l'id de la vidéo et je le stocke dans la table posts
-            
+            //  $disk = ($input['field'] === 'cloudmedia') ? config('filesystems.cloud') : config('filesystems.default');
             $post = $this->postRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
                     $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                    $mediaItem = $cacheUpload->getMedia('image')->first();
-                    $mediaItem->copy($post, 'image');
+                    $mediaItem = $cacheUpload->getMedia('*')->first();
+                    // dd($mediaItem) ;
+                    // dd($mediaItem->custom_properties); 
+                    // $mediaItem->copy($post, 'image');
+                    $mediaItem->copy($post,'cloudmedia', config('filesystems.cloud'));
                 }
             }
         } catch (ValidatorException $e) {
@@ -120,6 +125,9 @@ class PostController extends Controller
             return redirect(route('eServices.index'));
         }
 
+        $post->loadMedia('*');
+
+        $post->getFirstMediaUrl('*') ;
         return view('posts.show')->with('post', $post);
     }
 

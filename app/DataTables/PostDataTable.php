@@ -46,12 +46,18 @@ class PostDataTable extends DataTable
 
         $dataTable = $dataTable
             ->editColumn('media', function ($post) {
-                if (!is_null($post->vimeo_id)) {
-                    return '<iframe src="https://player.vimeo.com/video/'.$post->vimeo_id.'" 
-                            width="140" height="80" frameborder="0" 
-                            allow="autoplay; fullscreen" allowfullscreen></iframe>';
+
+                if($post->has_media == true){ 
+                    $media = $post->getFirstMedia('*') ;
+                    if(str_starts_with($media->mime_type, 'application/') || str_starts_with($media->mime_type, 'video/')) {
+                        
+                            return '<iframe src="'.$post->getFirstMediaUrl('*').'" 
+                                    width="140" height="80" frameborder="0" 
+                                    allow="autoplay; fullscreen" allowfullscreen></iframe>';
+                    }
                 }
-                return getMediaColumn($post, 'image');
+               
+                return getMediaColumn($post, '*');
             })
             ->editColumn('name', function ($post) {
                 if ($post['featured']) {

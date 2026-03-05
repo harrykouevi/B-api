@@ -119,9 +119,11 @@ class PostAPIController extends Controller
     {
         try {
 
-            $request->validate([
-                'image' => 'required|image|max:5120', // max 5MB
-            ]);
+            // $request->validate([
+            //     'image' => 'required|image|max:5120', // max 5MB
+            //     'file.file' => 'required|file|mimes:jpeg,png,jpg,gif,svg,mp4,mov,avi,wmv,webm,mkv|max:400480',
+            //     'file.field' => 'required|string',
+            // ]);
 
             $input = $request->all();
 
@@ -132,18 +134,10 @@ class PostAPIController extends Controller
                 $input['visibility'] = 'public';
                 $input['status'] = 'published';
                 $input['uuid'] = (isset($input['uuid']) && Str::isUuid($input['uuid'])) ? $input['uuid'] : (string) Str::uuid();
+ 
+               // $request->loadMedia('image');
 
-                if (isset($input['vimeo_id'])) {
-                    $input['vimeo_id'] = preg_replace('/[^0-9]/', '', $input['vimeo_id']);
-                }
-
-                $request->loadMedia('image');
                 $post = $this->postRepository->create($input);
-
-                
-                $request->loadMedia('image');
-                $post = $this->postRepository->create($input);
-            
                 $m = clone($post);
 
                 if (isset($input['e_service_id']) && $input['e_service_id']) {
@@ -152,40 +146,38 @@ class PostAPIController extends Controller
                     $data['model_type'] = 'App\Models\EService';
                     $data['model_id'] = $input['e_service_id'];
                     $this->postTargetRepository->create($data);
-                    $cacheUpload = $this->postTargetRepository->create($data);
+                    
                 }
 
-                if (isset($input['target']) && $input['target'] && is_array($input['target'])) {
-                    foreach ($input['target'] as $target) {
-                        $data = [];
-                        $data['post_id'] = $m->id;
-                        $data['model_type'] = 'App\Models\EService';
-                        $data['model_id'] = $input['e_service'];
-                       
+
+                if (isset($input['file']) && is_array($input['file'])) {
+
+                    foreach ($input['file'] as $fileUuid) {
+                        // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
+                        if(Str::isUuid($fileUuid)){ 
+                            $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
+                            $mediaItem = $cacheUpload->getMedia('*')->first();
+                            $mediaItem->copy($m, 'cloudmedia', config('filesystems.cloud'));
+                            
+                        }
+                    }
+
+                    foreach($request->file('file') as $file){
+                        $in = [
+                            'uuid' =>  (string) Str::uuid() ,
+                            'field' => 'cloudmedia' ,
+                        ] ;
+                        $this->uploadRepository->createWithMedia($file,$in,$m);
                     }
                 }
-                $post->targetModels();
+                
                 Log::info([$post->toArray()]);
+
+                $post->targetModels();
+                $post->load('media');
             }
             
-            if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
-
-                foreach ($input['image'] as $fileUuid) {
-                    // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
-                    if(Str::isUuid($fileUuid)){ 
-
-                        $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                        $mediaItem = $cacheUpload->getMedia('image')->first();
-                        $mediaItem->copy($m, 'image');
-                    }else{ 
-                    
-                        $image = $request->file('image');
-                        $image = $fileUuid->file('image');
-                        $cloudresponse = $this->cloudService->sendImage($image) ;
-                    }
-                }
-            }
-            $post->loadMedia('image');
+           
 
 
                     
@@ -194,16 +186,8 @@ class PostAPIController extends Controller
         } catch (Exception $e) {
             return $this->sendError($e->getMessage(), 500);
         }
-
-       
-       
-       
-        
-    
         
         event(new PostCreated($post));
-    
-        
         return $this->sendResponse($post, __('lang.saved_successfully', ['operator' => __('lang.post')]));
     } 
 

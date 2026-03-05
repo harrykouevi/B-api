@@ -114,10 +114,16 @@ return [
         'api_key' => env('INFOBIP_API_KEY'),
         'sender' => env('INFOBIP_SENDER'),
     ],
+
+
     'cloudflare' => [
-    'token' => env('CLOUDFLARE_TOKEN'),
-    'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
-],
+        'account_id'=> env('CLOUDFLARE_ACCOUNT_ID') ,
+        'stream_token' => env('CLOUDFLARE_STREAM_TOKEN'),
+        'r2_access_key_id' => env('CLOUDFLARE_R2_ACCESS_KEY_ID'),
+        'r2_secret_access_key' => env('CLOUDFLARE_R2_SECRET_ACCESS_KEY'),
+        'bucket' => env('CLOUDFLARE_R2_BUCKET'),
+        'r2_endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
+    ],
 
    
 

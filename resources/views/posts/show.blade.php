@@ -1,5 +1,23 @@
 @extends('layouts.app')
 
+@push('css_lib')
+    <link rel="stylesheet" href="{{asset('vendor/icheck-bootstrap/icheck-bootstrap.min.css')}}">
+    <link rel="stylesheet" href="{{asset('vendor/select2/css/select2.min.css')}}">
+    <link rel="stylesheet" href="{{asset('vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css')}}">
+    <link rel="stylesheet" href="{{asset('vendor/summernote/summernote-bs4.min.css')}}">
+    <link rel="stylesheet" href="{{asset('vendor/dropzone/min/dropzone.min.css')}}">
+    <link rel="stylesheet" href="{{asset('vendor/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css')}}">
+    <style>
+
+    
+        /* Désactivées */
+        .select2-results__option[aria-disabled="true"] {
+            color: #bbb;
+            font-style: italic;
+        }
+    </style>
+@endpush
+
 @section('content')
     <!-- Content Header (Page header) -->
     <div class="content-header">
@@ -52,3 +70,14 @@
         </div>
     </div>
 @endsection
+@push('scripts_lib')
+    <script src="{{asset('vendor/select2/js/select2.full.min.js')}}"></script>
+    <script src="{{asset('vendor/summernote/summernote.min.js')}}"></script>
+    <script src="{{asset('vendor/dropzone/min/dropzone.min.js')}}"></script>
+    <script src="{{asset('vendor/moment/moment.min.js')}}"></script>
+    <script src="{{asset('vendor/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js')}}"></script>
+    <script type="text/javascript">
+        Dropzone.autoDiscover = false;
+        var dropzoneFields = [];
+    </script>
+@endpush

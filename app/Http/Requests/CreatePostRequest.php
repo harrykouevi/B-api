@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Post;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InfyOm\Generator\Utils\ResponseUtil;
 
@@ -54,7 +55,50 @@ class CreatePostRequest extends FormRequest
     {
         return [...Post::$rules ,
         'e_service_id' => 'nullable|exists:e_services,id',  
-        'image' => 'nullable|image|max:5120', // max 5MB
+
+        'file' => ['nullable', 'array'],
+        'file.*' => [
+            'required',
+            function ($attribute, $value, $fail) {
+
+                // Cas 1 : vrai fichier uploadé
+                if ($value instanceof \Illuminate\Http\UploadedFile) {
+
+                    $allowedMimes = [
+                        'image/jpeg',
+                        'image/png',
+                        'image/gif',
+                        'image/svg+xml',
+                        'video/mp4',
+                        'video/quicktime',
+                        'video/x-msvideo',
+                        'video/x-ms-wmv',
+                        'video/webm',
+                        'video/x-matroska',
+                    ];
+
+                    if (!in_array($value->getMimeType(), $allowedMimes)) {
+                        $fail('Type de fichier non autorisé.');
+                    }
+
+                    if ($value->getSize() > 400480 * 1024) {
+                        $fail('Fichier trop volumineux.');
+                    }
+
+                    return;
+                }
+
+                // Cas 2 : UUID (upload temporaire)
+                if (is_string($value)) {
+                    if (!Str::isUuid($value)) {
+                        $fail('UUID invalide.');
+                    }
+                    return;
+                }
+
+                $fail('Format de fichier invalide.');
+            },
+        ],
 
         'target.*' => 'nullable|array',  
         'target.*.model' => 'required|string',  

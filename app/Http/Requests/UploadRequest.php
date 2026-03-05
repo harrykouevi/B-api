@@ -57,7 +57,8 @@ class UploadRequest extends FormRequest
     {
         
         return [
-            'file' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
+            // 'file' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
+            'file' => 'required|file|mimes:jpeg,png,jpg,gif,svg,mp4,mov,avi,wmv,webm,mkv|max:400480',
             'field' => 'required|string',
         ];
     }

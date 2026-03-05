@@ -8,11 +8,13 @@
 
 namespace App\Repositories;
 
+use App\Events\VideoUploadEvent;
 use App\Models\Media;
 use App\Models\Upload;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use InfyOm\Generator\Common\BaseRepository;
 
@@ -111,6 +113,34 @@ class UploadRepository extends BaseRepository
         unset($medias['default']);
         $medias->prepend(['value' => 'default', 'title' => 'Default'], 'default');
         return $medias;
+    }
+
+
+    public function createWithMedia($file, Array $other_inputs , ?Model $model =null)
+    {
+        $other_inputs = [ ...$other_inputs ,
+            'user_id' => Auth::user()->id,
+            // 'status' => 'processing',
+            //'type' => 'video',
+        ] ;
+        $upload = $this->create($other_inputs);
+        
+        if (str_starts_with($file->getMimeType(), 'video/')) {
+            $path = $file->store('uploads/videos', 'public');
+            event(new VideoUploadEvent($upload->id, $path , $model ?? $upload));
+
+        }else{
+            $disk = ($other_inputs['field'] === 'cloudmedia') ? config('filesystems.cloud') : config('filesystems.default');
+            $collection_name = $other_inputs['field'] ;
+            $media = $upload->addMedia($file)
+                ->withCustomProperties(['uuid' => $other_inputs['uuid'], 'user_id' => auth()->id()])
+                ->toMediaCollection($collection_name ,$disk );
+
+            if( !is_null($model) )  $media->copy($model, $other_inputs['field'] ,$disk);
+            
+        }
+
+        return  $upload;
     }
 
 }

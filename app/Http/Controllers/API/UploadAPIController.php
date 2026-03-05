@@ -41,17 +41,12 @@ class UploadAPIController extends Controller
     public function store(UploadRequest $request): JsonResponse
     {
         $input = $request->all();
-        // Gestion de l'exception
-        Log::channel('listeners_transactions')->error('Erreur at upload files #' , [
-            'exception' => $request->all(),
-        ]);
         try {
             $input['uuid'] = $input['uuid'] ?? (string) Str::uuid();
-            $upload = $this->uploadRepository->create($input);
-            $upload->addMedia($input['file'])
-                ->withCustomProperties(['uuid' => $input['uuid'], 'user_id' => auth()->id()])
-                ->toMediaCollection($input['field']);
+            $file = $request->file('file');
+            $this->uploadRepository->createWithMedia($file,$input);
             return $this->sendResponse($input['uuid'], "Uploaded Successfully");
+
         } catch (ValidatorException $e) {
             return $this->sendError(false, $e->getMessage());
         }
@@ -413,5 +408,29 @@ class UploadAPIController extends Controller
             Log::error('Error deleting physical file by URL: ' . $e->getMessage());
             return false;
         }
+    }
+
+
+    /**
+     * Wook called by cloudflare
+     * @param string $url
+     * @return bool
+     */
+    public function handleCloudFlare(Request $request)
+    {
+        $payload = $request->all();
+
+        // Vérification signature possible ici
+        // $this->verifySignature($request);
+
+        $upload = Upload::where('stream_uid', $payload['uid'])->first();
+
+        if ($upload) {
+            $upload->status = $payload['status']['state']; // ready / processing / error
+            $upload->pct_complete = $payload['status']['pctComplete'] ?? 100;
+            $upload->save();
+        }
+
+        return response()->json(['success' => true]);
     }
 }
