@@ -24,6 +24,7 @@ class UploadToStream implements ShouldQueue
 
     public function __construct($uploadId, $path , ?Model $model = null )
     {
+        $this->onQueue('upload');
         $this->uploadId = $uploadId;
         $this->path = $path;
         $this->model = $model;
