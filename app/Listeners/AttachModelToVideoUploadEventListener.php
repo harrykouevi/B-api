@@ -14,7 +14,7 @@ class AttachModelToVideoUploadEventListener
     // /**
     //  * Create the event listener.
     //  */
-     public function __construct(CloudService $cloudService , $uploadRepository)
+     public function __construct(CloudService $cloudService ,UploadRepository $uploadRepository)
     {
         $this->cloudService = $cloudService;
         $this->uploadRepository = $uploadRepository ;
