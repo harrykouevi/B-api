@@ -30,7 +30,7 @@ class UploadToStream implements ShouldQueue
         $this->model = $model;
     }
 
-    public function handle(CloudService $cloudService)
+    public function handle()
     {
         $upload = Upload::find($this->uploadId);
 
