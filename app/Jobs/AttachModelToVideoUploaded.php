@@ -17,12 +17,10 @@ class AttachModelToVideoUploaded implements ShouldQueue
     public $uploadId;
     public $path;
     public ?Model $model = null;
-    public  UploadRepository $uploadRepository ;
 
-    public function __construct( UploadRepository $uploadRepository , $uploadId, ?Model $model = null )
+    public function __construct( $uploadId, ?Model $model = null )
     {
         $this->onQueue('upload');
-        $this->uploadRepository = $uploadRepository; 
         $this->uploadId = $uploadId;
         $this->model = $model;
     }
@@ -30,9 +28,9 @@ class AttachModelToVideoUploaded implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle( UploadRepository $uploadRepository ,): void
     {
-        $cacheUpload = $this->uploadRepository->getByUuid($this->uploadId);
+        $cacheUpload = $uploadRepository->getByUuid($this->uploadId);
        
         $mediaItem = null;
         $attempts = 0;
