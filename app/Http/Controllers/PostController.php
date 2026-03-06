@@ -57,7 +57,6 @@ class PostController extends Controller
     /**
      * Store a newly created EService in storage.
      *
-     * @param CreateEServiceRequest $request
      *
      * @return RedirectResponse
      */
@@ -115,7 +114,7 @@ class PostController extends Controller
         if (is_null($post)) {
             Flash::error('Post not found');
 
-            return redirect(route('eServices.index'));
+            return redirect(route('posts.index'));
         }
 
         $post->loadMedia('*');

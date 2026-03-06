@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Criteria\Salons\SalonsOfUserCriteria;
 use App\DataTables\StoryDataTable;
+use App\Events\AttachModelToVideoUploadEvent;
 use App\Http\Requests\CreateStoryRequest;
 use App\Http\Requests\UpdateStoryRequest;
-use App\Repositories\PostRepository;
 use App\Repositories\StoryRepository;
 use App\Repositories\SalonRepository;
 use App\Repositories\UploadRepository;
@@ -25,9 +25,7 @@ class StoryController extends Controller
      /** @var  StoryRepository */
     private StoryRepository $storyRepository;
 
-     /** @var  PostRepository */
-    private PostRepository $postRepository;
-
+   
     /**
      * @var UploadRepository
      */
@@ -39,17 +37,15 @@ class StoryController extends Controller
     private SalonRepository $salonRepository;
 
  
-    public function __construct(PostRepository $postRepo, UploadRepository $uploadRepo
-        , SalonRepository                          $salonRepo)
+    public function __construct(StoryRepository $storyRepo, UploadRepository $uploadRepo)
     {
         parent::__construct();
-        $this->postRepository = $postRepo;
+        $this->storyRepository = $storyRepo;
         $this->uploadRepository = $uploadRepo;
-        $this->salonRepository = $salonRepo;
     }
 
     /*
-     * @param StoryDataTable $postDataTable
+     * @param StoryDataTable $storyDataTable
      * @return Response
      */
     public function index(StoryDataTable $storyDataTable): mixed
@@ -60,30 +56,25 @@ class StoryController extends Controller
     /**
      * Store a newly created EService in storage.
      *
-     * @param CreateEServiceRequest $request
-     *
      * @return RedirectResponse
      */
-    public function store(CreateStoryRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $input = $request->all();
         try {
-            //j'envoie la vidéo dans le cloudflare 
-            //A la fin de l'enregistrement je recupere l'id de la vidéo et je le stocke dans la table posts
             
-            $post = $this->postRepository->create($input);
+            $story = $this->storyRepository->create($input);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
-                    $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
-                    $mediaItem = $cacheUpload->getMedia('image')->first();
-                    $mediaItem->copy($post, 'image');
+                    
+                    event(new AttachModelToVideoUploadEvent($fileUuid, $story));
                 }
             }
         } catch (ValidatorException $e) {
             Flash::error($e->getMessage());
         }
 
-        Flash::success(__('lang.saved_successfully', ['operator' => __('lang.post')]));
+        Flash::success(__('lang.saved_successfully', ['operator' => __('lang.story')]));
 
         return redirect(route('stories.index'));
     }
@@ -95,10 +86,9 @@ class StoryController extends Controller
      */
     public function create(): View
     {
-        $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
-        $hasCustomField = in_array($this->postRepository->model(), setting('custom_field_models', []));
+        $hasCustomField = in_array($this->storyRepository->model(), setting('custom_field_models', []));
        
-        return view('stories.create')->with("customFields", $html ?? false)->with("salon", $salon);
+        return view('stories.create')->with("customFields", $html ?? false);
     }
 
     /**
@@ -111,20 +101,20 @@ class StoryController extends Controller
      */
     public function show($id): RedirectResponse|View
     {
-        $post = null ;
+        $story = null ;
         if(is_numeric($id)){ 
-            $post = $this->postRepository->findWithoutFail($id);
+            $story = $this->storyRepository->findWithoutFail($id);
         }else if(Str::isUuid($id)){ 
-            $post = $this->postRepository->findByField('uuid', $id)->first();
+            $story = $this->storyRepository->findByField('uuid', $id)->first();
         }
 
-        if (is_null($post)) {
+        if (is_null($story)) {
             Flash::error('Story not found');
 
-            return redirect(route('eServices.index'));
+            return redirect(route('stories.index'));
         }
 
-        return view('stories.show')->with('post', $post);
+        return view('stories.show')->with('story', $story);
     }
 
     /**
@@ -137,9 +127,9 @@ class StoryController extends Controller
      */
     public function edit(int $id): RedirectResponse|View
     {
-        $this->postRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
-        $post = $this->postRepository->findWithoutFail($id);
-        if (empty($post)) {
+        $this->storyRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
+        $story = $this->storyRepository->findWithoutFail($id);
+        if (empty($story)) {
             Flash::error(__('lang.not_found', ['operator' => __('lang.e_service')]));
 
             return redirect(route('eServices.index'));
@@ -148,7 +138,7 @@ class StoryController extends Controller
         $salon = $this->salonRepository->getByCriteria(new SalonsOfUserCriteria(auth()->id()))->pluck('name', 'id');
 
     
-        return view('e_services.edit')->with('eService', $post)->with("customFields", $html ?? false)->with("salon", $salon);
+        return view('e_services.edit')->with('eService', $story)->with("customFields", $html ?? false)->with("salon", $salon);
     }
 
     /**
@@ -162,10 +152,10 @@ class StoryController extends Controller
      */
     public function update(int $id, UpdateStoryRequest $request): RedirectResponse
     {
-        $this->postRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
-        $post = $this->postRepository->findWithoutFail($id);
+        $this->storyRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
+        $story = $this->storyRepository->findWithoutFail($id);
 
-        if (empty($post)) {
+        if (empty($story)) {
             Flash::error('E Service not found');
             return redirect(route('eServices.index'));
         }
@@ -177,12 +167,12 @@ class StoryController extends Controller
 
            
             
-            $post = $this->postRepository->update($input, $id);
+            $story = $this->storyRepository->update($input, $id);
             if (isset($input['image']) && $input['image'] && is_array($input['image'])) {
                 foreach ($input['image'] as $fileUuid) {
                     $cacheUpload = $this->uploadRepository->getByUuid($fileUuid);
                     $mediaItem = $cacheUpload->getMedia('image')->first();
-                    $mediaItem->copy($post, 'image');
+                    $mediaItem->copy($story, 'image');
                 }
             }
            
@@ -205,25 +195,25 @@ class StoryController extends Controller
      */
     public function destroy($id): RedirectResponse
     {
-        $post = null ;
+        $story = null ;
         if(is_numeric($id)){ 
-            $post = $this->postRepository->findWithoutFail($id);
+            $story = $this->storyRepository->findWithoutFail($id);
         }else if(Str::isUuid($id)){ 
-            $post = $this->postRepository->findByField('uuid', $id)->first();
+            $story = $this->storyRepository->findByField('uuid', $id)->first();
 
           
         }
 
-        if (is_null($post)) {
+        if (is_null($story)) {
 
             Flash::error('Story not found');
 
             return redirect(route('stories.index'));
         }
 
-        $this->postRepository->delete($post->id);
+        $this->storyRepository->delete($story->id);
 
-        Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.post')]));
+        Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.story')]));
 
         return redirect(route('stories.index'));
     }
@@ -235,10 +225,10 @@ class StoryController extends Controller
     public function removeMedia(Request $request): void
     {
         $input = $request->all();
-        $post = $this->postRepository->findWithoutFail($input['id']);
+        $story = $this->storyRepository->findWithoutFail($input['id']);
         try {
-            if ($post->hasMedia($input['collection'])) {
-                $post->getFirstMedia($input['collection'])->delete();
+            if ($story->hasMedia($input['collection'])) {
+                $story->getFirstMedia($input['collection'])->delete();
             }
         } catch (Exception $e) {
             Log::error($e->getMessage());

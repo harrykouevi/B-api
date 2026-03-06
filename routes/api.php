@@ -191,7 +191,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('affiliate/track-click/{affiliateLinkId}', [AffiliateAPIController::class, 'trackConversion']);
 
-     Route::resource('stories', StoryAPIController::class)->only([
+    Route::resource('stories', StoryAPIController::class)->only([
         'index', 'store', 'destroy'
     ]);
   

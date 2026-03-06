@@ -18,6 +18,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\MediaCollections\Models\Concerns\HasUuid;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Class Story
@@ -45,7 +46,8 @@ class Story extends Model implements HasMedia
      */
     public static array $rules = [
         'user_id' => 'required|exists:users,id',
-        'type' => 'required|in:image,video',
+        'salon_id' => 'nullable|exists:salons,id',
+
     ];
 
     protected $hidden = [
@@ -55,7 +57,7 @@ class Story extends Model implements HasMedia
     public $fillable = [
         'uuid',
         'user_id',
-        'type',
+        'salon_id',
         'expires_at',
     ];
 
@@ -65,10 +67,12 @@ class Story extends Model implements HasMedia
      * @var array
      */
     protected $casts = [
+        
         'user_id' => 'integer',
-        'type' => 'string',
-        'expires_at' => 'datetime',
+        'salon_id' => 'integer',
     ];
+
+  
 
     /**
      * New Attributes
@@ -121,9 +125,24 @@ class Story extends Model implements HasMedia
      */
     public function getFirstMediaUrl($collectionName = 'default', string $conversion = ''): string
     {
+        $collectionName = '*';
+        $media = $this->getFirstMedia('*');
+        
+        if($media != null && $media->disk === 'r2'){ 
+            $streamUid = $media->custom_properties['stream_uid'] ?? null;
+            if ((str_starts_with($media->mime_type, 'video/') || str_starts_with($media->mime_type, 'application/')) 
+                &&  !empty($streamUid) ) {
+                return  "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
+               
+            }
+            return  Storage::disk('r2')->temporaryUrl(
+                $media->getPathRelativeToRoot($conversion),
+                now()->addMinutes(10)
+            ); 
+        } 
+        
         $url = $this->getFirstMediaUrlTrait($collectionName);
-        if (!$url) return '';
-
+        if (!$url) return ''; // Sécurité si pas d'URL
         $array = explode('.', $url);
         $extension = strtolower(end($array));
         if (in_array($extension, config('media-library.extensions_has_thumb'))) {
@@ -139,7 +158,7 @@ class Story extends Model implements HasMedia
      */
     public function getHasMediaAttribute(): bool
     {
-        return $this->hasMedia('image') || $this->hasMedia('video');
+        return $this->hasMedia('*') ;
     }
 
     /**
@@ -148,5 +167,14 @@ class Story extends Model implements HasMedia
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+
+    /**
+     * A post can have many reports (polymorphic)
+     */
+    public function reports()
+    {
+        return $this->morphMany(Report::class, 'model');
     }
 }

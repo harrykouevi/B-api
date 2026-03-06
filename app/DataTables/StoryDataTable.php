@@ -9,7 +9,7 @@
 namespace App\DataTables;
 
 use App\Models\CustomField;
-use App\Models\Post;
+use App\Models\Story;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Yajra\DataTables\DataTableAbstract;
 use Yajra\DataTables\EloquentDataTable;
@@ -58,63 +58,69 @@ class StoryDataTable extends DataTable
 
 
         $dataTable = $dataTable
-            ->editColumn('media', function ($post) {
-                if (!is_null($post->vimeo_id)) {
-                    return '<iframe src="https://player.vimeo.com/video/'.$post->vimeo_id.'" 
-                            width="140" height="80" frameborder="0" 
-                            allow="autoplay; fullscreen" allowfullscreen></iframe>';
+            ->editColumn('media', function ($story) {
+
+                if($story->has_media == true){ 
+                    $media = $story->getFirstMedia('*') ;
+                    if(str_starts_with($media->mime_type, 'application/') || str_starts_with($media->mime_type, 'video/')) {
+                        
+                            return '<iframe src="'.$story->getFirstMediaUrl('*').'" 
+                                    width="140" height="80" frameborder="0" 
+                                    allow="autoplay; fullscreen" allowfullscreen></iframe>';
+                    }
                 }
-                return getMediaColumn($post, 'image');
+               
+                return getMediaColumn($story, '*');
             })
-            ->editColumn('name', function ($post) {
-                if ($post['featured']) {
-                    return $post['name'] . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.post_featured') . "</span>";
+            ->editColumn('name', function ($story) {
+                if ($story['featured']) {
+                    return $story['name'] . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.story_featured') . "</span>";
                 }
-                return $post['name'];
+                return $story['name'];
             })
            
-            ->editColumn('view_count', function ($post) {
+            // ->editColumn('view_count', function ($story) {
                 
-                return  '<span class="badge badge-secondary">'.$post->view_count.'</span>';
-            })
+            //     return  '<span class="badge badge-secondary">'.$story->view_count.'</span>';
+            // })
 
-            ->editColumn('like_count', function ($post) {
+            // ->editColumn('like_count', function ($story) {
                 
-                return  '<span class="badge badge-secondary">'.$post->like_count.'</span>';
+            //     return  '<span class="badge badge-secondary">'.$story->like_count.'</span>';
 
-            })
-            ->editColumn('comment_count', function ($post) {
+            // })
+            // ->editColumn('comment_count', function ($story) {
                 
-                return  '<span class="badge badge-secondary">'.$post->comment_count.'</span>';
+            //     return  '<span class="badge badge-secondary">'.$story->comment_count.'</span>';
 
-            })
-            ->editColumn('favory_count', function ($post) {
+            // })
+            // ->editColumn('favory_count', function ($story) {
                 
-                return  '<span class="badge badge-secondary">'.$post->favory_count.'</span>';
+            //     return  '<span class="badge badge-secondary">'.$story->favory_count.'</span>';
 
+            // })
+            ->editColumn('updated_at', function ($story) {
+                return getDateColumn($story, 'updated_at');
             })
-            ->editColumn('updated_at', function ($post) {
-                return getDateColumn($post, 'updated_at');
+            ->editColumn('user.name', function ($story) {
+                return getLinksColumnByRouteName([$story->user], 'users.edit', 'id', 'name');
             })
-            ->editColumn('user.name', function ($post) {
-                return getLinksColumnByRouteName([$post->user], 'users.edit', 'id', 'name');
-            })
-            ->editColumn('salon.name', function ($post) {
-                return getLinksColumnByRouteName([$post->salon], 'salons.edit', 'id', 'name');
-            })
-            // ->addColumn('action', 'posts.datatables_actions');
+            // ->editColumn('salon.name', function ($story) {
+            //     return getLinksColumnByRouteName([$story->salon], 'salons.edit', 'id', 'name');
+            // })
+            // ->addColumn('action', 'stories.datatables_actions');
             ->addColumn('action', function ($row) {
                 $html = '<div class="btn-group btn-group-sm">';
 
                 // Vérifie la permission
-                if (Gate::allows('posts.show')) {
-                    $html .= '<a data-toggle="tooltip" data-placement="left" href="'.route('posts.show', $row->uuid).'" class="btn btn-link">
+                if (Gate::allows('stories.show')) {
+                    $html .= '<a data-toggle="tooltip" data-placement="left" href="'.route('stories.show', $row->uuid).'" class="btn btn-link">
                                 <i class="fas fa-eye"></i>
                             </a>';
                 }
 
-                if (Gate::allows('posts.destroy')) { 
-                    $html .= '<form action="'.route('posts.destroy', $row->uuid).'"
+                if (Gate::allows('stories.destroy')) { 
+                    $html .= '<form action="'.route('stories.destroy', $row->uuid).'"
                         method="POST"
                         style="display:inline-block;">';
 
@@ -153,16 +159,16 @@ class StoryDataTable extends DataTable
         $columns = [
             [
                 'data' => 'media',
-                'title' => trans('lang.post_media'),
+                'title' => trans('lang.story_media'),
                 'searchable' => false, 'orderable' => false, 'exportable' => false, 'printable' => false,
             ],
-            [
-                'data' => 'caption',
-                'name' => 'posts.caption',
-                'title' => trans('lang.post_caption'),
-                'searchable' => true,
-                'orderable' => true
-            ],
+            // [
+            //     'data' => 'caption',
+            //     'name' => 'stories.caption',
+            //     'title' => trans('lang.story_caption'),
+            //     'searchable' => true,
+            //     'orderable' => true
+            // ],
             // AJOUT DE LA COLONNE VIDÉO DANS LE TABLEAU
             // [
             //     'data' => 'vimeo_id',
@@ -177,51 +183,51 @@ class StoryDataTable extends DataTable
                 'title' => trans('lang.user_id'),
             ],
            
-            [
-                'data' => 'salon.name',
-                'title' => trans('lang.post_salon_id'),
-                'searchable' => true,
-                'orderable' => true
-            ],
-             [
-                'data' => 'view_count',
-                'title' => trans('lang.view_count'),
-                'orderable' => true
+            // [
+            //     'data' => 'salon.name',
+            //     'title' => trans('lang.story_salon_id'),
+            //     'searchable' => true,
+            //     'orderable' => true
+            // ],
+            //  [
+            //     'data' => 'view_count',
+            //     'title' => trans('lang.view_count'),
+            //     'orderable' => true
 
-            ],
-             [
-                'data' => 'like_count',
-                'title' => trans('lang.like_count'),
-                'orderable' => true
+            // ],
+            //  [
+            //     'data' => 'like_count',
+            //     'title' => trans('lang.like_count'),
+            //     'orderable' => true
 
-            ],
-            [
-                'data' => 'comment_count',
-                'title' => trans('lang.comment_count'),
-                'orderable' => true
+            // ],
+            // [
+            //     'data' => 'comment_count',
+            //     'title' => trans('lang.comment_count'),
+            //     'orderable' => true
 
-            ],
-             [
-                'data' => 'favory_count',
-                'title' => trans('lang.favory_count'),
-                'orderable' => true
+            // ],
+            //  [
+            //     'data' => 'favory_count',
+            //     'title' => trans('lang.favory_count'),
+            //     'orderable' => true
 
-            ],
+            // ],
             [
                 'data' => 'updated_at',
-                'title' => trans('lang.post_updated_at'),
+                'title' => trans('lang.story_updated_at'),
                 'searchable' => false,
                 'orderable' => true
             ]
         ];
 
-        $hasCustomField = in_array(Post::class, setting('custom_field_models', []));
+        $hasCustomField = in_array(Story::class, setting('custom_field_models', []));
         if ($hasCustomField) {
-            $customFieldsCollection = CustomField::where('custom_field_model', Post::class)->where('in_table', '=', true)->get();
+            $customFieldsCollection = CustomField::where('custom_field_model', Story::class)->where('in_table', '=', true)->get();
             foreach ($customFieldsCollection as $key => $field) {
                 array_splice($columns, $field->order - 1, 0, [[
                     'data' => 'custom_fields.' . $field->name . '.view',
-                    'title' => trans('lang.post_' . $field->name),
+                    'title' => trans('lang.story_' . $field->name),
                     'orderable' => false,
                     'searchable' => false,
                 ]]);
@@ -233,20 +239,14 @@ class StoryDataTable extends DataTable
     /**
      * Get query source of dataTable.
      *
-     * @param Post $model
+     * @param Story $model
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function query(Post $model): \Illuminate\Database\Eloquent\Builder
+    public function query(Story $model): \Illuminate\Database\Eloquent\Builder
     {
         $query = $model->newQuery()
-            ->with(['salon',"user"])
-            ->select('posts.*');
-
-        if (auth()->user()->hasRole('salon owner')) {
-            $query->join('salon_users', 'salon_users.salon_id', '=', 'posts.salon_id')
-                ->where('salon_users.user_id', auth()->id())
-                ->groupBy('posts.id');
-        }
+            ->with(["user"])
+            ->select('stories.*');
 
         return $query;
     }

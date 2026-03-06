@@ -166,7 +166,6 @@ class Post extends Model implements HasMedia
                
             }
             return  Storage::disk('r2')->temporaryUrl(
-                // $media->getPath(),
                 $media->getPathRelativeToRoot($conversion),
                 now()->addMinutes(10)
             ); 

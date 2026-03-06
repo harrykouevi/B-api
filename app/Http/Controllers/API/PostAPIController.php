@@ -128,9 +128,9 @@ class PostAPIController extends Controller
 
             $input = $request->all();
 
-            if (auth()->user()->hasAnyRole(['salon owner'])) {
+            // if (auth()->user()->hasAnyRole(['salon owner'])) {
 
-                $input['users'] = [auth()->id()];
+                // $input['users'] = [auth()->id()];
                 $input['published_at'] = now();
                 $input['visibility'] = 'public';
                 $input['status'] = 'published';
@@ -173,11 +173,7 @@ class PostAPIController extends Controller
 
                 $post->targetModels();
                 $post->load('media');
-            }
-            
-           
-
-
+            // }
                     
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);

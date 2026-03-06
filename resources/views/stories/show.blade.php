@@ -6,14 +6,14 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0 text-bold">{{trans('lang.post_plural')}} <small class="mx-3">|</small><small>{{trans('lang.post_desc')}}</small>
+                    <h1 class="m-0 text-bold">{{trans('lang.story_plural')}} <small class="mx-3">|</small><small>{{trans('lang.story_desc')}}</small>
                     </h1>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb bg-white float-sm-right rounded-pill px-4 py-2 d-none d-md-flex">
                         <li class="breadcrumb-item"><a href="{{url('/')}}"><i class="fas fa-tachometer-alt"></i> {{trans('lang.dashboard')}}</a></li>
                         <li class="breadcrumb-item active">
-                            <a href="{!! route('posts.index') !!}">{{trans('lang.post_plural')}}</a>
+                            <a href="{!! route('stories.index') !!}">{{trans('lang.story_plural')}}</a>
                         </li>
                     </ol>
                 </div><!-- /.col -->
@@ -26,25 +26,25 @@
             <div class="card-header">
                 <ul class="nav nav-tabs d-flex flex-row align-items-start card-header-tabs">
                     <li class="nav-item">
-                        <a class="nav-link" href="{!! route('posts.index') !!}"><i class="fa fa-list mr-2"></i>{{trans('lang.post_table')}}</a>
+                        <a class="nav-link" href="{!! route('stories.index') !!}"><i class="fa fa-list mr-2"></i>{{trans('lang.story_table')}}</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{!! route('posts.create') !!}"><i class="fa fa-plus mr-2"></i>{{trans('lang.post_create')}}
+                        <a class="nav-link" href="{!! route('stories.create') !!}"><i class="fa fa-plus mr-2"></i>{{trans('lang.story_create')}}
                         </a>
                     </li>
                     <li class="nav-item">
-                        <span class="nav-link active" ><i class="fas fa-eye mr-2"></i>{{trans('lang.post_show')}}
+                        <span class="nav-link active" ><i class="fas fa-eye mr-2"></i>{{trans('lang.story_show')}}
                         </span>
                     </li>
                 </ul>
             </div>
             <div class="card-body">
                 <div class="row">
-                @include('posts.show_fields')
+                @include('stories.show_fields')
 
                 <!-- Back Field -->
                     <div class="form-group col-12 d-flex flex-column flex-md-row justify-content-md-end justify-content-sm-center border-top pt-4">
-                        <a href="{!! route('posts.index') !!}" class="btn btn-default"><i class="fa fa-undo"></i> {{trans('lang.back')}}</a>
+                        <a href="{!! route('stories.index') !!}" class="btn btn-default"><i class="fa fa-undo"></i> {{trans('lang.back')}}</a>
                     </div>
                 </div>
                 <div class="clearfix"></div>

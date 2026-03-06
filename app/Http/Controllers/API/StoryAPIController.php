@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateStoryRequest;
+use App\Listeners\AttachModelToVideoUploadEventListener;
 use App\Models\Story;
 use App\Repositories\StoryRepository;
 use App\Repositories\UploadRepository;
@@ -42,9 +44,9 @@ class StoryAPIController extends Controller
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
-
+        
         // On utilise la méthode de ton Repo qui filtre les stories de moins de 24h
-        $stories = $this->storyRepository->getActiveStories(auth()->id());
+        $stories = $this->storyRepository->getActiveStories();
 
         return $this->sendResponse($stories, 'Stories retrieved successfully');
     }
@@ -53,49 +55,52 @@ class StoryAPIController extends Controller
      * Store a newly created Story in storage.
      * POST /stories
      */
-    public function store(Request $request): JsonResponse
+    public function store(CreateStoryRequest $request): JsonResponse
     {
         try {
             $input = $request->all();
 
             // 1. Logique de sécurité / Rôles (Optionnel, comme dans ton PostController)
             $input['user_id'] = auth()->id();
-            
-            // 2. Gestion du média via ton UploadRepository (si tu utilises le système de cache UUID)
-            // OU Gestion directe si c'est un fichier brut de la galerie
-            if ($request->hasFile('media')) {
-                $file = $request->file('media');
-                $path = $file->store('stories', 'public');
-                $input['media_path'] = asset('storage/' . $path);
-            } 
-            // Si tu utilises le système d'Upload par UUID (comme dans ton store de Post)
-            elseif (isset($input['media_uuid'])) {
-                $cacheUpload = $this->uploadRepository->getByUuid($input['media_uuid']);
-                if ($cacheUpload) {
-                    $mediaItem = $cacheUpload->getMedia('image')->first() ?? $cacheUpload->getMedia('video')->first();
-                    // Ici on récupère l'URL du média uploadé
-                    $input['media_path'] = $mediaItem->getUrl();
+            $input['uuid'] = (isset($input['uuid']) && Str::isUuid($input['uuid'])) ? $input['uuid'] : (string) Str::uuid();
+            $story = $this->storyRepository->create($input);
+
+            if (isset($input['file']) && is_array($input['file'])) {
+                
+                // Si tu utilises le système d'Upload par UUID (comme dans ton store de Post)
+                foreach ($input['file'] as $fileUuid) {
+                    // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
+                    if(Str::isUuid($fileUuid)){ 
+                        event(new AttachModelToVideoUploadEventListener($fileUuid, $story));
+                    }
                 }
+
+                // 2. Gestion du média via ton UploadRepository (si tu utilises le système de cache UUID)
+                // OU Gestion directe si c'est un fichier brut de la galerie
+                if ($request->hasFile('file')) {
+                    foreach($request->file('file') as $file){
+                        if (!$file->isValid()) {
+                            continue;
+                        }
+                        $in = [
+                            'uuid' =>  (string) Str::uuid() ,
+                            'field' => 'cloudmedia' ,
+                        ] ;
+                        $this->uploadRepository->createWithMedia($file,$in,$story);
+                    }
+                } 
+                
             }
-
-            if (!isset($input['media_path'])) {
-                return $this->sendError('Media file is required');
-            }
-
-            $input['type'] = $input['type'] ?? 'image';
-
-            // 3. Création via le Repository
-            $story = $this->storyRepository->createStory($input);
-
-            // Optionnel : Déclencher un événement comme pour les posts
-            // event(new StoryCreated($story));
-
-            return $this->sendResponse($story->load('user'), __('lang.saved_successfully', ['operator' => 'Story']));
+            $story->load('media');
+            Log::info([$story->toArray()]);
 
         } catch (Exception $e) {
             Log::error("Error storing story: " . $e->getMessage());
             return $this->sendError($e->getMessage(), 500);
         }
+
+        return $this->sendResponse($story, __('lang.saved_successfully', ['operator' => 'Story']));
+        // event(new StoryCreated($story));
     }
 
     /**
