@@ -2,19 +2,19 @@
 
 namespace App\Notifications;
 
-use App\Models\Post;
+use App\Models\PostView;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
 
-class PostPublishedNotification extends BaseNotification
+class PostViewedNotification extends BaseNotification
 {
     use Queueable;
 
-    private Post $post;
+    private PostView $postview;
 
-    public function __construct(Post $post)
+    public function __construct(PostView $postview)
     {
-        $this->post = $post;
+        $this->postview = $postview;
     }
 
     /**
@@ -34,11 +34,11 @@ class PostPublishedNotification extends BaseNotification
      */
     public function toFcm($notifiable): FcmMessage
     {
-        $title = "Nouveau post sur Charm !";
-        $body = ($this->post->user->name ?? 'Un utilisateur') . " a publié une nouvelle vidéo.";
+        $title = "Une vue de plus!";
+        $body = ($this->postview->user->name ?? 'Un utilisateur') . " vient de voir votre post #". $this->postview->post->uuid;
         
         $data = [
-            'post_id' => (string) $this->post->id,
+            'post_id' => (string) $this->postview->post->uuid,
             'type'    => 'new_post',
         ];
 
@@ -49,12 +49,13 @@ class PostPublishedNotification extends BaseNotification
      * Obligatoire car défini en "abstract" dans BaseNotification
      * On définit l'image qui apparaîtra dans la petite icône de notification
      */
-    protected function getIconUrl(): string
+    protected function getIconUrl($model = 'post'): string
     {
-        if ($this->post->user->hasMedia('image')) {
-            return $this->post->user->getFirstMediaUrl('image', 'thumb');
+        if($model == 'user'){ 
+            if ($this->postview->user->hasMedia('image')) {
+                return $this->postview->user->getFirstMediaUrl('image', 'thumb');
+            }
         }
-        
         return asset('images/logo_default.png'); // Assure-toi que ce fichier existe
     }
 
@@ -64,9 +65,9 @@ class PostPublishedNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'post_id'     => $this->post->id,
+            'post_id'     => $this->postview->post->uuid,
             'author_name' => $this->post->user->name ?? 'Un utilisateur',
-            'message'     => ($this->post->user->name ?? 'Quelqu\'un') . " a publié une nouvelle vidéo.",
+            'message'     => ($this->postview->user->name ?? 'Un utilisateur') . " vient de voir votre post #". $this->postview->post->uuid ,
             'image'       => $this->getIconUrl(),
         ];
     }

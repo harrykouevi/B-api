@@ -65,10 +65,10 @@ class StoryAPIController extends Controller
             $input['uuid'] = (isset($input['uuid']) && Str::isUuid($input['uuid'])) ? $input['uuid'] : (string) Str::uuid();
             $story = $this->storyRepository->create($input);
 
-            if (isset($input['file']) && is_array($input['file'])) {
+            if (isset($input['media']) && is_array($input['media'])) {
                 
                 // Si tu utilises le système d'Upload par UUID (comme dans ton store de Post)
-                foreach ($input['file'] as $fileUuid) {
+                foreach ($input['media'] as $fileUuid) {
                     // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
                     if(Str::isUuid($fileUuid)){ 
                         event(new AttachModelToVideoUploadEventListener($fileUuid, $story));
@@ -77,8 +77,8 @@ class StoryAPIController extends Controller
 
                 // 2. Gestion du média via ton UploadRepository (si tu utilises le système de cache UUID)
                 // OU Gestion directe si c'est un fichier brut de la galerie
-                if ($request->hasFile('file')) {
-                    foreach($request->file('file') as $file){
+                if ($request->hasFile('media')) {
+                    foreach($request->file('media') as $file){
                         if (!$file->isValid()) {
                             continue;
                         }

@@ -78,7 +78,7 @@ class UploadToStream implements ShouldQueue
                  'trace' => $e->getTraceAsString()
             ]);
 
-            $upload->status = 'error';
+            // $upload->status = 'error';
             $upload->pct_complete = 0;
             $upload->save();
         }

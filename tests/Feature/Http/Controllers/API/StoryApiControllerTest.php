@@ -25,6 +25,9 @@ class StoryApiControllerTest extends TestCase
             
             $this->actingAs($user,'api');
             $response = $this->getJson(route('api.stories.index'));
+
+            // dd($response->json());
+            $response->assertStatus(200);
            
             $response->assertStatus(ResponseAlias::HTTP_OK);
         } catch (\Exception $e) {

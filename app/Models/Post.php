@@ -280,6 +280,17 @@ class Post extends Model implements HasMedia
     }
 
 
+    public function not_already_notified_views($limit = 3)
+    {
+        return $this->views()
+            ->whereNull('notified_at') // seules les vues non notifiées
+            ->latest()
+            ->take($limit)
+            ->with('user')
+            ->get();
+    }
+
+
 
     /**
      * @return HasMany

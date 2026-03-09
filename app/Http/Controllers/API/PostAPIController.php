@@ -151,16 +151,16 @@ class PostAPIController extends Controller
                 }
 
 
-                if (isset($input['file']) && is_array($input['file'])) {
+                if (isset($input['media']) && is_array($input['media'])) {
 
-                    foreach ($input['file'] as $fileUuid) {
+                    foreach ($input['media'] as $fileUuid) {
                         // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
                         if(Str::isUuid($fileUuid)){ 
                             event(new AttachModelToVideoUploadEventListener($fileUuid, $post));
                         }
                     }
 
-                    foreach($request->file('file') as $file){
+                    foreach($request->file('media') as $file){
                         $in = [
                             'uuid' =>  (string) Str::uuid() ,
                             'field' => 'cloudmedia' ,

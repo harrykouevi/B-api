@@ -57,8 +57,8 @@ class CreatePostRequest extends FormRequest
         return [...Post::$rules ,
         'e_service_id' => 'nullable|exists:e_services,id',  
 
-        'file' => ['nullable', 'array'],
-        'file.*' => [
+        'media' => ['nullable', 'array'],
+        'media.*' => [
             'required',
             function ($attribute, $value, $fail) {
 

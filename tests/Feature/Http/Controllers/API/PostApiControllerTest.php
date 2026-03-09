@@ -58,10 +58,10 @@ class PostApiControllerTest extends TestCase
             $response = $this->actingAs($user, 'api')->postJson(route('api.posts.store'), [
              
                 "author_id"=> $user->id, 
-                "e_service_id"=> 210, 
-                "salon_id"=> 62, 
-                'caption' => 'harry feff ef rfrffgrr frf',
-                'file' => [$file], // nom de la collection
+                // "e_service_id"=> 210, 
+                // "salon_id"=> 62, 
+                'caption' => 'test 1',
+                'media' => [$file], // nom de la collection
             ]);
 
             dd($response->json());

@@ -87,8 +87,8 @@ class UpdateBookingPaymentListener
      */
     public function __construct(PaymentService $paymentService , BookingRepository $bookingRepository ,PurchaseRepository $purchaseRepository ,
         WalletTransactionRepository $walletTransactionRepository ,
-     WalletRepository $walletRepository ,
-     TaxRepository $taxRepository  , SalonRepository $salonRepository)
+        WalletRepository $walletRepository ,
+        TaxRepository $taxRepository  , SalonRepository $salonRepository)
     {
         $this->bookingRepository = $bookingRepository ;
         $this->walletRepository = $walletRepository ;
@@ -97,8 +97,6 @@ class UpdateBookingPaymentListener
         $this->paymentService = $paymentService ;
         $this->purchaseRepository = $purchaseRepository ;
         $this->walletTransactionRepository = $walletTransactionRepository;
-
-
 
     }
 
@@ -200,7 +198,6 @@ class UpdateBookingPaymentListener
 
             // Déterminer le type de wallet utilisé
             $walletType = $walletTransaction->wallet->name ?? null;
-
             $walletType = ($walletType === WalletType::BONUS->value)
                             ? WalletType::BONUS
                             : WalletType::PRINCIPAL;

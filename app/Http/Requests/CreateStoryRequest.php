@@ -51,8 +51,8 @@ class CreateStoryRequest extends FormRequest
     {
         return [...Story::$rules ,
 
-            'file' => ['nullable', 'array'],
-            'file.*' => [
+            'media' => ['nullable', 'array'],
+            'media.*' => [
                 'required',
                 function ($attribute, $value, $fail) {
 
