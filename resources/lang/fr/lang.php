@@ -1641,5 +1641,15 @@ return [
     'notification_new_booking_title' => 'Nouvelle réservation',
     'notification_new_booking_body' => 'Nouvelle réservation #:booking_id par :user_name. Services: :services. Date: :booking_date',
     'notification_new_booking_details' => 'Réservation #:booking_id confirmée. Services: :services. Date: :booking_date',
+    
+    'notification_and' => 'et', // pour les liaisons
+    'notification_new_post_title' => 'Votre post a été enregistré',
+    'notification_ready_post_title' => 'Votre post est pret',
+    'notification_ready_post_message' => 'Votre post est maintenant disponible et visible par tous.' ,
+    'notification_new_published_post_title' => ':author_name a publié un nouveau post',
+    'notification_post_viewed_single' => ':name viewed your post',
+    'notification_post_viewed_multiple' => ':names viewed your post',
+    'notification_post_viewed_with_others' => ':names and :count others viewed your post',
+
 
 ];

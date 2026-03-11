@@ -6,19 +6,15 @@ use App\Models\Post;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
 
-class PostPublishedNotification extends BaseNotification
+class MyPostCreatedNotification extends BaseNotification
 {
     use Queueable;
 
-    private Post $post;
-    private string $message;
+    // private Post $post;
+    // private string $message;
 
-    public function __construct(Post $post)
-    {
-        $this->post = $post;
-        $this->message = ($post->author->name ?? 'Un utilisateur') . " a publié une nouveau post.";
-       
-    }
+    public function __construct( private Post $post , private string $message)
+    {}
 
     /**
      * Canaux d'envoi
@@ -38,7 +34,7 @@ class PostPublishedNotification extends BaseNotification
     public function toFcm($notifiable): FcmMessage
     {
         // $title = "Nouveau post sur Charm !";
-        $title = trans('lang.notification_new_published_post_title', ['author_name' => $this->post->author->name ?? 'Un utilisateur']);
+        $title = trans('lang.notification_new_post_title');
 
         $message = $this->message ;
 

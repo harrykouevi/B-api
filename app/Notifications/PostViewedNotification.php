@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\PostView;
+use App\Models\Post;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
 
@@ -10,11 +10,15 @@ class PostViewedNotification extends BaseNotification
 {
     use Queueable;
 
-    private PostView $postview;
+    public Post $post;
+    protected $message;
+    protected $userIds;
 
-    public function __construct(PostView $postview)
+    public function __construct(Post $post ,  $message ,  $userIds = [])
     {
-        $this->postview = $postview;
+        $this->post = $post;
+        $this->message = $message;
+        $this->userIds = $userIds;
     }
 
     /**
@@ -34,28 +38,30 @@ class PostViewedNotification extends BaseNotification
      */
     public function toFcm($notifiable): FcmMessage
     {
-        $title = "Une vue de plus!";
-        $body = ($this->postview->user->name ?? 'Un utilisateur') . " vient de voir votre post #". $this->postview->post->uuid;
-        
-        $data = [
-            'post_id' => (string) $this->postview->post->uuid,
-            'type'    => 'new_post',
+        $title = "Votre post a été vu";
+
+        // Données différenciées selon le type de destinataire
+        $baseData = [
+            'post_id' => (string) $this->post->uuid,
+            'author_id' => (string) $this->post->author_id,
+            'image' => $this->getIconUrl(),
         ];
 
-        return $this->getFcmMessage($notifiable, $title, $body, $data);
+        $data = array_merge($baseData, []);
+
+        return $this->getFcmMessage($notifiable, $title, $this->message, $data);
     }
 
     /**
      * Obligatoire car défini en "abstract" dans BaseNotification
      * On définit l'image qui apparaîtra dans la petite icône de notification
      */
-    protected function getIconUrl($model = 'post'): string
+    protected function getIconUrl(): string
     {
-        if($model == 'user'){ 
-            if ($this->postview->user->hasMedia('image')) {
-                return $this->postview->user->getFirstMediaUrl('image', 'thumb');
-            }
+        if ($this->post->hasMedia('*')) {
+            return $this->post->getFirstMediaUrl('*', 'thumb');
         }
+        
         return asset('images/logo_default.png'); // Assure-toi que ce fichier existe
     }
 
@@ -65,9 +71,11 @@ class PostViewedNotification extends BaseNotification
     public function toArray(mixed $notifiable): array
     {
         return [
-            'post_id'     => $this->postview->post->uuid,
-            'author_name' => $this->post->user->name ?? 'Un utilisateur',
-            'message'     => ($this->postview->user->name ?? 'Un utilisateur') . " vient de voir votre post #". $this->postview->post->uuid ,
+            'post_id'     => $this->post->post->uuid,
+            'author_id' => (string) $this->post->author_id,
+            'author_name' => $this->post->author->name ?? 'Un utilisateur',
+            'user_ids'    => $this->userIds ,
+            'message'     => $this->message,
             'image'       => $this->getIconUrl(),
         ];
     }

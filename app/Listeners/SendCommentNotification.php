@@ -24,7 +24,7 @@ class SendCommentNotification implements ShouldQueue
 
         // 2. On récupère l'auteur du POST (celui qui doit recevoir la notif)
         // On remonte du commentaire -> vers le post -> vers l'auteur (user)
-        $postAuthor = $comment->post->user;
+        $postAuthor = $comment->post->author;
 
         // 3. On lui envoie la notification
         // (On vérifie quand même que l'auteur du commentaire n'est pas l'auteur du post)

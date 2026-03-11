@@ -86,7 +86,7 @@ class PostDataTable extends DataTable
                 return getDateColumn($post, 'updated_at');
             })
             ->editColumn('user.name', function ($post) {
-                return getLinksColumnByRouteName([$post->user], 'users.edit', 'id', 'name');
+                return getLinksColumnByRouteName([$post->author], 'users.edit', 'id', 'name');
             })
             ->editColumn('salon.name', function ($post) {
                 return getLinksColumnByRouteName([$post->salon], 'salons.edit', 'id', 'name');

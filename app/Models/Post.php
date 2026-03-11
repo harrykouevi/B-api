@@ -279,16 +279,21 @@ class Post extends Model implements HasMedia
         return $this->favories()->count() ;
     }
 
+    // public function notAlreadyNotifiedViewsQuery()
+    // {
+    //     return $this->views()
+    //         ->whereNull('notified_at')
+    //         ->latest('created_at')
+    //         ->with('user');
+    // }
 
-    public function not_already_notified_views($limit = 3)
-    {
-        return $this->views()
-            ->whereNull('notified_at') // seules les vues non notifiées
-            ->latest()
-            ->take($limit)
-            ->with('user')
-            ->get();
-    }
+
+    // public function not_already_notified_views($limit = 3)
+    // {
+    //     return $this->notAlreadyNotifiedViewsQuery()
+    //     ->take($limit)
+    //     ->get();
+    // }
 
 
 
@@ -318,12 +323,6 @@ class Post extends Model implements HasMedia
         return $this->hasMany(PostView::class);
     }
 
-    /**
-     * @return BelongsTo
-     **/
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'author_id', 'id');
-    }
+   
 
 }

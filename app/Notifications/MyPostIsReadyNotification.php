@@ -6,19 +6,15 @@ use App\Models\Post;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
 
-class PostPublishedNotification extends BaseNotification
+class MyPostIsReadyNotification extends BaseNotification
 {
     use Queueable;
 
-    private Post $post;
-    private string $message;
+    // private Post $post;
+    // private string $message;
 
-    public function __construct(Post $post)
-    {
-        $this->post = $post;
-        $this->message = ($post->author->name ?? 'Un utilisateur') . " a publié une nouveau post.";
-       
-    }
+    public function __construct( private Post $post )
+    {}
 
     /**
      * Canaux d'envoi
@@ -37,15 +33,13 @@ class PostPublishedNotification extends BaseNotification
      */
     public function toFcm($notifiable): FcmMessage
     {
-        // $title = "Nouveau post sur Charm !";
-        $title = trans('lang.notification_new_published_post_title', ['author_name' => $this->post->author->name ?? 'Un utilisateur']);
-
-        $message = $this->message ;
+        $title = trans('lang.notification_ready_post_title');
+        $message = trans('lang.notification_ready_post_message') ;
 
         // Données différenciées selon le type de destinataire
         $baseData = [
             'post_id' => (string) $this->post->uuid,
-            'type'    => 'new_post',
+            'type'    => 'post_is_ready',
             'author_id' => (string) $this->post->author_id,
             'image' => $this->getIconUrl(),
         ];
@@ -76,11 +70,11 @@ class PostPublishedNotification extends BaseNotification
     {
         return [
             'post_id'     => (string) $this->post->uuid,
-            'author_id' => (string) $this->post->author_id,
+            'author_id'   => (string) $this->post->author_id,
             'author_name' => $this->post->author->name ?? 'Un utilisateur',
-            'message'     => $this->message ,
+            'message'     => trans('lang.notification_ready_post_message') ,
             'image'       => $this->getIconUrl(),
-            'type'    => 'new_post',
+            'type'        => 'post_is_ready',
         ];
     }
 }

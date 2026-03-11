@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Events\CloudMediaIsReadyEvent;
 use App\Repositories\UploadRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -59,6 +60,8 @@ class AttachModelToVideoUploaded implements ShouldQueue
                     Log::info('Manifest not ready, will retry...');
                     throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
                 }
+
+                event(new CloudMediaIsReadyEvent($this->model));
 
                 Log::info('Manifest ready', [
                     'media_id' => $media->id,

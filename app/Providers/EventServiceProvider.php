@@ -12,6 +12,7 @@ use App\Events\AttachModelToVideoUploadEvent;
 use App\Events\BookingPaymentUpdatedEvent;
 use App\Events\BookingReportedEvent;
 use App\Events\BookingStatusChangedEvent;
+use App\Events\CloudMediaIsReadyEvent;
 use App\Events\DoPaymentEvent;
 use App\Events\NotifyBookingEvent;
 use App\Events\NotifyPaymentEvent;
@@ -34,10 +35,11 @@ use App\Listeners\UpdatePaymentListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use App\Events\PostCreated;
+use App\Events\MyPostCreatedEvent;
 use App\Events\VideoUploadEvent;
 use App\Listeners\AttachModelToVideoUploadEventListener;
-use App\Listeners\SendPostCreationNotification;
+use App\Listeners\CloudMediaIsReadyEventListener;
+use App\Listeners\MyPostCreatedListener;
 use App\Listeners\VideoUploadEventListener;
 
 class EventServiceProvider extends ServiceProvider
@@ -64,13 +66,17 @@ class EventServiceProvider extends ServiceProvider
         DoPaymentEvent::class => [
             CreatingPaymentListener::class,
         ],
-        PostCreated::class => [
-            SendPostCreationNotification::class,
+        MyPostCreatedEvent::class => [
+            MyPostCreatedListener::class,
         ],
         'App\Events\CommentCreated' => [
             'App\Listeners\SendCommentNotification',
         ],
 
+        CloudMediaIsReadyEvent::class => [
+            CloudMediaIsReadyEventListener::class,
+        ],
+        
         BookingPaymentUpdatedEvent::class => [
             UpdateBookingPaymentListener::class,
             SendBookingStatusNotificationsListener::class,

@@ -64,7 +64,6 @@ class PostApiControllerTest extends TestCase
                 'media' => [$file], // nom de la collection
             ]);
 
-            dd($response->json());
             // $this->assertNotEmpty($uploadedUuid);
 
             $response->assertStatus(200);
@@ -72,6 +71,8 @@ class PostApiControllerTest extends TestCase
             Log::error('FAIL:'. $e->getMessage() , [
                  'trace' => $e->getTraceAsString()
             ]);
+
+            throw $e; 
         }
     }
 

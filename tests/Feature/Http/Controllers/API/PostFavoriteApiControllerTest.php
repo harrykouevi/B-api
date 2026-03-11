@@ -9,11 +9,8 @@
 namespace Tests\Feature\Http\Controllers\Api;
 
 use App\Models\Post;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 use App\Models\User;
-use App\Repositories\UploadRepository;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -22,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 use Tests\Helpers\TestHelper;
 
 
-class FavoritePostApiControllerTest extends TestCase
+class PostFavoriteApiControllerTest extends TestCase
 {
     // use DatabaseTransactions;
 

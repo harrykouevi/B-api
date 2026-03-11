@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Criteria\Comments\CommentsReportedCriteria;
-use App\Events\PostCreated; // N'oublie pas l'import en haut !
+use App\Events\MyPostCreatedEvent; // N'oublie pas l'import en haut !
 
 
 use App\Events\CommentPosted;
@@ -120,15 +120,7 @@ class PostAPIController extends Controller
     {
         try {
 
-            // $request->validate([
-            //     'image' => 'required|image|max:5120', // max 5MB
-            //     'file.file' => 'required|file|mimes:jpeg,png,jpg,gif,svg,mp4,mov,avi,wmv,webm,mkv|max:400480',
-            //     'file.field' => 'required|string',
-            // ]);
-
             $input = $request->all();
-
-            // if (auth()->user()->hasAnyRole(['salon owner'])) {
 
                 // $input['users'] = [auth()->id()];
                 $input['published_at'] = now();
@@ -173,15 +165,21 @@ class PostAPIController extends Controller
 
                 $post->targetModels();
                 $post->load('media');
-            // }
+        
                     
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
             return $this->sendError($e->getMessage(), 500);
         }
+
+       if (isset($input['media']) && is_array($input['media'])) {
+            $message = "Votre post a bien été enregistré, mais il est en cours de traitement car il contient un média.";
+        } else {
+            $message = "Votre post a bien été enregistré.";
+        }
         
-        event(new PostCreated($post));
+        event(new MyPostCreatedEvent($post,$message));
         return $this->sendResponse($post, __('lang.saved_successfully', ['operator' => __('lang.post')]));
     } 
 

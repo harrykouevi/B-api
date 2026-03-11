@@ -56,6 +56,7 @@ abstract class BaseNotification extends Notification
         $notification = [
             'title' => $title,
             'body' => $body,
+            'image' => $data['image'] ?? null,
         ];
 
         $baseData = $this->getBaseData($notifiable, $data);

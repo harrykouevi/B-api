@@ -8,6 +8,7 @@
 
 namespace App\Console;
 
+use App\Jobs\SendPostViewNotificationJob;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -33,6 +34,8 @@ class Kernel extends ConsoleKernel
                  ->runInBackground()
                  ->appendOutputTo(storage_path('logs/reminders.log'));
 
+        $schedule->job(new SendPostViewNotificationJob())
+        ->everyFiveMinutes();
         // Nettoyage des jobs échoués quotidiennement (optionnel)
         $schedule->command('queue:flush')
                  ->daily()
