@@ -95,9 +95,13 @@ class InfoBipService{
                             ],
                             'buttons' => [
                                 [
-                                    'type' => 'COPY_CODE',
+                                    'type' => 'URL',
                                     'parameter' => $code,
                                 ],
+                                [
+                                    'type' => 'QUICK_REPLY',
+                                    'parameter' => "",
+                                ]
                             ],
                             
                         ],
