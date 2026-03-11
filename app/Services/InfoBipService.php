@@ -88,7 +88,7 @@ class InfoBipService{
                     'from' => $this->sender,
                     'to' => $phone,
                     'content' => [
-                        'templateName' => 'charm',
+                        'templateName' => 'authentication',
                         'templateData' => [
                             'body' => [
                                 'placeholders' => [$code],
