@@ -100,7 +100,7 @@ class InfoBipService{
                                 ],
                                 [
                                     'type' => 'QUICK_REPLY',
-                                    'parameter' => "",
+                                    'parameter' => "confirmer",
                                 ]
                             ],
                             
