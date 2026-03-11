@@ -88,16 +88,20 @@ class InfoBipService{
                     'from' => $this->sender,
                     'to' => $phone,
                     'content' => [
-                        'templateName' => 'charm',
+                        'templateName' => 'authentication',
                         'templateData' => [
                             'body' => [
                                 'placeholders' => [$code],
                             ],
                             'buttons' => [
                                 [
-                                    'type' => 'COPY_CODE',
+                                    'type' => 'URL',
                                     'parameter' => $code,
                                 ],
+                                [
+                                    'type' => 'QUICK_REPLY',
+                                    'parameter' => "confirmer",
+                                ]
                             ],
                             
                         ],
