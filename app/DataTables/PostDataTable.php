@@ -206,7 +206,7 @@ class PostDataTable extends DataTable
     public function query(Post $model): \Illuminate\Database\Eloquent\Builder
     {
         $query = $model->newQuery()
-            ->with(['salon',"user"])
+            ->with(['salon',"author"])
             ->select('posts.*');
 
         if (auth()->user()->hasRole('salon owner')) {
