@@ -101,6 +101,7 @@ class PostApiControllerTest extends TestCase
             Log::error('FAIL:'. $e->getMessage() , [
                  'trace' => $e->getTraceAsString()
             ]);
+            throw $e; 
         }
 
         

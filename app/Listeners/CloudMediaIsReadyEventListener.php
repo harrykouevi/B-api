@@ -4,9 +4,12 @@ namespace App\Listeners;
 
 use App\Events\CloudMediaIsReadyEvent;
 use App\Models\Post;
+use App\Models\Story;
 use App\Models\User;
 use App\Notifications\MyPostIsReadyNotification;
+use App\Notifications\MyStoryIsReadyNotification;
 use App\Notifications\PostPublishedNotification;
+use App\Notifications\StoryPublishedNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Notification;
@@ -36,7 +39,7 @@ class CloudMediaIsReadyEventListener
                 return;
             }
 
-            if (!$post->author()->hasRole('admin')) {
+            if (!$post->author->hasRole('admin')) {
                 $post->author->notify(new MyPostIsReadyNotification($post));
             }
 
@@ -45,6 +48,25 @@ class CloudMediaIsReadyEventListener
             User::where('id', '!=', $post->author_id)
                 ->chunk(100, function ($users) use ($post,$event) {
                     Notification::send($users, new  PostPublishedNotification($post));
+                });
+        }elseif($event->model instanceof Story){
+            // On récupère le post
+            $story = $event->model;
+
+            // On évite d'envoyer la notif si le story n'a pas d'auteur (sécurité)
+            if (!$story->user_id) {
+                return;
+            }
+
+            if (!$story->user->hasRole('admin')) {
+                $story->user->notify(new MyStoryIsReadyNotification($story));
+            }
+
+            // On récupère les utilisateurs qui est  l'auteur)
+            // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
+            User::where('id', '!=', $story->user_id)
+                ->chunk(100, function ($users) use ($story,$event) {
+                    Notification::send($users, new  StoryPublishedNotification($story));
                 });
         }
     }

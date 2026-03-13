@@ -36,10 +36,12 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use App\Events\MyPostCreatedEvent;
+use App\Events\MyStoryCreatedEvent;
 use App\Events\VideoUploadEvent;
 use App\Listeners\AttachModelToVideoUploadEventListener;
 use App\Listeners\CloudMediaIsReadyEventListener;
 use App\Listeners\MyPostCreatedListener;
+use App\Listeners\MyStoryCreatedListener;
 use App\Listeners\VideoUploadEventListener;
 
 class EventServiceProvider extends ServiceProvider
@@ -68,6 +70,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         MyPostCreatedEvent::class => [
             MyPostCreatedListener::class,
+        ],
+        MyStoryCreatedEvent::class => [
+            MyStoryCreatedListener::class,
         ],
         'App\Events\CommentCreated' => [
             'App\Listeners\SendCommentNotification',

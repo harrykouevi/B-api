@@ -79,7 +79,7 @@ class UploadToStream implements ShouldQueue
             ]);
 
             // $upload->status = 'error';
-            $upload->pct_complete = 0;
+            // $upload->pct_complete = 0;
             $upload->save();
         }
 

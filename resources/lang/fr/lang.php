@@ -1650,6 +1650,10 @@ return [
     'notification_post_viewed_single' => ':name viewed your post',
     'notification_post_viewed_multiple' => ':names viewed your post',
     'notification_post_viewed_with_others' => ':names and :count others viewed your post',
+    'notification_new_story_title'=> 'Votre post a été enregistré',
+    'notification_ready_story_title' => 'Votre story est pret',
+    'notification_ready_story_message' => 'Votre story est maintenant disponible et visible par tous.' ,
+    'notification_new_published_story_title' => ':author_name a publié un nouveau story',
 
 
 ];

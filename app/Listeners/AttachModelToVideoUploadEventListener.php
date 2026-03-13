@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class AttachModelToVideoUploadEventListener
 {
-    public $cloudService ;
+    public CloudService $cloudService ;
     public UploadRepository $uploadRepository ;
     // /**
     //  * Create the event listener.

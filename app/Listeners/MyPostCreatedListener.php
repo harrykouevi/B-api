@@ -21,11 +21,8 @@ class MyPostCreatedListener implements ShouldQueue
             return;
         }
 
-        // On récupère les utilisateurs qui est  l'auteur)
-        // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
-        User::where('id', '==', $post->author_id)
-            ->chunk(100, function ($users) use ($post,$event) {
-                Notification::send($users, new MyPostCreatedNotification($post , $event->message));
-            });
+       
+        $user = User::find($post->author_id);
+        Notification::send($user, new MyPostCreatedNotification($post, $event->message));
     }
 }

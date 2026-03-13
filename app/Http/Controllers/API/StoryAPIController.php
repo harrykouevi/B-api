@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Events\AttachModelToVideoUploadEvent;
+use App\Events\MyStoryCreatedEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateStoryRequest;
-use App\Listeners\AttachModelToVideoUploadEventListener;
-use App\Models\Story;
 use App\Repositories\StoryRepository;
 use App\Repositories\UploadRepository;
 use Exception;
@@ -71,7 +71,7 @@ class StoryAPIController extends Controller
                 foreach ($input['media'] as $fileUuid) {
                     // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
                     if(Str::isUuid($fileUuid)){ 
-                        event(new AttachModelToVideoUploadEventListener($fileUuid, $story));
+                        event(new AttachModelToVideoUploadEvent($fileUuid, $story));
                     }
                 }
 
@@ -98,6 +98,14 @@ class StoryAPIController extends Controller
             Log::error("Error storing story: " . $e->getMessage());
             return $this->sendError($e->getMessage(), 500);
         }
+
+        if (isset($input['media']) && is_array($input['media'])) {
+            $message = "Votre story a bien été enregistré, mais il est en cours de traitement car il contient un média.";
+        } else {
+            $message = "Votre story a bien été enregistré.";
+        }
+        
+        event(new MyStoryCreatedEvent($story,$message));
 
         return $this->sendResponse($story, __('lang.saved_successfully', ['operator' => 'Story']));
         // event(new StoryCreated($story));

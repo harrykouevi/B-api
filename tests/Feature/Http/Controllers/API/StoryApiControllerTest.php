@@ -40,17 +40,11 @@ class StoryApiControllerTest extends TestCase
     /**
      * A basic feature test example.
      */
-    public function test_store(): void
+    public function testStore(): void
     {
         try{ 
-            // Fake le storage pour Spatie Media Library ^pour que l'image soit supprimer
-            // Storage::fake('public');
-
-            // Créer un utilisateur et se connecter
+            
             $user = $this->createUser(2);
-
-            // $file = UploadedFile::fake()->image('water.jpg');
-         
             $file = new UploadedFile(
                 base_path('tests/video.mp4'),
                 'video.mp4',
@@ -60,20 +54,27 @@ class StoryApiControllerTest extends TestCase
             );
             
             $this->actingAs($user,'api');
-           
-            $response = $this->actingAs($user, 'api')->postJson(route('api.stories.store'), [
-             
-                "user_id"=> $user->id, 
-                'file' => [$file], // nom de la collection
-            ]);
 
-            dd($response->json());
+            $data = [
+                'file' => $file,
+                'field' => 'cloudmedia', // nom de la collection
+            ];
+
+            $response = $this->postJson(route('api.uploads.store'), $data);
+            $uploadedUuid = $response->json('data');
+            $this->assertNotEmpty($uploadedUuid);
+           
+            $response = $this->postJson(route('api.stories.store'), [
+                "user_id"=> $user->id, 
+                'media' => [$uploadedUuid],
+            ]);
 
             $response->assertStatus(200);
         } catch (\Exception $e) {
             Log::error('FAIL:'. $e->getMessage() , [
                  'trace' => $e->getTraceAsString()
             ]);
+            throw $e; 
         }
     }
 

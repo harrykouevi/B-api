@@ -11,9 +11,9 @@ use App\Events\CommentPosted;
 use App\Criteria\Posts\FavoryPostCriteria;
 use App\Models\Comment;
 use App\Criteria\Posts\PostsOfUserCriteria;
+use App\Events\AttachModelToVideoUploadEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreatePostRequest;
-use App\Listeners\AttachModelToVideoUploadEventListener;
 use App\Repositories\PostRepository;
 use App\Repositories\PostTargetRepository;
 use Exception;
@@ -28,7 +28,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str; 
 use App\Models\Like;
-use App\Models\Post;
 use App\Repositories\CommentRepository;
 use Illuminate\Support\Facades\Auth;
 use App\Repositories\PostViewRepository;
@@ -148,11 +147,14 @@ class PostAPIController extends Controller
                     foreach ($input['media'] as $fileUuid) {
                         // liaison de l'image uploadé (recup de l'uuid de l'image) avec le post
                         if(Str::isUuid($fileUuid)){ 
-                            event(new AttachModelToVideoUploadEventListener($fileUuid, $post));
+                            event(new AttachModelToVideoUploadEvent($fileUuid, $post));
                         }
                     }
 
                     foreach($request->file('media') as $file){
+                        if (!$file->isValid()) {
+                            continue;
+                        }
                         $in = [
                             'uuid' =>  (string) Str::uuid() ,
                             'field' => 'cloudmedia' ,
@@ -173,7 +175,7 @@ class PostAPIController extends Controller
             return $this->sendError($e->getMessage(), 500);
         }
 
-       if (isset($input['media']) && is_array($input['media'])) {
+        if (isset($input['media']) && is_array($input['media'])) {
             $message = "Votre post a bien été enregistré, mais il est en cours de traitement car il contient un média.";
         } else {
             $message = "Votre post a bien été enregistré.";
