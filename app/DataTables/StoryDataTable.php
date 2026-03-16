@@ -105,7 +105,7 @@ class StoryDataTable extends DataTable
                 }
                 
                 
-                return "<p><span class='badge bg-success p-1 m-2'>0</span>  expire à" . getDateColumn($story, 'expires_at') ."<p>";
+                return "<p><span class='badge bg-success p-1 m-2'>0</span>  expire " . getDateColumn($story, 'expires_at') ."<p>";
 
             })
             ->editColumn('updated_at', function ($story) {
