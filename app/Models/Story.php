@@ -132,27 +132,30 @@ class Story extends Model implements HasMedia
         $collectionName = '*';
         $media = $this->getFirstMedia('*');
         
-        if($media != null && $media->disk === 'r2'){ 
-            $streamUid = $media->custom_properties['stream_uid'] ?? null;
-            if ((str_starts_with($media->mime_type, 'video/') || str_starts_with($media->mime_type, 'application/')) 
-                &&  !empty($streamUid) ) {
-                return  "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
-               
-            }
-            return  Storage::disk('r2')->temporaryUrl(
-                $media->getPathRelativeToRoot($conversion),
-                now()->addMinutes(10)
-            ); 
-        } 
+        if($media != null ){ 
+            if($media->disk === 'r2'){ 
+                $streamUid = $media->custom_properties['stream_uid'] ?? null;
+                if ((str_starts_with($media->mime_type, 'video/') || str_starts_with($media->mime_type, 'application/')) 
+                    &&  !empty($streamUid) ) {
+                    return  "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
+                
+                }
+                return  Storage::disk('r2')->temporaryUrl(
+                    $media->getPathRelativeToRoot($conversion),
+                    now()->addMinutes(10)
+                ); 
+            }else{ 
         
-        $url = $this->getFirstMediaUrlTrait($collectionName);
-        if (!$url) return ''; // Sécurité si pas d'URL
-        $array = explode('.', $url);
-        $extension = strtolower(end($array));
-        if (in_array($extension, config('media-library.extensions_has_thumb'))) {
-            return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
-        } else {
-            return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
+                $url = $this->getFirstMediaUrlTrait($collectionName);
+                if (!$url) return ''; // Sécurité si pas d'URL
+                $array = explode('.', $url);
+                $extension = strtolower(end($array));
+                if (in_array($extension, config('media-library.extensions_has_thumb'))) {
+                    return asset($this->getFirstMediaUrlTrait($collectionName, $conversion));
+                } else {
+                    return asset(config('media-library.icons_folder') . '/' . $extension . '.png');
+                }
+            }
         }
     }
 

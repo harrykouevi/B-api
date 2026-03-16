@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Criteria\Stories\AvailableCriteria;
 use App\Events\AttachModelToVideoUploadEvent;
 use App\Events\MyStoryCreatedEvent;
 use App\Http\Controllers\Controller;
@@ -40,13 +41,15 @@ class StoryAPIController extends Controller
     {
         try {
             $this->storyRepository->pushCriteria(new RequestCriteria($request));
+            $this->storyRepository->pushCriteria(new AvailableCriteria($request));
             $this->storyRepository->pushCriteria(new LimitOffsetCriteria($request));
+
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
         
         // On utilise la méthode de ton Repo qui filtre les stories de moins de 24h
-        $stories = $this->storyRepository->getActiveStories();
+        $stories = $this->storyRepository->all();
 
         return $this->sendResponse($stories, 'Stories retrieved successfully');
     }

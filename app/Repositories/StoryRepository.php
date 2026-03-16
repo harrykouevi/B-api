@@ -19,15 +19,5 @@ class StoryRepository extends BaseRepository
     }
 
    
-    /**
-     * Récupérer les stories actives (le feed)
-     */
-    public function getActiveStories()
-    {
-        return $this->model
-            // Optionnel : ->whereIn('user_id', $idsDesAmisEtMoi) 
-            ->where('expires_at', '>', Carbon::now())
-            ->orderBy('created_at', 'desc')
-            ->get();
-    }
+   
 }
