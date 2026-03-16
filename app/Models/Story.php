@@ -118,6 +118,10 @@ class Story extends Model implements HasMedia
         $this->addMediaConversion('thumb')
             ->fit(Manipulations::FIT_CROP, 200, 200)
             ->sharpen(10);
+
+        $this->addMediaConversion('icon')
+            ->fit(Manipulations::FIT_CROP, 100, 100)
+            ->sharpen(10);
     }
 
     /**
