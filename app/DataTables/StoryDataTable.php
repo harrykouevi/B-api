@@ -99,6 +99,15 @@ class StoryDataTable extends DataTable
             //     return  '<span class="badge badge-secondary">'.$story->favory_count.'</span>';
 
             // })
+            ->editColumn('expires_at', function ($story) {
+                if ($story['is_expired']) {
+                    return "<p><span class='badge bg-warning p-1 m-2'>1</span> ". getDateColumn($story, 'expires_at') ."<p>";
+                }
+                
+                
+                return "<p><span class='badge bg-success p-1 m-2'>0</span>  expire à" . getDateColumn($story, 'expires_at') ."<p>";
+
+            })
             ->editColumn('updated_at', function ($story) {
                 return getDateColumn($story, 'updated_at');
             })
@@ -213,6 +222,12 @@ class StoryDataTable extends DataTable
             //     'orderable' => true
 
             // ],
+             [
+                'data' => 'expires_at',
+                'title' => trans('lang.story_expires_at'),
+                'searchable' => false,
+                'orderable' => true
+            ],
             [
                 'data' => 'updated_at',
                 'title' => trans('lang.story_updated_at'),
