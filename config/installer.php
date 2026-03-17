@@ -78,10 +78,7 @@ return [
                 'purchase_code' => 'required|string|max:36|min:36',
                 'environment' => 'required|string|max:50',
                 'environment_custom' => 'required_if:environment,other|max:50',
-                'app_debug' => [
-                    'required',
-                    Rule::in(['true', 'false']),
-                ],
+                'app_debug' =>  'required|in:true,false',
                 'app_log_level' => 'required|string|max:50',
                 'app_url' => 'required|url',
                 'database_connection' => 'required|string|max:50',

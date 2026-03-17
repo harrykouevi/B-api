@@ -117,6 +117,13 @@ return [
             'path' => storage_path('logs/vegeta.log'),
             'level' => 'debug',
         ],
+
+        'flutter' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/flutter.log'),
+            'level' => 'error',
+            'days' => 7, 
+        ],
     ],
 
 ];

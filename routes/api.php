@@ -16,6 +16,7 @@ use App\Http\Controllers\API\BookingAPIController;
 use App\Http\Controllers\API\CategoryAPIController;
 use App\Http\Controllers\API\CinetpayAPIController;
 use App\Http\Controllers\API\CurrencyAPIController;
+use App\Http\Controllers\Api\ErrorLogApiController;
 use App\Http\Controllers\API\FavoritePostAPIController;
 use App\Http\Controllers\API\ModuleAPIController;
 use App\Http\Controllers\API\ServiceTemplateAPIController;
@@ -43,6 +44,10 @@ use App\Http\Controllers\API\PostAPIController;
 Route::get('/test', function (Request $request) {
     dd(env('APP_LOCALE')) ;
 })->name('test');
+
+
+
+Route::post('/log-error', [ErrorLogApiController::class, 'store'])->name('logs.store');
 
 Route::prefix('salon_owner')->as('salon_owner.')->group(function () {
     // Route::post('login', 'API\SalonOwner\UserAPIController@login')->name('api.login');
