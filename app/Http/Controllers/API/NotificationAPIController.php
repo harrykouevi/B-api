@@ -15,6 +15,7 @@ use App\Models\Notification;
 use App\Notifications\NewMessage;
 use App\Repositories\NotificationRepository;
 use App\Repositories\UserRepository;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -106,7 +107,8 @@ class NotificationAPIController extends Controller
             try{
                 Log::error(['NotificationAPIController',$users]);
 
-              \Illuminate\Support\Facades\Notification::send($users, new NewMessage($from, $text, $messageId));
+            //   \Illuminate\Support\Facades\Notification::send($users, new NewMessage($from, $text, $messageId));
+                NotificationService::notify($users, new NewMessage($from, $text, $messageId));
             } catch (Exception $e) {
                 Log::error($e->getMessage());
             }

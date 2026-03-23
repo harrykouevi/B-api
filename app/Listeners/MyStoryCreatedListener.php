@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Events\MyStoryCreatedEvent;
 use App\Models\User;
 use App\Notifications\MyStoryCreatedNotification;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 
@@ -23,7 +24,7 @@ class MyStoryCreatedListener implements ShouldQueue
         // On récupère les utilisateurs qui est  l'auteur)
         // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
         $user = User::find($story->user_id);
-        Notification::send($user, new MyStoryCreatedNotification($story, $event->message));
+        NotificationService::notify([$user], new MyStoryCreatedNotification($story, $event->message));
    
     }
 }

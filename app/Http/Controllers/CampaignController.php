@@ -11,6 +11,7 @@ use App\DataTables\CampaignDataTable;
 use App\Models\Campaign;
 use App\Models\User;
 use App\Notifications\CampaignNotification;
+use App\Services\NotificationService;
 use Flash;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -172,22 +173,22 @@ class CampaignController extends Controller
                 }
                 foreach ($users as $user) {
                     try {
-                        Notification::send(
-                            $user,
+                        NotificationService::notify(
+                            [$user],
                             new CampaignNotification(
                                 $validated['title'],
                                 $messagePlain,
-                            $validated['audience'],
-                            false,
-                            'all',
-                            $messageRaw,
-                            $messageFormat,
-                            $imageUrl,
-                            $campaign->id,
-                            $actionType,
-                            $deepLink,
-                            $ctaText
-                        )
+                                $validated['audience'],
+                                false,
+                                'all',
+                                $messageRaw,
+                                $messageFormat,
+                                $imageUrl,
+                                $campaign->id,
+                                $actionType,
+                                $deepLink,
+                                $ctaText
+                            )
                         );
                         $sent++;
                     } catch (Throwable $e) {

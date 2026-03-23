@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Post;
 use App\Models\PostView;
 use App\Notifications\PostViewedNotification;
+use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -61,7 +62,7 @@ class SendPostViewNotificationJob implements ShouldQueue
             }
 
             // envoyer notification
-            $author->notify(new PostViewedNotification($post, $message , $userIds));
+            NotificationService::notify( [$author], new PostViewedNotification($post, $message , $userIds));
 
             // marquer les vues comme notifiées
             $recentViews__->each(function ($view) {

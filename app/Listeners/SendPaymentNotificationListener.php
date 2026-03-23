@@ -10,6 +10,7 @@ use App\Notifications\NewDebitPayment;
 use App\Notifications\NewReceivedPayment;
 use App\Repositories\WalletRepository;
 use App\Repositories\WalletTransactionRepository;
+use App\Services\NotificationService;
 use App\Types\PaymentType;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -44,7 +45,7 @@ class SendPaymentNotificationListener
             if($transaction && $transaction->action == PaymentType::DEBIT->value){
                 Log::info(['NotifyPaymentEvent', 'Payement : Type '. $transaction->action. ' → montant de '.$transaction->amount.' débité du compte  de '.$payer_wallet->user->name]) ;
                 try{
-                    Notification::send([$payer_wallet->user], new NewDebitPayment($transaction));
+                    NotificationService::notify([$payer_wallet->user], new NewDebitPayment($transaction));
                 } catch (\Exception $e) {
                     Log::error("Erreur dans SendPaymentNotificationListener avec l'envoie de notifications: " . $e->getMessage());
                 }
@@ -64,7 +65,7 @@ class SendPaymentNotificationListener
                     Log::info(['NotifyPaymentEvent', 'Paiement : Type ' . $transaction->action . ' → montant '.$transaction->amount.' crédité sur le compte de '.$user->name]) ;
                     try{
                         // Notifier le bénéficiaire (user), et non le payeur
-                        Notification::send([$user], new NewReceivedPayment($transaction));
+                        NotificationService::notify([$user], new NewReceivedPayment($transaction));
                     } catch (\Exception $e) {
                         Log::error("Erreur dans SendPaymentNotificationListener avec l'envoie de notifications: " . $e->getMessage());
                     }

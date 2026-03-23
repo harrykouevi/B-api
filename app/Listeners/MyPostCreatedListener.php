@@ -6,6 +6,7 @@ use App\Events\MyPostCreatedEvent;
 use App\Models\User;
 use App\Notifications\MyPostCreatedNotification;
 use App\Notifications\PostPublishedNotification;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Notification;
 
@@ -23,6 +24,6 @@ class MyPostCreatedListener implements ShouldQueue
 
        
         $user = User::find($post->author_id);
-        Notification::send($user, new MyPostCreatedNotification($post, $event->message));
+        NotificationService::notify([$user], new MyPostCreatedNotification($post, $event->message));
     }
 }

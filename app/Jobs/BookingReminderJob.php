@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Booking;
 use App\Notifications\BookingReminderNotification;
+use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -62,7 +63,7 @@ class BookingReminderJob implements ShouldQueue
             // Envoyer le rappel au client
             if ($currentBooking->user) {
                 try{
-                    Notification::send(
+                    NotificationService::notify(
                         [$currentBooking->user], 
                         new BookingReminderNotification($currentBooking, $this->reminderType, 'client')
                     );
@@ -77,7 +78,7 @@ class BookingReminderJob implements ShouldQueue
             // Envoyer le rappel au salon (sauf pour confirmation)
             if ($this->reminderType !== 'confirmation' && $currentBooking->salon && $currentBooking->salon->users->isNotEmpty()) {
                 try{
-                    Notification::send(
+                    NotificationService::notify(
                         $currentBooking->salon->users, 
                         new BookingReminderNotification($currentBooking, $this->reminderType, 'salon')
                     );

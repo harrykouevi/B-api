@@ -274,6 +274,7 @@ class WalletAPIController extends Controller
         try {
             Log::error(['sendNotification', auth()->user()]);
 
+            
             Notification::send(auth()->user(), "yes yes yes yes");
 
         } catch (RepositoryException $e) {

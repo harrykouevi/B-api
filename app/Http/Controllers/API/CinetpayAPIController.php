@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use App\Services\CinetPayService;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\RechargePayment;
+use App\Services\NotificationService;
 
 class CinetpayAPIController extends Controller
 {
@@ -234,7 +235,7 @@ class CinetpayAPIController extends Controller
                 $wallet = $walletTransaction->wallet;
                 if ($wallet) {
                     // TODO: revoir le parametre envoyé à NewReceivedPayment
-                    Notification::send([$wallet->user], new NewReceivedPayment($transactionId, $wallet));
+                    NotificationService::notify([$wallet->user], new NewReceivedPayment($transactionId, $wallet));
                 }
             } catch(\Exception $e) {
                 Log::error("Erreur lors de l'envoi de la notification", [

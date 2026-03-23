@@ -262,9 +262,9 @@ class PaymentService
             if ($payment && $wallet->user) {
                 try {
                     if($type == PaymentType::CREDIT){
-                        Notification::send([$wallet->user], new RechargePayment($payment, $wallet));
+                        NotificationService::notify([$wallet->user], new RechargePayment($payment, $wallet));
                     }else{
-                        Notification::send([$wallet->user], new WithdrawPayment($payment, $wallet));
+                        NotificationService::notify([$wallet->user], new WithdrawPayment($payment, $wallet));
                     }
                 
                 } catch (Exception $e) {

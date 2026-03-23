@@ -14,6 +14,7 @@ use App\Notifications\NewBooking;
 use App\Repositories\BookingRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\PaymentRepository;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Prettus\Validator\Exceptions\ValidatorException;
@@ -90,7 +91,7 @@ abstract class ParentBookingController extends Controller
         try {
             Log::error(['sendNotificationToProviders',$this->booking->salon->users]);
 
-            Notification::send($this->booking->salon->users, new NewBooking($this->booking));
+            NotificationService::notify($this->booking->salon->users, new NewBooking($this->booking));
 
             event(new BookingPaymentUpdatedEvent($this->booking));
 

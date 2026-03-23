@@ -10,6 +10,7 @@ use App\Notifications\MyPostIsReadyNotification;
 use App\Notifications\MyStoryIsReadyNotification;
 use App\Notifications\PostPublishedNotification;
 use App\Notifications\StoryPublishedNotification;
+use App\Services\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Notification;
@@ -40,14 +41,15 @@ class CloudMediaIsReadyEventListener
             }
 
             if (!$post->author->hasRole('admin')) {
-                $post->author->notify(new MyPostIsReadyNotification($post));
+                NotificationService::notify([$post->author] , new MyPostIsReadyNotification($post));
+
             }
 
             // On récupère les utilisateurs qui est  l'auteur)
             // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
             User::where('id', '!=', $post->author_id)
                 ->chunk(100, function ($users) use ($post,$event) {
-                    Notification::send($users, new  PostPublishedNotification($post));
+                    NotificationService::notify($users, new  PostPublishedNotification($post));
                 });
         }elseif($event->model instanceof Story){
             // On récupère le post
@@ -59,14 +61,15 @@ class CloudMediaIsReadyEventListener
             }
 
             if (!$story->user->hasRole('admin')) {
-                $story->user->notify(new MyStoryIsReadyNotification($story));
+                NotificationService::notify( [$story->user] , new MyStoryIsReadyNotification($story));
             }
 
             // On récupère les utilisateurs qui est  l'auteur)
             // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
             User::where('id', '!=', $story->user_id)
                 ->chunk(100, function ($users) use ($story,$event) {
-                    Notification::send($users, new  StoryPublishedNotification($story));
+                    NotificationService::notify($users, new  StoryPublishedNotification($story));
+               
                 });
         }
     }

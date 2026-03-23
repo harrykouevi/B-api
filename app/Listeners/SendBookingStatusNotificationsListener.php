@@ -14,6 +14,7 @@ use App\Services\BookingReminderService;
 use App\Notifications\StatusChangedBooking;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\OwnerStatusChangedBooking;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 
 /**
@@ -240,8 +241,7 @@ class SendBookingStatusNotificationsListener
                 'status_order' => $booking->bookingStatus->order,
                 'status_name' => $booking->bookingStatus->status ?? 'N/A'
             ]);
-
-            Notification::send([$booking->user], new StatusChangedBooking($booking));
+            NotificationService::notify([$booking->user], new StatusChangedBooking($booking));
 
             Log::info("SendBookingStatusNotificationsListener - notifyClient SUCCESS", [
                 'booking_id' => $booking->id,
@@ -317,7 +317,7 @@ class SendBookingStatusNotificationsListener
         }
 
         try{
-            Notification::send($salonUsers, new OwnerStatusChangedBooking($booking));
+            NotificationService::notify($salonUsers, new OwnerStatusChangedBooking($booking));
 
             Log::info("SendBookingStatusNotificationsListener - notifySalonOwners SUCCESS", [
                 'booking_id' => $booking->id,

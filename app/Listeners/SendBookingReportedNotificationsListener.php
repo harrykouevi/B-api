@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Notification;
 use App\Events\BookingReportedEvent;
 use App\Notifications\BookingReportedClientNotification;
 use App\Notifications\BookingReportedSalonNotification;
+use App\Services\NotificationService;
 
 class SendBookingReportedNotificationsListener
 {
@@ -56,8 +57,7 @@ class SendBookingReportedNotificationsListener
 
             $client = $originalBooking->user;
             if ($client) {
-                Notification::send(
-                    [$client],
+                NotificationService::notify([$client],
                     new BookingReportedClientNotification($originalBooking, $newBooking)
                 );
             }
@@ -93,8 +93,7 @@ class SendBookingReportedNotificationsListener
             });
 
             if ($recipients->count() > 0) {
-                Notification::send(
-                    $recipients,
+                NotificationService::notify($recipients,
                     new BookingReportedSalonNotification($originalBooking, $newBooking)
                 );
             }
