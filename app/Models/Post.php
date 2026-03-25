@@ -48,7 +48,7 @@ class Post extends Model implements HasMedia
      * @var array
      */
     public static array $rules = [
-        'caption' => 'required|string',
+        'caption' => 'nullable|string',
         'salon_id' => 'nullable|exists:salons,id',
         'author_id' => 'nullable|exists:users,id',
     ];

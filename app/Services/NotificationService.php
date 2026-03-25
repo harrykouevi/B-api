@@ -75,9 +75,9 @@ class NotificationService extends Mailable
                     }
                     
 
-                }else{
-                    throw $e; 
                 }
+
+                Log::error('FCM failed: ' . $e->getMessage());
             }
         }
     }
