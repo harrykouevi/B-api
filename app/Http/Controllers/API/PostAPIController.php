@@ -174,6 +174,8 @@ class PostAPIController extends Controller
         } catch (ValidationException $e) {
             return $this->sendError(array_values($e->errors()), 422);
         } catch (Exception $e) {
+            Log::error("Error storing post: " . $e->getMessage());
+
             return $this->sendError($e->getMessage(), 500);
         }
 
