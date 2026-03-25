@@ -151,15 +151,17 @@ class PostAPIController extends Controller
                         }
                     }
 
-                    foreach($request->file('media') as $file){
-                        if (!$file->isValid()) {
-                            continue;
+                    if ($request->hasFile('media')) {
+                        foreach($request->file('media') as $file){
+                            if (!$file->isValid()) {
+                                continue;
+                            }
+                            $in = [
+                                'uuid' =>  (string) Str::uuid() ,
+                                'field' => 'cloudmedia' ,
+                            ] ;
+                            $this->uploadRepository->createWithMedia($file,$in,$m);
                         }
-                        $in = [
-                            'uuid' =>  (string) Str::uuid() ,
-                            'field' => 'cloudmedia' ,
-                        ] ;
-                        $this->uploadRepository->createWithMedia($file,$in,$m);
                     }
                 }
                 
