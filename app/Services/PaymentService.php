@@ -866,9 +866,10 @@ class PaymentService
     }
 
 
-    public function  createDefaultWallet(User $user , $name = null ):Wallet|Null
+    public function  createDefaultWallet(User $user , $name = null )
     {
-        return  $this->createWallet($user,0, $name = null );
+        $this->createWallet($user, 0 );
+        $this->createWallet($user,0, WalletType::BONUS);
     }
 
 
