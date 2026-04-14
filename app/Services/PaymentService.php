@@ -99,21 +99,7 @@ class PaymentService
             'tax' => $taxLog,
             'coupon' => $coupon,
         ]);
-        // if($receiver->id != null){ 
-        //     $wallet = ($wallettype !== null) ? $this->walletRepository->findWhere([
-        //                                                             'user_id' => $receiver->id,
-        //                                                             'name'    => $wallettype->value,
-        //                                                         ])->first() 
-        //                         : $this->walletRepository->findWhere(['user_id' =>$receiver->id,
-        //                                                             'name' => WalletType::PRINCIPAL->value,
-        //                                                         ])->first() ;
-        // }else{
-        //     $wallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
-        // }
-
-        // if($wallet == Null){
-        //     $wallet = ($wallettype == null )? $this->createWallet($receiver, 0) : $this->createWallet($receiver, 0, $wallettype->value);
-        // }
+       
 
         $receiverWallet = $this->resolveReceiverWallet($receiver, $wallettype);
 
@@ -156,20 +142,6 @@ class PaymentService
         
         $payer_wallet = $this->resolveWallet($payer_wallet);
         $wallettype =  !is_null($wallettype)? $wallettype->value : WalletType::PRINCIPAL->value ;
-
-
-        // if($receiver->id != null){ 
-        //     $receiverWallet = ($wallettype !== null) ? $this->walletRepository->findByField('user_id',  $receiver->id)
-        //                                                             ->findByField('name',  $wallettype)->first() 
-        //                         : $this->walletRepository->findByField('user_id',  $receiver->id)
-        //                         ->findByField('name',  $wallettype)->first() ;
-        // }else{
-        //     $receiverWallet =  $this->walletRepository->find(setting('app_default_wallet_id'));
-        // }
-
-        // if($receiverWallet == Null){
-        //     $receiverWallet = $this->createWallet($receiver , 0 , $wallettype) ;
-        // }
         $receiverWallet = $this->resolveReceiverWallet($receiver, $wallettype);
 
         $currency = json_decode($receiverWallet->currency, true);
@@ -891,6 +863,12 @@ class PaymentService
            return  $this->walletRepository->create($input);
         }
         return Null;
+    }
+
+
+    public function  createDefaultWallet(User $user , $name = null ):Wallet|Null
+    {
+        return  $this->createWallet($user,0, $name = null );
     }
 
 

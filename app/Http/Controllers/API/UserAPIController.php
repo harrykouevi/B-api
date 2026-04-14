@@ -166,6 +166,7 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name','customer');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
+            app(PaymentService::class)->createDefaultWallet($user, WalletType::PRINCIPAL->value);
 
             if($registerwith == 'email') event(new SendEmailOtpEvent($user));
 
@@ -176,17 +177,6 @@ class UserAPIController extends Controller
                 
                 $this->partenerShipService->proceedPartenerShip($user,$affiliation) ;
                 
-                // // Attribue la récompense au partenaire
-                // $partner = $affiliation->user;
-                // if($partner){ 
-                //     $paymentInfo = ["amount"=>setting('partener_rewards'),"payer_wallet"=>setting('app_default_wallet_id'), "user"=>$partner, "walletType"=> WalletType::BONUS] ;
-                //     event(new DoPaymentEvent($paymentInfo));
-                // }
-
-                // $user->update([
-                //     'sponsorship' => $affiliation,
-                //     'sponsorship_at' => now(),
-                // ]);
             }
 
             //credité le wallet du client
@@ -246,6 +236,8 @@ class UserAPIController extends Controller
             $defaultRoles = $this->roleRepository->findByField('name','customer');
             $defaultRoles = $defaultRoles->pluck('name')->toArray();
             $user->assignRole($defaultRoles);
+            app(PaymentService::class)->createDefaultWallet($user, WalletType::PRINCIPAL->value);
+
             if($registerwith == 'email') event(new SendEmailOtpEvent($user));
 
 
