@@ -59,6 +59,7 @@ class PaymentService
 
     public function buildCouponData(Booking|Purchase $booking){
         $coupon = $booking->coupon ;
+       
         $applies_to = 'platform' ;
         if ($coupon->discountable_type  == "App\Models\Wallet") $applies_to = 'platform' ;
         if (in_array( $coupon->discountable_type , ["App\Models\EService" , "App\Models\Salon" ,"App\Models\Category" ]))  $applies_to = 'salon' ;
@@ -807,7 +808,7 @@ class PaymentService
                 'amount' => $amount ,
                 'description' => "payement done to user : ". strval($receiver->id) ." .  ". strval($receiver->name)  ,
                 'payment_status_id' => 2 , // done
-                'payment_method_id' => 11 , // done
+                'payment_method_id' => 1 , // done
                 'user_id' =>  $payer_wallet->user->id ,
             ]
         ] ;

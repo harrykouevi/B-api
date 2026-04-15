@@ -41,6 +41,9 @@ class CouponDataTable extends DataTable
             ->editColumn('description', function ($coupon) {
                 return getStripedHtmlColumn($coupon, 'description');
             })
+            ->editColumn('number_ofuse', function ($coupon) {
+                return $coupon->number_ofuse;
+            })
             ->editColumn('expires_at', function ($coupon) {
                 return getDateColumn($coupon, 'expires_at');
             })
@@ -80,6 +83,11 @@ class CouponDataTable extends DataTable
             [
                 'data' => 'description',
                 'title' => trans('lang.coupon_description'),
+
+            ],
+            [
+                'data' => 'number_ofuse',
+                'title' => trans('lang.number_ofuse'),
 
             ],
             [

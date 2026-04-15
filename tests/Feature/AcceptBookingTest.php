@@ -137,6 +137,7 @@ class AcceptBookingTest extends TestCase
             Log::error('FAIL:'. $e->getMessage() , [
                  'trace' => $e->getTraceAsString()
             ]);
+             throw $e; 
         }
     }
 

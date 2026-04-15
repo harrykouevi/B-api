@@ -39,6 +39,7 @@ use Illuminate\Validation\ValidationException;
 use Prettus\Repository\Criteria\RequestCriteria;
 use App\Criteria\Bookings\BookingsOfUserCriteria;
 use App\Events\NotifyBookingEvent;
+use App\Models\CouponUse;
 use App\Models\Tax;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Validator\Exceptions\ValidatorException;
@@ -195,7 +196,18 @@ class BookingAPIController extends Controller
                 if (isset($input['code'])) {
                     $this->couponRepository->pushCriteria(new ValidCriteria($request));
                     $coupon = $this->couponRepository->first();
-                    $input['coupon'] = $coupon->getValue($input['e_services'] , ($request->has('options') && $input['options'] instanceof \Illuminate\Support\Collection) ? $input['options'] :null );
+
+                    if($coupon !== Null){
+                        $c=[];
+                        $input['coupon'] = $coupon->getValue($input['e_services'] , ($request->has('options') && $input['options'] instanceof \Illuminate\Support\Collection) ? $input['options'] :null );
+                    
+                        $users = $coupon->users ?? '';
+                        if (strpos($users, auth()->id().";") === false) {
+                            $c['users'] = $users . auth()->id() . ";";
+                        }
+                        CouponUse::create([ 'coupon_id' => $coupon->id,'user_id' => auth()->id()]);
+                        
+                    }
                 }
             }
             $taxes = $salon->taxes;

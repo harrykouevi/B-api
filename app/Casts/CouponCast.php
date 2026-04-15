@@ -49,6 +49,7 @@ class CouponCast implements CastsAttributes
                     'id' => $value['id'],
                     'code' => $value['code'],
                     'discount' => $value['discount'],
+                    'number_ofuse'  => $value['number_ofuse'],
                     'value' => $value['value'],
                     'discount_type' => $value['discount_type'],
                 ]

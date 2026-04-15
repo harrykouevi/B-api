@@ -48,6 +48,7 @@ class Coupon extends Model implements Castable
         'code' => 'required|unique:coupons|max:50',
         'discount' => 'required|numeric|min:0',
         'discount_type' => 'required',
+        'number_ofuse' => 'required|numeric|min:0',
         'expires_at' => 'required|date|after_or_equal:tomorrow'
     ];
     public array $translatable = [
@@ -58,7 +59,9 @@ class Coupon extends Model implements Castable
         'code',
         'discount',
         'discount_type',
+        'number_ofuse',
         'description',
+        'users',
         'expires_at',
         'enabled'
     ];
@@ -70,6 +73,7 @@ class Coupon extends Model implements Castable
     protected $casts = [
         'code' => 'string',
         'discount' => 'double',
+        'number_ofuse'  => 'double',
         'value' => 'double',
         'discount_type' => 'string',
         'description' => 'string',
@@ -142,8 +146,25 @@ class Coupon extends Model implements Castable
         return $this->morphedByMany(Salon::class, 'discountable');
     }
 
+    public function uses()
+    {
+        return $this->hasMany(CouponUse::class);
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'coupon_uses')
+                    ->withTimestamps();
+    }
+
+    public function usesByUser($userId)
+    {
+        return $this->uses()->where('user_id', $userId);
+    }
+
     public function getValue($eServices , $options = Null ): Coupon
     {
+        // dd(['gggg', $eServices]) ;
        $serviceprices = 0 ;
         $couponValue = 0;
         $app_w = $this->app_charges()->first() ;
@@ -153,9 +174,11 @@ class Coupon extends Model implements Castable
             $couponEServices = $this->eServices->concat($eServicesOfCategories)->concat($eServicesOfSalons);
             $couponEServicesIds = $couponEServices->pluck('id')->toArray();
         }else{
-            $couponEServicesIds = Eservice::pluck('id')->toArray();
+            $couponEServicesIds = EService::pluck('id')->toArray();
+            
         }
-
+      
+       
         foreach ($eServices as $eService) {
             $serviceprices += $eService->getPrice() ;
             if (in_array($eService->id, $couponEServicesIds)) {
@@ -180,10 +203,8 @@ class Coupon extends Model implements Castable
         }
 
         
-       
         $this->value = $couponValue;
         unset($this['eServices'], $this['salons'], $this['categories']);
         return $this;
     }
-
 }

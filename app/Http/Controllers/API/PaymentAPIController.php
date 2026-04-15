@@ -245,14 +245,15 @@ class PaymentAPIController extends Controller
             $wallet = $this->walletRepository->find($walletId);
             $currency = json_decode($wallet->currency, true);
 
+
             // Charger le booking (salon, e_services, options sont des attributs castés, pas des relations)
             $booking = $this->bookingRepository->find($input['id']);
-
+            
             // Vérification de base du wallet et de la devise
             if (!$wallet || $currency['code'] != setting('default_currency_code')) {
                 return $this->sendError(__('lang.not_found', ['operator' => __('lang.wallet')]));
             }
-
+            
             // Vérification optionnelle supplémentaire du solde (en cas de changement entre création et paiement)
             $bookingTotal = $booking->getTotal();
             if ($wallet->balance < $bookingTotal) {
@@ -260,7 +261,8 @@ class PaymentAPIController extends Controller
             }
 
             // Créer le paiement
-            $transactionAmount = $input['payment']['amount'];
+            $transactionAmount = $bookingTotal;
+            // $transactionAmount = $input['payment']['amount'];
 
             // Déterminer le type de wallet en fonction du nom
             $walletType = $wallet->name === WalletType::BONUS->value
@@ -280,6 +282,7 @@ class PaymentAPIController extends Controller
                 $tax,
                 $coupon
             );
+            
             $payment = $payment[0];
 
             if ($payment) {

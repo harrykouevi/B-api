@@ -66,6 +66,24 @@ class ValidCriteria implements CriteriaInterface
                 }
             })
             ->orWhere('code', $this->request->get('code'))
-            ->where('enabled', '1')->where('expires_at', '>', Carbon::now())->select('coupons.*');
+            ->where('enabled', 1)
+            ->where('expires_at', '>', Carbon::now())
+
+            ->leftJoin('coupon_uses', function ($join) {
+                $join->on('coupon_uses.coupon_id', '=', 'coupons.id')
+                    ->where('coupon_uses.user_id', auth()->id());
+            })
+
+            ->groupBy('coupons.id')
+
+            ->havingRaw('
+                coupons.number_ofuse = 0 
+                OR COALESCE(COUNT(coupon_uses.id), 0) < coupons.number_ofuse
+            ')
+
+            ->select('coupons.*');
+
+             
+           
     }
 }

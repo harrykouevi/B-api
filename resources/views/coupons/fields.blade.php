@@ -86,6 +86,17 @@
         </div>
     </div> --}}
 
+    <!-- number_of_use Field -->
+    <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
+        {!! Form::label('number_of_use', trans("lang.coupon_number_of_use"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+        <div class="col-md-9">
+            {!! Form::number('number_ofuse', null,  ['class' => 'form-control','placeholder'=>  trans("lang.coupon_number_of_use_placeholder"),'step'=>"any", 'min'=>"0"]) !!}
+            <div class="form-text text-muted">
+                {!! trans("lang.coupon_number_of_use_help")   !!}
+            </div>
+        </div>
+    </div>
+
     <!-- Start At Field -->
     <div class="form-group align-items-baseline d-flex flex-column flex-md-row">
         {!! Form::label('expires_at', trans("lang.coupon_expires_at"), ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}

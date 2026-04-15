@@ -1061,6 +1061,7 @@ return [
     'coupon_e_service_id_help' => 'Le coupon sera appliqué sur les services sélectionnés',
     'coupon_category_id' => 'Catégories',
     'coupon_category_id_help' => 'Le coupon sera appliqué sur les catégories sélectionnées',
+    'coupon_app_charge' => 'A la charge de l\'application' ,
     'slide' => 'Faire glisser',
     'slide_plural' => 'Diapositives',
     'slide_desc' => 'Gestion des diapositives',

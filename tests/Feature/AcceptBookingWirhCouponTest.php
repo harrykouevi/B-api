@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Models\Booking;
 use App\Models\Currency;
 use App\Models\Purchase;
+use App\Models\Salon;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Repositories\PurchaseRepository;
+use App\Models\Category;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
@@ -20,7 +22,7 @@ use Tests\TestCase;
 
 class AcceptBookingWirhCouponTest extends TestCase
 {
-    use DatabaseTransactions;
+    // use DatabaseTransactions;
     /**
      * A basic feature test example.
      */
@@ -32,8 +34,8 @@ class AcceptBookingWirhCouponTest extends TestCase
 
             $user = User::create([
                     'name' => 'userdddd test',
-                    'email' => 'user222@example.com',
-                    'phone_number' => '+0022890009988',
+                    'email' => Str::random(8).'@example.com',
+                    'phone_number' =>  '+00228'.Str::random(8),
                     'phone_verified_at' => now(),
                     'email_verified_at' => now(),
                     'password' => Hash::make('password125'),
@@ -56,45 +58,68 @@ class AcceptBookingWirhCouponTest extends TestCase
                     'updated_at' => now(),
             ]);
 
-            $user2 = User::create([
-                    'name' => 'test',
-                    'email' => 'user2E82@example.com',
-                    'phone_number' => '+00228900409988',
-                    'phone_verified_at' => now(),
-                    'email_verified_at' => now(),
-                    'password' => Hash::make('password125'),
-                    'api_token' => Str::random(60),
-                    'device_token' => '',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-            ]);
+            $user2 = User::find(184)  ;
+            // $user2 = User::create([
+            //         'name' => 'test',
+            //         'email' => Str::random(8).'@example.com',
+            //         'phone_number' =>  '+00228'.Str::random(8),
+            //         'phone_verified_at' => now(),
+            //         'email_verified_at' => now(),
+            //         'password' => Hash::make('password125'),
+            //         'api_token' => Str::random(60),
+            //         'device_token' => '',
+            //         'created_at' => now(),
+            //         'updated_at' => now(),
+            // ]);
 
-            $user2->assignRole(3);
+            // $user2->assignRole(3);
 
-
-            $wallet2 = Wallet::create([
+            $wallet2 = Wallet::where('user_id', $user2->id)->first()  ;
+            // $wallet2 = Wallet::create([
                     
-                    'name'  => 'Bonus',
-                    'balance' => 500000,
-                    'currency' =>  $currency,
-                    'user_id' => $user2->id,
-                    'enabled' => 1 ,
+            //         'name'  => 'Bonus',
+            //         'balance' => 500000,
+            //         'currency' =>  $currency,
+            //         'user_id' => $user2->id,
+            //         'enabled' => 1 ,
+            //         'created_at' => now(),
+            //         'updated_at' => now(),
+            // ]);
+            
+
+            $salon = Salon::create([
+                    'name' => Str::random(10),
+                'phone_number' => '+00228'.Str::random(8),
+                    'address_id' => 1,
+                    'mobile_number' => '+00228'.Str::random(8),
+                    'accepted' => 1,
                     'created_at' => now(),
                     'updated_at' => now(),
             ]);
-            
-            
+
+
+            $servi_resp_1=  $this->actingAs($user, 'api')->postJson(route('api.e_services.store'), [
+                'name' => 'pourri',
+                'price' => '1000',
+                'discount_price' => '1500',
+                'duration' => '12:05',
+                'description' => 'bla bla bla',
+                'salon_id' => $salon->id,
+                'category_id' => Category::find(15)->id ,
+             
+            ]);
+        
 
             $booking_resp =  $this->actingAs($user2, 'api')->postJson(route('api.bookings.store'), [
-                'code' =>  'HARR80',
+                'code' =>  'CARINE',
                  "duration"=> "0.0", 
                  "quantity"=> 1, 
                  "cancel"=> false, 
                  "taxes"=> [], 
                  "options"=> [1, 3], 
                  "user_id"=> $user2->id, 
-                 "e_services"=> [1], 
-                "salon_id"=> 1, 
+                 "e_services"=> [$servi_resp_1['data']['id']], 
+                "salon_id"=> $salon->id, 
                  
                  "booking_at"=> "2025-10-27 12:00:00.000Z"
 
@@ -106,11 +131,10 @@ class AcceptBookingWirhCouponTest extends TestCase
 
             $response =  $this->actingAs($user2, 'api')->postJson(route('api.payments.wallets', $wallet2->id), [
                 "id" => $booking_data['data']['id'],
-                'payment' => ['amount'=> 0 ],
+                'payment' => ['amount'=> 10000 ],
             ]);
             $payement_data = $response->json();
             
-
            if($payement_data['success'] == true){
                 $response2 =  $this->actingAs($user, 'api')->putJson(route('api.bookings.update', $booking_data['data']['id']), [
                     'booking_status_id' =>  4 ,
@@ -140,6 +164,7 @@ class AcceptBookingWirhCouponTest extends TestCase
             Log::error('FAIL:'. $e->getMessage() , [
                  'trace' => $e->getTraceAsString()
             ]);
+            throw $e ;
         }
     }
 
