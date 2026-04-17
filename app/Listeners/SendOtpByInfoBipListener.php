@@ -25,7 +25,7 @@ class SendOtpByInfoBipListener
      */
     public function __construct()
     {
-        $this->_apiKey = '90b05381e1a1d1576332dbd264deb8a6-b238d700-d8f7-47b9-a715-e4a5c8516656' ;
+        $this->_apiKey = config('services.infobip.api_key') ;
         $this->_baseUrl = env('INFOBIP_BASE_URL', 'https://api.infobip.com');
         $this->_smsSender = env('INFOBIP_SENDER');
         $this->_whatsappSender = env('INFOBIP_SENDER', '22896617963');
@@ -135,6 +135,8 @@ class SendOtpByInfoBipListener
             'Content-Type'=> 'application/json',
         ])
         ->post($this->_baseUrl . '/whatsapp/1/message/text', $data);
+
+        
 
         Log::info('Réponse WhatsApp OTP listen', [
             'status' => $response->status(),
