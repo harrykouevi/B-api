@@ -86,6 +86,8 @@ class InfoBipService{
         $phone = $this->refactorPhoneNumber($phone);
 
         $body = [
+            "applicationId"=>  "charm-whatsapp" ,
+
             'messages' => [
                 [
                     'from' => $this->sender,
