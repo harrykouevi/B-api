@@ -93,7 +93,7 @@ class InfoBipService{
         $body = [
             'messages' => [
                 [
-                    "applicationId"=> "default",
+                    // "applicationId"=> "default",
 
                     'from' => $this->sender,
                     'to' => $phone,
