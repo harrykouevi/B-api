@@ -25,7 +25,7 @@ class SendOtpByInfoBipListener
      */
     public function __construct()
     {
-        $this->_apiKey = env('INFOBIP_API_KEY', 'bba4558d9e99eb22b1624c09bc3bc1d4-17a91549-9d23-4598-b8f3-dd4d81104792');
+        $this->_apiKey = '90b05381e1a1d1576332dbd264deb8a6-b238d700-d8f7-47b9-a715-e4a5c8516656' ;
         $this->_baseUrl = env('INFOBIP_BASE_URL', 'https://api.infobip.com');
         $this->_smsSender = env('INFOBIP_SENDER');
         $this->_whatsappSender = env('INFOBIP_SENDER', '22896617963');
