@@ -114,9 +114,36 @@ class SendOtpByInfoBipListener
     {
         $data = [
             "applicationId"=>  "charm-whatsapp" ,
-            "from"=> $this->_whatsappSender,
-            "to"=> $this->phoneNumber,
-            "content" => ['text' => "Votre code de vérification est: $this->code . Ce code est à usage unique et expirera prochainement."]
+            // "from"=> $this->_whatsappSender,
+            // "to"=> $this->phoneNumber,
+            // "content" => ['text' => "Votre code de vérification est: $this->code . Ce code est à usage unique et expirera prochainement."]
+
+            'messages' => [
+                [
+                    'from' => $this->_whatsappSender,
+                    'to' => $this->phoneNumber,
+                    'content' => [
+                        'templateName' => 'authentication',
+                        'templateData' => [
+                            'body' => [
+                                'placeholders' => [$this->code],
+                            ],
+                            'buttons' => [
+                                [
+                                    'type' => 'URL',
+                                    'parameter' => $this->code,
+                                ],
+                                [
+                                    'type' => 'QUICK_REPLY',
+                                    'parameter' => "confirmer",
+                                ]
+                            ],
+                            
+                        ],
+                        'language' => 'fr',
+                    ],
+                ],
+            ],
         ];
 
         Log::info("listenner info d'envoi:", [
