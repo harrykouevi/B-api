@@ -34,7 +34,7 @@ class InfoBipService{
                 'status' => true,
                 'message' => "Le message non envoyé"
             ];
-            
+
         Log::info('Envoi du message SMS au '.$phone);
         $phone = $this->refactorPhoneNumber($phone);
 
@@ -93,7 +93,7 @@ class InfoBipService{
         $body = [
             'messages' => [
                 [
-                    "applicationId"=> "charm-whatsapp",
+                    "applicationId"=> "default",
 
                     'from' => $this->sender,
                     'to' => $phone,
