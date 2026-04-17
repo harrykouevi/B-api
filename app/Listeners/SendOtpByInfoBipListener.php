@@ -76,8 +76,14 @@ class SendOtpByInfoBipListener
      * @return \Illuminate\Http\Client\Response
      * 
      */
-    private function bySms() : \Illuminate\Http\Client\Response
+    private function bySms() 
     {
+
+        return Http::response([
+            'status' => 'skipped',
+            'message' => 'SMS sending disabled (bypass mode)'
+        ], 200);
+
         $data = [
             'messages' => [
                 [

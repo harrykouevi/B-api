@@ -30,6 +30,11 @@ class InfoBipService{
 
     public function sendSms(string $code, string $phone): array
     {
+        return [
+                'status' => true,
+                'message' => "Le message non envoyé"
+            ];
+            
         Log::info('Envoi du message SMS au '.$phone);
         $phone = $this->refactorPhoneNumber($phone);
 
