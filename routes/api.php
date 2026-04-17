@@ -30,7 +30,10 @@ use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
 use App\Http\Controllers\API\PostAPIController;
 use App\Http\Controllers\API\StoryAPIController;
+use  Illuminate\Support\Facades\Http;
+
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +49,64 @@ use App\Services\NotificationService;
 Route::get('/test', function (Request $request) {
     dd(env('APP_LOCALE')) ;
 })->name('test');
+
+Route::get('/template', function (Request $request) {
+    $body = [
+        
+            "name"=> "media_template_with_footer",
+            "language"=> "en",
+            "category"=> "MARKETING",
+            "structure"=> [ 
+                "body"=> [ 
+                    "text"=> "body {{1}} content",
+                    "examples"=> [
+                        "example"
+                    
+                    ]
+                ]
+                ,
+                "footer"=> [ 
+                 "text"=> "footer content"
+                ]
+            ]
+            
+            // 'messages' => [
+            //     [
+            //         "applicationId"=> "charm-whatsapp",
+
+            //         'from' => $this->sender,
+            //         'to' => $phone,
+            //         'content' => [
+            //             'templateName' => 'authentication',
+            //             'templateData' => [
+            //                 'body' => [
+            //                     'placeholders' => [$code],
+            //                 ],
+            //                 'buttons' => [
+            //                     [
+            //                         'type' => 'URL',
+            //                         'parameter' => $code,
+            //                     ],
+            //                     [
+            //                         'type' => 'QUICK_REPLY',
+            //                         'parameter' => "confirmer",
+            //                     ]
+            //                 ],
+                            
+            //             ],
+            //             'language' => 'fr',
+            //         ],
+            //     ],
+            // ],
+        ];
+        $apiUrl = $this->api_url.'/whatsapp/2/senders/447860030808/templates';
+
+        $response = Http::withHeaders($this->headers)->post($apiUrl, $body);
+        Log::info("Réponse template creation:", [
+            'status' => $response->status(),
+            'body' => $response->json()
+        ]);
+})->name('template');
 
 
 
