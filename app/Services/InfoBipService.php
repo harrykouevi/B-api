@@ -86,7 +86,7 @@ class InfoBipService{
         $phone = $this->refactorPhoneNumber($phone);
 
         $body = [
-            "applicationId"=>  "47E15114840A4BC670CDA974DCD3B84B" ,
+            "application_id"=>  "47E15114840A4BC670CDA974DCD3B84B" ,
 
             'messages' => [
                 [
