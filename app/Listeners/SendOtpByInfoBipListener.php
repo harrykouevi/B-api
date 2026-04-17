@@ -90,6 +90,9 @@ class SendOtpByInfoBipListener
             ]
         ];
 
+        Log::info("listenner info d'envoi:", [
+            'url' =>  $this->_baseUrl . '/sms/3/messages' ]);
+
         $response = Http::withHeaders([
             'Authorization'=> 'App ' .  $this->_apiKey,
             'Content-Type'=> 'application/json',
@@ -114,6 +117,10 @@ class SendOtpByInfoBipListener
             "to"=> $this->phoneNumber,
             "content" => ['text' => "Votre code de vérification est: $this->code . Ce code est à usage unique et expirera prochainement."]
         ];
+
+        Log::info("listenner info d'envoi:", [
+            'url' =>  $this->_baseUrl . '/whatsapp/1/message/text' ]);
+
 
         $response = Http::withHeaders([
             'Authorization'=> 'App ' .  $this->_apiKey,

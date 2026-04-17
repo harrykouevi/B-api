@@ -69,7 +69,9 @@ class OtpService
         Log::info('code envoyé via sms', ["request" => $code] );
          $result = $this->infoBipService->sendSMS($code , $phoneNumber);
         Log::info('resultat', ["request" => $result] );
+
         event(new SendOtpByInfoBipEvent($code , $phoneNumber));
+        
         return 'If an account exists with this phone number, a reset link will be sent.' ;
     }
 

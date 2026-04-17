@@ -57,6 +57,9 @@ class InfoBipService{
         ]);
         $response = Http::withHeaders($this->headers)->post($apiUrl, $body);
 
+        Log::info("info d'envoi:", [
+            'url' =>  $apiUrl ]);
+
         Log::info("Réponse de l'envoi du SMS:", [
             'status' => $response->status(),
             'body' => $response->json()
