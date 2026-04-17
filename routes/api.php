@@ -104,9 +104,9 @@ $api_url = "https://grgz46.api.infobip.com" ;
             //     ],
             // ],
         ];
-        $apiUrl = $api_url.'/whatsapp/2/senders/447860030808/templates';
+        $apiUrl_ = $api_url.'/whatsapp/2/senders/447860030808/templates';
 
-        $response = Http::withHeaders($headers)->post($apiUrl, $body);
+        $response = Http::withHeaders($headers)->post($apiUrl_, $body);
         Log::info("Réponse template creation:", [
             'status' => $response->status(),
             'body' => $response->json()
