@@ -51,7 +51,7 @@ Route::get('/test', function (Request $request) {
 })->name('test');
 
 Route::get('/template', function (Request $request) {
- $this->headers = [
+ $headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'App '.config('services.infobip.api_key'),
         ];
@@ -106,7 +106,7 @@ $api_url = "https://grgz46.api.infobip.com" ;
         ];
         $apiUrl = $api_url.'/whatsapp/2/senders/447860030808/templates';
 
-        $response = Http::withHeaders($this->headers)->post($apiUrl, $body);
+        $response = Http::withHeaders($headers)->post($apiUrl, $body);
         Log::info("Réponse template creation:", [
             'status' => $response->status(),
             'body' => $response->json()
