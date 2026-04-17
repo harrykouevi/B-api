@@ -111,6 +111,7 @@ class InfoBipService{
                         ],
                         'language' => 'fr_FR',
                     ],
+                    "applicationId" =>  "charm-whatsapp" ,
                 ],
             ],
         ];
