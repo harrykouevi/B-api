@@ -113,7 +113,7 @@ class SendOtpByInfoBipListener
     private function byWhasapp() : \Illuminate\Http\Client\Response
     {
         $data = [
-            "application_id"=>  "charm-whatsapp" ,
+            "applicationId"=>  "charm-whatsapp" ,
             "from"=> $this->_whatsappSender,
             "to"=> $this->phoneNumber,
             "content" => ['text' => "Votre code de vérification est: $this->code . Ce code est à usage unique et expirera prochainement."]
