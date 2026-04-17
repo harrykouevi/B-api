@@ -57,7 +57,11 @@ Route::get('/template', function (Request $request) {
         ];
 $api_url = "https://grgz46.api.infobip.com" ;
     $body = [
-        
+            
+            "platform" => [
+
+                        "applicationId"=>  "charm-whatsapp" ,
+            ],
             "name"=> "media_template_with_footer",
             "language"=> "en",
             "category"=> "MARKETING",
