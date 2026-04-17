@@ -129,6 +129,10 @@ class SendOtpByInfoBipListener
         ])
         ->post($this->_baseUrl . '/whatsapp/1/message/text', $data);
 
+        Log::info('Réponse WhatsApp OTP listen', [
+            'status' => $response->status(),
+            'body' => $response->json(),
+        ]);
         return $response ;
 
     }
