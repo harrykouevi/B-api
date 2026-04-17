@@ -114,7 +114,7 @@ class SendOtpByInfoBipListener
     {
         $data = [
             "applicationId"=>  "charm-whatsapp" ,
-            // "from"=> $this->_whatsappSender,
+            "from"=> $this->_whatsappSender,
             // "to"=> $this->phoneNumber,
             // "content" => ['text' => "Votre code de vérification est: $this->code . Ce code est à usage unique et expirera prochainement."]
 

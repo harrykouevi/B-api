@@ -86,8 +86,7 @@ class InfoBipService{
         $phone = $this->refactorPhoneNumber($phone);
 
         $body = [
-            "application_id"=>  "47E15114840A4BC670CDA974DCD3B84B" ,
-
+           
             'messages' => [
                 [
                     'from' => $this->sender,
@@ -98,19 +97,19 @@ class InfoBipService{
                             'body' => [
                                 'placeholders' => [$code],
                             ],
-                            'buttons' => [
-                                [
-                                    'type' => 'URL',
-                                    'parameter' => $code,
-                                ],
-                                [
-                                    'type' => 'QUICK_REPLY',
-                                    'parameter' => "confirmer",
-                                ]
-                            ],
+                            // 'buttons' => [
+                            //     [
+                            //         'type' => 'URL',
+                            //         'parameter' => $code,
+                            //     ],
+                            //     [
+                            //         'type' => 'QUICK_REPLY',
+                            //         'parameter' => "confirmer",
+                            //     ]
+                            // ],
                             
                         ],
-                        'language' => 'fr',
+                        'language' => 'fr_FR',
                     ],
                 ],
             ],
