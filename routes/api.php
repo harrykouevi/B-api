@@ -29,7 +29,9 @@ use App\Http\Controllers\API\WalletAPIController;
 use App\Http\Controllers\API\PaymentAPIController;
 use App\Http\Controllers\API\UploadAPIController;
 use App\Http\Controllers\API\PostAPIController;
- use App\Http\Controllers\API\StoryAPIController;
+use App\Http\Controllers\API\StoryAPIController;
+use App\Services\NotificationService;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -183,6 +185,9 @@ Route::resource('options', 'API\OptionAPIController');
 // Routes for creating and updating EServices from templates (authenticated)
 Route::middleware('auth:api')->group(function () {
     
+    // Route::get('/test/notify', function (Request $request) {
+    //     NotificationService::notify([$booking->user], new StatusChangedBooking($booking));
+    // })->name('notify');
 
     Route::post('e_services/from-template', 'API\EServiceAPIController@storeFromTemplate')->name('e_services.storeFromTemplate');
     Route::put('e_services/{id}/from-template', 'API\EServiceAPIController@updateFromTemplate')->name('e_services.updateFromTemplate');

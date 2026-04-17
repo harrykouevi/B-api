@@ -41,6 +41,7 @@ class SendOtpByInfoBipListener
         $this->provider = $event->provider ;
 
         try {
+            Log::info('in listener');
             
             if($event->provider == "sms"){ 
                 $response = $this->bySms();
