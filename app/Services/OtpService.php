@@ -12,21 +12,22 @@ use App\Events\SendEmailOtpEvent;
 use App\Events\SendOtpByInfoBipEvent;
 use App\Models\User;
 use App\Repositories\UserRepository;
-use Exception;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
-use App\Services\InfoBipService;
 
 class OtpService
 {
-    private $userRepository;
-    private $infoBipService;
+    private InfoBipService $infoBipService;
+    private TermiiService $termiiService;
   
-    public function __construct(InfoBipService $infoBipService) {
-
-        $this ->infoBipService  = $infoBipService;
+    public function __construct(
+        InfoBipService $infoBipService,
+        TermiiService $termiiService
+    ) {
+        $this->infoBipService = $infoBipService;
+        $this->termiiService = $termiiService;
     }
     /**
     * generate and send otp .
@@ -66,9 +67,17 @@ class OtpService
     {
         // Stocker dans le cache avec expiration de 5 minutes
         Cache::put('otp_' . $phoneNumber, Hash::make($code), now()->addMinutes(5));
-        Log::info('code envoyé via sms', ["request" => $code] );
-         $result = $this->infoBipService->sendSMS($code , $phoneNumber);
-        Log::info('resultat', ["request" => $result] );
+        $provider = $this->resolveSmsProvider();
+        Log::info('code envoye via sms', [
+            'provider' => $provider,
+            'phone_number' => $phoneNumber,
+        ]);
+
+        $result = $this->sendSmsWithProvider($provider, $code, $phoneNumber);
+        Log::info('resultat envoi otp sms', [
+            'provider' => $provider,
+            'result' => $result,
+        ]);
 
         event(new SendOtpByInfoBipEvent($code , $phoneNumber));
         
@@ -87,10 +96,39 @@ class OtpService
         // Stocker dans le cache avec expiration de 5 minutes
         Cache::put('otp_' . $phoneNumber, Hash::make($code), now()->addMinutes(5));
         $result = $this->infoBipService->sendWhatsappSMS($code , $phoneNumber);
-        Log::info('resultat', ["request" => $result] );
+        Log::info('resultat envoi otp whatsapp', [
+            'provider' => 'infobip',
+            'result' => $result,
+        ]);
         event(new SendOtpByInfoBipEvent($code , $phoneNumber,'wh'));
         return 'If an account exists with this phone number, a reset link will be sent.' ;
     }
 
+    private function resolveSmsProvider(): string
+    {
+        // Priorite au setting runtime si present, sinon valeur env/config
+        $provider = strtolower((string) setting(
+            'otp_sms_provider',
+            config('services.otp.sms_provider', 'infobip')
+        ));
+
+        if (!in_array($provider, ['infobip', 'termii'], true)) {
+            Log::warning('otp_sms_provider invalide, fallback vers infobip', [
+                'otp_sms_provider' => $provider,
+            ]);
+
+            return 'infobip';
+        }
+
+        return $provider;
+    }
+
+    private function sendSmsWithProvider(string $provider, string $code, string $phoneNumber): array
+    {
+        return match ($provider) {
+            'termii' => $this->termiiService->sendSMS($code, $phoneNumber),
+            default => $this->infoBipService->sendSMS($code, $phoneNumber),
+        };
+    }
 
 }

@@ -402,6 +402,11 @@ class AppSettingsTableSeeder extends Seeder
                 'value' => '1',
             ),
             array(
+                // 'id' => 149.1,
+                'key' => 'otp_sms_provider',
+                'value' => 'termii',
+            ),
+            array(
                 // 'id' => 150,
                 'key' => 'default_wallet_name',
                 'value' => 'Igris',
