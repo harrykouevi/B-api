@@ -35,7 +35,7 @@ class CloudMediaIsReadyEventListener
         if($event->model instanceof Post){
             // On récupère le post
             $post = $event->model;
-
+            Log::info('send to owner');
             // On évite d'envoyer la notif si le post n'a pas d'auteur (sécurité)
             if (!$post->author_id) {
                 return;
@@ -43,7 +43,7 @@ class CloudMediaIsReadyEventListener
 
             if (!$post->author->hasRole('admin')) {
                 NotificationService::notify([$post->author] , new MyPostIsReadyNotification($post));
-                Log::info('send to owner');
+                Log::info('send to owner Z');
             }
 
             
