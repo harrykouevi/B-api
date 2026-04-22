@@ -30,7 +30,7 @@ class AttachModelToVideoUploadEventListener
         // $cacheUpload = $this->uploadRepository->getByUuid($event->upload_uuid);
         // $media = $cacheUpload->getMedia('*')->first();
         // $streamUid = $media->getCustomProperty('stream_uid');
-        Log::info('Message de log 1+1');
+        Log::info('Message de logi 1+1');
 
         AttachModelToVideoUploaded::dispatch($event->upload_uuid ,$event->model);
  
