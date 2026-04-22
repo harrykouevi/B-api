@@ -115,6 +115,19 @@ return [
         'sender' => env('INFOBIP_SENDER'),
     ],
 
+    'termii' => [
+        'api_url' => env('TERMII_BASE_URL', 'https://api.ng.termii.com'),
+        'api_key' => env('TERMII_API_KEY'),
+        'sender' => env('TERMII_SENDER', 'CHARM'),
+        'channel' => env('TERMII_SMS_CHANNEL', 'dnd'),
+        'type' => env('TERMII_SMS_TYPE', 'plain'),
+    ],
+
+    'otp' => [
+        // Valeurs possibles: infobip | termii
+        'sms_provider' => env('OTP_SMS_PROVIDER', 'termii'),
+    ],
+
 
     'cloudflare' => [
         'account_id'=> env('CLOUDFLARE_ACCOUNT_ID') ,
