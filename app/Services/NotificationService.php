@@ -52,7 +52,9 @@ class NotificationService extends Mailable
             try {
                 Notification::send($user, $notification);
             } catch (Exception $e) {
-                
+                Log::error('FAIL:'. $e->getMessage() , [
+                    'trace' => $e->getTraceAsString()
+                ]);
                 // Détection spécifique d'un token FCM invalide
                 $isFcmTokenError = str_contains($e->getMessage(), '404 Not Found') ||
                                 str_contains($e->getMessage(), 'Requested entity was not found');
