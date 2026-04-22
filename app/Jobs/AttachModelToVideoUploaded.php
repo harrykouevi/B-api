@@ -62,13 +62,15 @@ class AttachModelToVideoUploaded implements ShouldQueue
                     throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
                 }
 
-                event(new CloudMediaIsReadyEvent($this->model));
+                
 
                 Log::info('Manifest ready', [
                     'media_id' => $media->id,
                     'model_id' => $this->model?->id
                 ]);
             }
+
+            event(new CloudMediaIsReadyEvent($this->model));
 
             $media->copy($this->model, 'cloudmedia', config('filesystems.cloud'));
 
