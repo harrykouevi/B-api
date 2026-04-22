@@ -49,6 +49,7 @@ class NotificationService extends Mailable
     {
 
         foreach ($notifiables as $user) {
+            Log::info('FAIL:'.$user->id);
             try {
                 Notification::send($user, $notification);
             } catch (Exception $e) {

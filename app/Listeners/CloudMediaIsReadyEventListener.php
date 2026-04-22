@@ -53,7 +53,7 @@ class CloudMediaIsReadyEventListener
                 ->chunk(100, function ($users) use ($post,$event) {
                     NotificationService::notify($users, new  PostPublishedNotification($post));
                 });
-                
+
         }elseif($event->model instanceof Story){
             // On récupère le post
             $story = $event->model;
