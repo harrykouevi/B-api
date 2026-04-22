@@ -32,6 +32,8 @@ class CloudMediaIsReadyEventListener
      */
     public function handle(CloudMediaIsReadyEvent $event): void
     {
+        Log::info('xxxxx to owner');
+
         if($event->model instanceof Post){
             // On récupère le post
             $post = $event->model;
