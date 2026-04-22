@@ -3,8 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\SendOtpByInfoBipEvent;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
@@ -45,7 +44,7 @@ class SendOtpByInfoBipListener
             
             if($event->provider == "sms"){ 
                 $response = $this->bySms();
-                Log::channel('otp_sending')->info($response ) ;
+                $this->logProviderResponse($response, 'sms');
 
                 if ($response->successful()) {
                     Log::channel('otp_sending')->info("Reset OTP was sent successfully to infobip for $event->phoneNumber with provider : $event->provider ");
@@ -55,7 +54,7 @@ class SendOtpByInfoBipListener
             }
             if($event->provider == "wh"){ 
                 $response = $this->byWhasapp();
-                Log::channel('otp_sending')->info($response ) ;
+                $this->logProviderResponse($response, 'whatsapp');
                 if ($response->successful()) {
                     Log::channel('otp_sending')->info("Reset OTP was sent successfully to infobip for $event->phoneNumber with provider : $event->provider ");
                 } else {
@@ -65,7 +64,9 @@ class SendOtpByInfoBipListener
            
         } catch (\Exception $e) {
             // Gestion de l'exception
-            Log::channel('otp_sending')->error('Erreur lors de l\' envoi du code OTP à l\'utilisateur #' . $event->user->id, [
+            Log::channel('otp_sending')->error('Erreur lors de l\'envoi du code OTP', [
+                'phone_number' => $event->phoneNumber,
+                'provider' => $event->provider,
                 'exception' => $e,
             ]);
         }
@@ -144,5 +145,14 @@ class SendOtpByInfoBipListener
         ]);
         return $response ;
 
+    }
+
+    private function logProviderResponse(Response $response, string $provider): void
+    {
+        Log::channel('otp_sending')->info('OTP provider response', [
+            'provider' => $provider,
+            'status' => $response->status(),
+            'body' => $response->json(),
+        ]);
     }
 }
