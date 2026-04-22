@@ -44,7 +44,6 @@ class CloudMediaIsReadyEventListener
 
             if (!$post->author->hasRole('admin')) {
                 NotificationService::notify([$post->author] , new MyPostIsReadyNotification($post));
-                Log::info('send to owner Z');
             }
 
             
@@ -54,10 +53,10 @@ class CloudMediaIsReadyEventListener
                 ->chunk(100, function ($users) use ($post,$event) {
                     NotificationService::notify($users, new  PostPublishedNotification($post));
                 });
+                
         }elseif($event->model instanceof Story){
             // On récupère le post
             $story = $event->model;
-            Log::info('send to owner');
 
             // On évite d'envoyer la notif si le story n'a pas d'auteur (sécurité)
             if (!$story->user_id) {
@@ -66,7 +65,6 @@ class CloudMediaIsReadyEventListener
 
             if (!$story->user->hasRole('admin')) {
                 NotificationService::notify( [$story->user] , new MyStoryIsReadyNotification($story));
-                Log::info('send to owner P');
             
             }
 

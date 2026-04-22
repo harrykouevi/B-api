@@ -34,7 +34,7 @@ class MyStoryIsReadyNotification extends BaseNotification
     public function toFcm($notifiable): FcmMessage
     {
         $title = trans('lang.notification_ready_story_title');
-        $message = trans('lang.notification_ready_story_message') ;
+        $message = trans('lang.notification_ready_story_message').'fdfdf' ;
 
         // Données différenciées selon le type de destinataire
         $baseData = [
