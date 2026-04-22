@@ -71,10 +71,10 @@ class CloudMediaIsReadyEventListener
             // On récupère les utilisateurs qui est  l'auteur)
             // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
             User::where('id', '!=', $story->user_id)
-                ->chunk(100, function ($users) use ($story,$event) {
-                    // NotificationService::notify($users, new  StoryPublishedNotification($story));
-               
-                });
+            ->chunk(100, function ($users) use ($story,$event) {
+                NotificationService::notify($users, new  StoryPublishedNotification($story));
+            
+            });
         }
     }
 }
