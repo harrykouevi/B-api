@@ -13,6 +13,7 @@ use App\Notifications\StoryPublishedNotification;
 use App\Services\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 
@@ -42,9 +43,10 @@ class CloudMediaIsReadyEventListener
 
             if (!$post->author->hasRole('admin')) {
                 NotificationService::notify([$post->author] , new MyPostIsReadyNotification($post));
-
+                Log::info('send to owner');
             }
 
+            
             // On récupère les utilisateurs qui est  l'auteur)
             // On utilise chunk pour être sûr que ça ne plante jamais, même à 10 000 users
             User::where('id', '!=', $post->author_id)
