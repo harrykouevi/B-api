@@ -35,7 +35,6 @@ class CloudMediaIsReadyEventListener
         if($event->model instanceof Post){
             // On récupère le post
             $post = $event->model;
-            Log::info('send to owner');
             // On évite d'envoyer la notif si le post n'a pas d'auteur (sécurité)
             if (!$post->author_id) {
                 return;
@@ -56,6 +55,7 @@ class CloudMediaIsReadyEventListener
         }elseif($event->model instanceof Story){
             // On récupère le post
             $story = $event->model;
+            Log::info('send to owner');
 
             // On évite d'envoyer la notif si le story n'a pas d'auteur (sécurité)
             if (!$story->user_id) {
@@ -64,6 +64,8 @@ class CloudMediaIsReadyEventListener
 
             if (!$story->user->hasRole('admin')) {
                 NotificationService::notify( [$story->user] , new MyStoryIsReadyNotification($story));
+                Log::info('send to owner P');
+            
             }
 
             // On récupère les utilisateurs qui est  l'auteur)
