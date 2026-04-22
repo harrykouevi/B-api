@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\SendOtpByInfoBipEvent;
+use GuzzleHttp\Psr7\Response as PsrResponse;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -79,11 +80,17 @@ class SendOtpByInfoBipListener
      */
     private function bySms() 
     {
-
-        return Http::response([
-            'status' => 'skipped',
-            'message' => 'SMS sending disabled (bypass mode)'
-        ], 200);
+        // Keep legacy listener non-blocking while returning a proper HTTP client response object.
+        return new Response(
+            new PsrResponse(
+                200,
+                ['Content-Type' => 'application/json'],
+                json_encode([
+                    'status' => 'skipped',
+                    'message' => 'SMS sending disabled (bypass mode)'
+                ], JSON_UNESCAPED_UNICODE)
+            )
+        );
 
         $data = [
             'messages' => [
