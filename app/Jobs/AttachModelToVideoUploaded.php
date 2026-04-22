@@ -46,6 +46,7 @@ class AttachModelToVideoUploaded implements ShouldQueue
             Log::info([$cacheUpload->toArray()]);
 
             $media = $cacheUpload->getMedia('*')->first();
+            Log::info([$media->toArray()]);
             $streamUid = $media->getCustomProperty('stream_uid');
             if($streamUid){
 
