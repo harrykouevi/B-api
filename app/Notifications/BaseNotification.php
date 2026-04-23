@@ -61,7 +61,8 @@ abstract class BaseNotification extends Notification
 
         $baseData = $this->getBaseData($notifiable, $data);
         
-        $message->content($notification)->data($baseData)->priority(FcmMessage::PRIORITY_HIGH);
+        $message->content($notification)->priority(FcmMessage::PRIORITY_HIGH);
+        // $message->content($notification)->data($baseData)->priority(FcmMessage::PRIORITY_HIGH);
 
         if ($to = $notifiable->routeNotificationFor('fcm', $this)) {
             $message->to($to);

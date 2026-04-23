@@ -16,7 +16,7 @@ class StoryPublishedNotification extends BaseNotification
     public function __construct(Story $story)
     {
         $this->story = $story;
-        $this->message = ($story->user->name ?? 'Un utilisateur') . " a publié une nouveau story.";
+        $this->message = ($story->user->name ?? 'Un utilisateur') . " a publié une nouvelle story.";
        
     }
 
@@ -45,8 +45,8 @@ class StoryPublishedNotification extends BaseNotification
         // Données différenciées selon le type de destinataire
         $baseData = [
             'story_id' => (string) $this->story->uuid,
-            'type'    => 'new_story',
             'author_id' => (string) $this->story->user_id,
+            'author_name' => $this->story->user->name ?? 'Un utilisateur',
             'image' => $this->getIconUrl(),
         ];
 
