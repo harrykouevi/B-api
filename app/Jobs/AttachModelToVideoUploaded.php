@@ -61,15 +61,15 @@ class AttachModelToVideoUploaded implements ShouldQueue
                 }
                 
             }else{
-                $response = Http::head($media->url );
+                $response = Http::get($media->url );
                 Log::info([
                     $response->status(),
                     $response->body()]
                 );
 
                 if (!$response->successful()) {
-                    //Log::info('Manifest not ready, will retry...');
-                   // throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
+                    Log::info('Manifest not ready, will retry...');
+                   throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
                 }
             }
             
