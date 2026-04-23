@@ -43,8 +43,7 @@ class AttachModelToVideoUploaded implements ShouldQueue
                 throw new \Exception('Upload not found');
             }
             Log::info('Message de log 1+2');
-            Log::info([$cacheUpload->toArray()]);
-
+           
             $media = $cacheUpload->getMedia('*')->first();
             $streamUid = $media->getCustomProperty('stream_uid');
             if($streamUid){
@@ -60,14 +59,22 @@ class AttachModelToVideoUploaded implements ShouldQueue
                     Log::info('Manifest not ready, will retry...');
                     throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
                 }
+                
+            }else{
+                $response = Http::head($media->url );
 
-                event(new CloudMediaIsReadyEvent($this->model));
-
-                Log::info('Manifest ready', [
-                    'media_id' => $media->id,
-                    'model_id' => $this->model?->id
-                ]);
+                if (!$response->successful()) {
+                    Log::info('Manifest not ready, will retry...');
+                    throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
+                }
             }
+            
+            Log::info('Media is ready', [
+                'media_id' => $media->id,
+                'model_id' => $this->model?->id
+            ]);
+
+            event(new CloudMediaIsReadyEvent($this->model));
 
             $media->copy($this->model, 'cloudmedia', config('filesystems.cloud'));
 
