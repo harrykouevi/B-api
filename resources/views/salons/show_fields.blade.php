@@ -96,9 +96,8 @@
 
 <!-- Featured Field -->
 <div class="form-group row col-6">
-    {!! Form::label('featured', 'Featured:', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
+    {!! Form::label('featured', trans('lang.salon_featured') . ':', ['class' => 'col-md-3 control-label text-md-right mx-1']) !!}
     <div class="col-md-9">
         <p>{!! $salon->featured !!}</p>
     </div>
 </div>
-
