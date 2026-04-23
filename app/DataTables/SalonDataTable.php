@@ -40,7 +40,7 @@ class SalonDataTable extends DataTable
             })
             ->editColumn('name', function ($salon) {
                 if ($salon['featured']) {
-                    return $salon->name . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.e_service_featured') . "</span>";
+                    return $salon->name . "<span class='badge bg-" . setting('theme_color') . " p-1 m-2'>" . trans('lang.salon_featured') . "</span>";
                 }
                 return $salon->name;
             })
