@@ -61,12 +61,15 @@ class AttachModelToVideoUploaded implements ShouldQueue
                 }
                 
             }else{
-                Log::info($media->url);
                 $response = Http::head($media->url );
+                Log::info([
+                    $response->status(),
+                    $response->body()]
+                );
 
                 if (!$response->successful()) {
-                     $this->release(10); // retry dans 10s
-                    return;
+                    Log::info('Manifest not ready, will retry...');
+                    throw new \Exception('Manifest not ready'); // Laravel retry automatiquement
                 }
             }
             
@@ -80,11 +83,11 @@ class AttachModelToVideoUploaded implements ShouldQueue
             $media->copy($this->model, 'cloudmedia', config('filesystems.cloud'));
 
         } catch (\Exception $e) {
-            Log::error('FAIL: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'upload_uuid' => $this->upload_uuId,
-                'model_id' => $this->model?->id ?? null
-            ]);
+            // Log::error('FAIL: ' . $e->getMessage(), [
+            //     'trace' => $e->getTraceAsString(),
+            //     'upload_uuid' => $this->upload_uuId,
+            //     'model_id' => $this->model?->id ?? null
+            // ]);
 
             // relance l'exception pour que Laravel retry
             throw $e;
