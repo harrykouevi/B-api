@@ -74,9 +74,10 @@ class AttachModelToVideoUploaded implements ShouldQueue
                 'model_id' => $this->model?->id
             ]);
 
+            $media->copy($this->model, 'cloudmedia', config('filesystems.cloud'));
             event(new CloudMediaIsReadyEvent($this->model));
 
-            $media->copy($this->model, 'cloudmedia', config('filesystems.cloud'));
+            
 
         } catch (\Exception $e) {
             Log::error('FAIL: ' . $e->getMessage(), [
