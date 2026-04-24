@@ -137,8 +137,10 @@ class Story extends Model implements HasMedia
                 $streamUid = $media->custom_properties['stream_uid'] ?? null;
                 if ((str_starts_with($media->mime_type, 'video/') || str_starts_with($media->mime_type, 'application/')) 
                     &&  !empty($streamUid) ) {
-                    return  "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8";
+
+                    return  ($conversion == '' )? "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/manifest/video.m3u8" :
                 
+                    "https://customer-jhmjx2xxk4rdo62d.cloudflarestream.com/{$streamUid}/thumbnails/thumbnail.jpg" ;
                 }
                 return  Storage::disk('r2')->temporaryUrl(
                     $media->getPathRelativeToRoot($conversion),

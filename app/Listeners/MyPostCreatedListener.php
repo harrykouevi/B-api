@@ -19,8 +19,6 @@ class MyPostCreatedListener implements ShouldQueue
         if (!$post->author_id) {
             return;
         }
-
-       
         $user = User::find($post->author_id);
         NotificationService::notify([$user], new MyPostCreatedNotification($post, $event->message));
     }
