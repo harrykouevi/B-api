@@ -65,7 +65,6 @@ class NotificationService extends Mailable
                     Log::error('Erreur notification utilisateur', [
                         'user_id' => $user->id,
                         'notification' => get_class($notification),
-                        'message' => $e->getMessage(),
                     ]);
 
                     
