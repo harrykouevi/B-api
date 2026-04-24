@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Story;
 use Benwilkins\FCM\FcmMessage;
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\Facades\Log;
 
 class MyStoryIsReadyNotification extends BaseNotification
 {
@@ -56,6 +57,7 @@ class MyStoryIsReadyNotification extends BaseNotification
      */
     protected function getIconUrl(): string
     {
+        Log::info(['fqdfdfqf has media',$this->story->hasMedia('*')]) ;
         if ($this->story->hasMedia('*')) {
             return $this->story->getFirstMediaUrl('*', 'thumb');
         }
