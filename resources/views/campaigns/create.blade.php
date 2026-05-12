@@ -80,6 +80,7 @@
                                     'home' => trans('lang.campaign_action_type_home'),
                                     'salon' => trans('lang.campaign_action_type_salon'),
                                     'service' => trans('lang.campaign_action_type_service'),
+                                    'register' => trans('lang.campaign_action_type_register'),
                                     'external_url' => trans('lang.campaign_action_type_external_url'),
                                 ], old('action_type', 'home'), ['class' => 'form-control']) !!}
                                 <div class="form-text text-muted">{{ trans('lang.campaign_action_type_help') }}</div>

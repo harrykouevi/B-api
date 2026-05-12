@@ -61,7 +61,7 @@ class CampaignController extends Controller
             'image_url' => 'nullable|url|max:2048',
             'image_file' => 'nullable|image|mimes:jpeg,jpg,png,webp,gif|max:4096',
             'audience' => 'required|string|in:all,salon,client',
-            'action_type' => 'nullable|string|in:home,salon,service,external_url',
+            'action_type' => 'nullable|string|in:home,salon,service,register,external_url',
             'deep_link' => 'nullable|string|max:2048',
             'cta_text' => 'nullable|string|max:120',
         ]);
