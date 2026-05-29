@@ -28,6 +28,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Nwidart\Modules\Facades\Module;
 use Prettus\Repository\Criteria\RequestCriteria;
@@ -89,6 +90,7 @@ class EServiceAPIController extends Controller
             $this->availableEServices($eServices);
             $this->availableSalon($request, $eServices);
             $this->hasValidSubscription($request, $eServices);
+            $this->applySearchFilters($request, $eServices);
             $this->limitOffset($request, $eServices);
             $this->filterCollection($request, $eServices);
             $eServices = array_values($eServices->toArray());
@@ -134,6 +136,64 @@ class EServiceAPIController extends Controller
                 return $element->salon->accepted;
             });
         }
+    }
+
+    /**
+     * Apply explicit search filters for catalog browsing.
+     */
+    private function applySearchFilters(Request $request, Collection &$eServices): void
+    {
+        $keyword = trim((string) $request->input('keyword', ''));
+        if ($keyword !== '') {
+            $normalizedKeyword = Str::lower($keyword);
+            $eServices = $eServices->filter(function ($element) use ($normalizedKeyword) {
+                $name = $element->name;
+                if (is_array($name)) {
+                    $name = implode(' ', array_filter($name));
+                }
+
+                return Str::contains(Str::lower((string) $name), $normalizedKeyword);
+            });
+        }
+
+        $categoryIds = $request->input('category_ids', []);
+        if (is_string($categoryIds)) {
+            $categoryIds = array_filter(explode(',', $categoryIds));
+        }
+        if (is_array($categoryIds) && count($categoryIds) > 0) {
+            $normalizedCategoryIds = array_map('strval', $categoryIds);
+            $eServices = $eServices->filter(function ($element) use ($normalizedCategoryIds) {
+                return $element->categories->contains(function ($category) use ($normalizedCategoryIds) {
+                    return in_array((string) $category->id, $normalizedCategoryIds, true);
+                });
+            });
+        }
+
+        $minPrice = $request->input('min_price');
+        if ($minPrice !== null && $minPrice !== '') {
+            $minPrice = (float) $minPrice;
+            $eServices = $eServices->filter(function ($element) use ($minPrice) {
+                return $this->resolveEffectivePrice($element) >= $minPrice;
+            });
+        }
+
+        $maxPrice = $request->input('max_price');
+        if ($maxPrice !== null && $maxPrice !== '') {
+            $maxPrice = (float) $maxPrice;
+            $eServices = $eServices->filter(function ($element) use ($maxPrice) {
+                return $this->resolveEffectivePrice($element) <= $maxPrice;
+            });
+        }
+    }
+
+    private function resolveEffectivePrice(EService $eService): float
+    {
+        $discountPrice = (float) ($eService->discount_price ?? 0);
+        if ($discountPrice > 0) {
+            return $discountPrice;
+        }
+
+        return (float) ($eService->price ?? 0);
     }
 
     /**
