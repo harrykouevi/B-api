@@ -5,11 +5,13 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateServiceTemplateRequest;
 use App\Http\Requests\UpdateServiceTemplateRequest;
+use App\Models\ServiceTemplate;
 use App\Repositories\ServiceTemplateRepository;
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use InfyOm\Generator\Criteria\LimitOffsetCriteria;
+use Illuminate\Support\Str;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 
@@ -39,15 +41,24 @@ class ServiceTemplateAPIController extends Controller
     {
         try {
             $this->serviceTemplateRepository->pushCriteria(new RequestCriteria($request));
-            $this->serviceTemplateRepository->pushCriteria(new LimitOffsetCriteria($request));
+            $serviceTemplates = $this->serviceTemplateRepository->all();
+            $serviceTemplates->loadMissing(['category', 'optionTemplates', 'media']);
+            $this->applySearchFilters($request, $serviceTemplates);
+            $this->limitOffset($request, $serviceTemplates);
+            $this->filterCollection($request, $serviceTemplates);
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
         }
-        
-        $serviceTemplates = $this->serviceTemplateRepository->all();
-        $this->filterCollection($request, $serviceTemplates);
 
-        return $this->sendResponse($serviceTemplates->toArray(), 'Service Templates retrieved successfully');
+        $payload = array_values(
+            $serviceTemplates
+                ->map(fn (ServiceTemplate $template) => $this->serializeTemplate($template))
+                ->toArray()
+        );
+
+        return $this->sendResponse($payload, 'Service Templates retrieved successfully');
     }
 
     /**
@@ -72,9 +83,10 @@ class ServiceTemplateAPIController extends Controller
             return $this->sendError('Service Template not found');
         }
         
+        $serviceTemplate->loadMissing(['category', 'optionTemplates', 'media']);
         $this->filterModel($request, $serviceTemplate);
         
-        return $this->sendResponse($serviceTemplate->toArray(), 'Service Template retrieved successfully');
+        return $this->sendResponse($this->serializeTemplate($serviceTemplate), 'Service Template retrieved successfully');
     }
 
     /**
@@ -148,5 +160,104 @@ class ServiceTemplateAPIController extends Controller
         }
         
         return $this->sendResponse($serviceTemplate->toArray(), 'Service Template deleted successfully');
+    }
+
+    private function applySearchFilters(Request $request, Collection &$serviceTemplates): void
+    {
+        $keyword = trim((string) $request->input('keyword', ''));
+        if ($keyword !== '') {
+            $normalizedKeyword = Str::lower($keyword);
+            $serviceTemplates = $serviceTemplates->filter(function (ServiceTemplate $template) use ($normalizedKeyword) {
+                $haystacks = [
+                    Str::lower((string) $template->name),
+                    Str::lower((string) $template->description),
+                    Str::lower((string) optional($template->category)->name),
+                ];
+
+                foreach ($haystacks as $haystack) {
+                    if ($haystack !== '' && Str::contains($haystack, $normalizedKeyword)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+        }
+
+        $categoryIds = $request->input('category_ids', []);
+        if (is_string($categoryIds)) {
+            $categoryIds = array_filter(explode(',', $categoryIds));
+        }
+        if (is_array($categoryIds) && count($categoryIds) > 0) {
+            $normalizedCategoryIds = array_map('strval', $categoryIds);
+            $serviceTemplates = $serviceTemplates->filter(function (ServiceTemplate $template) use ($normalizedCategoryIds) {
+                return in_array((string) $template->category_id, $normalizedCategoryIds, true);
+            });
+        }
+
+        $minPrice = $request->input('min_price');
+        if ($minPrice !== null && $minPrice !== '') {
+            $minPrice = (float) $minPrice;
+            $serviceTemplates = $serviceTemplates->filter(function (ServiceTemplate $template) use ($minPrice) {
+                $price = $this->resolveStartingPrice($template);
+                return $price !== null && $price >= $minPrice;
+            });
+        }
+
+        $maxPrice = $request->input('max_price');
+        if ($maxPrice !== null && $maxPrice !== '') {
+            $maxPrice = (float) $maxPrice;
+            $serviceTemplates = $serviceTemplates->filter(function (ServiceTemplate $template) use ($maxPrice) {
+                $price = $this->resolveStartingPrice($template);
+                return $price !== null && $price <= $maxPrice;
+            });
+        }
+    }
+
+    private function resolveStartingPrice(ServiceTemplate $template): ?float
+    {
+        if (isset($template->price) && is_numeric($template->price)) {
+            $price = (float) $template->price;
+            if ($price > 0) {
+                return $price;
+            }
+        }
+
+        $prices = $template->relationLoaded('optionTemplates')
+            ? $template->optionTemplates
+                ->pluck('price')
+                ->filter(fn ($value) => is_numeric($value) && (float) $value > 0)
+            : collect();
+
+        if ($prices->isEmpty()) {
+            $minPrice = $template->optionTemplates()->where('price', '>', 0)->min('price');
+            return $minPrice !== null ? (float) $minPrice : null;
+        }
+
+        return (float) $prices->min();
+    }
+
+    private function serializeTemplate(ServiceTemplate $template): array
+    {
+        return [
+            'id' => (string) $template->id,
+            'name' => $template->name,
+            'description' => $template->description,
+            'category_id' => $template->category_id !== null ? (string) $template->category_id : null,
+            'category' => $template->relationLoaded('category') && $template->category
+                ? [
+                    'id' => (string) $template->category->id,
+                    'name' => $template->category->name,
+                ]
+                : null,
+            'starting_price' => $this->resolveStartingPrice($template),
+            'options_count' => $template->relationLoaded('optionTemplates')
+                ? $template->optionTemplates->count()
+                : $template->optionTemplates()->count(),
+            'image_url' => $template->getFirstMediaUrl('image'),
+            'source' => 'service_templates',
+            'created_at' => $template->created_at,
+            'updated_at' => $template->updated_at,
+        ];
     }
 }
