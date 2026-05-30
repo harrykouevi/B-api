@@ -164,6 +164,7 @@ Route::get('option-templates/by-service/{serviceTemplateId}', [OptionTemplateAPI
 // Route resource standard pour les option templates
 Route::resource('option_templates', OptionTemplateAPIController::class);
 
+Route::get('search/services', 'API\EServiceAPIController@searchCatalog');
 Route::resource('e_services', 'API\EServiceAPIController');
 Route::resource('galleries', 'API\GalleryAPIController');
 Route::get('salon_reviews/{id}', 'API\SalonReviewAPIController@show');

@@ -18,6 +18,7 @@ use App\Http\Requests\CreateEServiceFromTemplateRequest;
 use App\Http\Requests\UpdateEServiceRequest;
 use App\Http\Requests\UpdateEServiceFromTemplateRequest;
 use App\Models\EService;
+use App\Models\ServiceTemplate;
 use App\Repositories\EServiceRepository;
 use App\Repositories\ServiceTemplateRepository;
 use App\Repositories\UploadRepository;
@@ -63,13 +64,15 @@ class EServiceAPIController extends Controller
         EServiceRepository $eServiceRepo,
         UserRepository $userRepository,
         UploadRepository $uploadRepository,
-        EServiceFromTemplateService $eServiceFromTemplateService
+        EServiceFromTemplateService $eServiceFromTemplateService,
+        ServiceTemplateRepository $serviceTemplateRepository
     ) {
         parent::__construct();
         $this->eServiceRepository = $eServiceRepo;
         $this->userRepository = $userRepository;
         $this->uploadRepository = $uploadRepository;
         $this->eServiceFromTemplateService = $eServiceFromTemplateService;
+        $this->serviceTemplateRepository = $serviceTemplateRepository;
     }
 
     /**
@@ -82,15 +85,7 @@ class EServiceAPIController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $this->eServiceRepository->pushCriteria(new RequestCriteria($request));
-            $this->eServiceRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
-            $this->eServiceRepository->pushCriteria(new NearCriteria($request));
-            $eServices = $this->eServiceRepository->all();
-
-            $this->availableEServices($eServices);
-            $this->availableSalon($request, $eServices);
-            $this->hasValidSubscription($request, $eServices);
-            $this->applySearchFilters($request, $eServices);
+            $eServices = $this->getSearchableEServices($request);
             $this->limitOffset($request, $eServices);
             $this->filterCollection($request, $eServices);
             $eServices = array_values($eServices->toArray());
@@ -98,6 +93,92 @@ class EServiceAPIController extends Controller
             return $this->sendError($e->getMessage());
         }
         return $this->sendResponse($eServices, 'E Services retrieved successfully');
+    }
+
+    public function searchCatalog(Request $request): JsonResponse
+    {
+        try {
+            $eServices = $this->getSearchableEServices($request);
+            $templates = $this->getSearchableServiceTemplates($request);
+
+            $results = $this->buildCatalogResults($eServices, $templates);
+            $this->limitOffset($request, $results);
+
+            return $this->sendResponse(
+                array_values($results->toArray()),
+                'Catalog search retrieved successfully'
+            );
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage(), 500);
+        }
+    }
+
+    private function getSearchableEServices(Request $request): Collection
+    {
+        $this->eServiceRepository->pushCriteria(new RequestCriteria($request));
+        $this->eServiceRepository->pushCriteria(new EServicesOfUserCriteria(auth()->id()));
+        $this->eServiceRepository->pushCriteria(new NearCriteria($request));
+
+        $eServices = $this->eServiceRepository->all();
+        $eServices->loadMissing(['categories', 'salon.address', 'media']);
+
+        $this->availableEServices($eServices);
+        $this->availableSalon($request, $eServices);
+        $this->hasValidSubscription($request, $eServices);
+        $this->applySearchFilters($request, $eServices);
+
+        return $eServices->values();
+    }
+
+    private function getSearchableServiceTemplates(Request $request): Collection
+    {
+        $this->serviceTemplateRepository->pushCriteria(new RequestCriteria($request));
+
+        $templates = $this->serviceTemplateRepository->all();
+        $templates->loadMissing(['category', 'optionTemplates', 'media']);
+
+        $this->applyTemplateSearchFilters($request, $templates);
+
+        return $templates->values();
+    }
+
+    private function buildCatalogResults(Collection $eServices, Collection $templates): Collection
+    {
+        $serviceResults = $eServices->map(function (EService $service) {
+            $category = $service->categories->first();
+
+            return [
+                'result_id' => 'e_service_' . $service->id,
+                'source' => 'e_service',
+                'name' => $service->name,
+                'description' => $service->description,
+                'category_id' => $category ? (string) $category->id : null,
+                'category_name' => $category ? $category->name : null,
+                'display_price' => $this->resolveEffectivePrice($service),
+                'image_url' => $service->getFirstMediaUrl('image'),
+                'salon_name' => optional($service->salon)->name,
+                'e_service' => $service->toArray(),
+                'template' => null,
+            ];
+        });
+
+        $templateResults = $templates->map(function (ServiceTemplate $template) {
+            return [
+                'result_id' => 'service_template_' . $template->id,
+                'source' => 'service_template',
+                'name' => $template->name,
+                'description' => $template->description,
+                'category_id' => $template->category_id !== null ? (string) $template->category_id : null,
+                'category_name' => optional($template->category)->name,
+                'display_price' => $this->resolveTemplateStartingPrice($template),
+                'image_url' => $template->getFirstMediaUrl('image'),
+                'salon_name' => null,
+                'e_service' => null,
+                'template' => $this->serializeTemplateForSearch($template),
+            ];
+        });
+
+        return $serviceResults->concat($templateResults)->values();
     }
 
     /**
@@ -194,6 +275,103 @@ class EServiceAPIController extends Controller
         }
 
         return (float) ($eService->price ?? 0);
+    }
+
+    private function applyTemplateSearchFilters(Request $request, Collection &$templates): void
+    {
+        $keyword = trim((string) $request->input('keyword', ''));
+        if ($keyword !== '') {
+            $normalizedKeyword = Str::lower($keyword);
+            $templates = $templates->filter(function (ServiceTemplate $template) use ($normalizedKeyword) {
+                $haystacks = [
+                    Str::lower((string) $template->name),
+                    Str::lower((string) $template->description),
+                    Str::lower((string) optional($template->category)->name),
+                ];
+
+                foreach ($haystacks as $haystack) {
+                    if ($haystack !== '' && Str::contains($haystack, $normalizedKeyword)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+        }
+
+        $categoryIds = $request->input('category_ids', []);
+        if (is_string($categoryIds)) {
+            $categoryIds = array_filter(explode(',', $categoryIds));
+        }
+        if (is_array($categoryIds) && count($categoryIds) > 0) {
+            $normalizedCategoryIds = array_map('strval', $categoryIds);
+            $templates = $templates->filter(function (ServiceTemplate $template) use ($normalizedCategoryIds) {
+                return in_array((string) $template->category_id, $normalizedCategoryIds, true);
+            });
+        }
+
+        $minPrice = $request->input('min_price');
+        if ($minPrice !== null && $minPrice !== '') {
+            $minPrice = (float) $minPrice;
+            $templates = $templates->filter(function (ServiceTemplate $template) use ($minPrice) {
+                $price = $this->resolveTemplateStartingPrice($template);
+                return $price !== null && $price >= $minPrice;
+            });
+        }
+
+        $maxPrice = $request->input('max_price');
+        if ($maxPrice !== null && $maxPrice !== '') {
+            $maxPrice = (float) $maxPrice;
+            $templates = $templates->filter(function (ServiceTemplate $template) use ($maxPrice) {
+                $price = $this->resolveTemplateStartingPrice($template);
+                return $price !== null && $price <= $maxPrice;
+            });
+        }
+    }
+
+    private function resolveTemplateStartingPrice(ServiceTemplate $template): ?float
+    {
+        if (isset($template->price) && is_numeric($template->price)) {
+            $price = (float) $template->price;
+            if ($price > 0) {
+                return $price;
+            }
+        }
+
+        $prices = $template->relationLoaded('optionTemplates')
+            ? $template->optionTemplates
+                ->pluck('price')
+                ->filter(fn ($value) => is_numeric($value) && (float) $value > 0)
+            : collect();
+
+        if ($prices->isEmpty()) {
+            $minPrice = $template->optionTemplates()->where('price', '>', 0)->min('price');
+            return $minPrice !== null ? (float) $minPrice : null;
+        }
+
+        return (float) $prices->min();
+    }
+
+    private function serializeTemplateForSearch(ServiceTemplate $template): array
+    {
+        return [
+            'id' => (string) $template->id,
+            'name' => $template->name,
+            'description' => $template->description,
+            'category_id' => $template->category_id !== null ? (string) $template->category_id : null,
+            'category' => $template->category
+                ? [
+                    'id' => (string) $template->category->id,
+                    'name' => $template->category->name,
+                ]
+                : null,
+            'starting_price' => $this->resolveTemplateStartingPrice($template),
+            'options_count' => $template->relationLoaded('optionTemplates')
+                ? $template->optionTemplates->count()
+                : $template->optionTemplates()->count(),
+            'image_url' => $template->getFirstMediaUrl('image'),
+            'source' => 'service_template',
+        ];
     }
 
     /**
